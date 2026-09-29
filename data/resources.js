@@ -35,6 +35,7 @@ export const RESOURCES = {
                  loot: 'wreck' },
   barrel:      { name: 'Beczka z wraku', kind: 'loot', hp: 1, radius: 0.4, height: 0.9, respawn: 0, xp: 2, verb: 'Otwórz beczkę',
                  loot: 'wreck' },
+  note:        { name: 'Notatka rozbitka', kind: 'hand', hp: 1, radius: 0.0, height: 0.4, respawn: 0, xp: 6, verb: 'Przeczytaj notatkę', drops: [], noteItem: true },
   hull:        { name: 'Wrak statku', kind: 'decor', hp: 1, radius: 0, height: 4, respawn: 0 },
 };
 

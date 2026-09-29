@@ -84,6 +84,7 @@ export class AudioManager {
       case 'squeal': this.tone(0, dst, 'sawtooth', 900 * pitch, 500, t, 0.3, 0.4); this.tone(0, dst, 'square', 1300 * pitch, 700, t, 0.25, 0.15); break;
       case 'growl': { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 500; f.connect(dst); this.tone(0, f, 'sawtooth', 70 * pitch, 55, t, 0.6, 0.9); break; }
       case 'screech': this.tone(0, dst, 'sawtooth', 2000 * pitch, 3200, t, 0.16, 0.25); this.tone(0, dst, 'square', 2600 * pitch, 3600, t + 0.05, 0.12, 0.1); break;
+      case 'drip': this.tone(0, dst, 'sine', 1800, 700, t, 0.12, 0.35); this.tone(0, dst, 'sine', 900, 500, t + 0.05, 0.2, 0.15); break;
       case 'thunder': this.burst(dst, t, 2.6, 'lowpass', 220, 0.8, 1.0, 60); break;
       case 'craft': this.tone(0, dst, 'triangle', 440, 440, t, 0.06, 0.4); this.tone(0, dst, 'triangle', 660, 660, t + 0.08, 0.06, 0.4); this.tone(0, dst, 'triangle', 880, 880, t + 0.16, 0.14, 0.4); break;
       case 'eat': this.burst(dst, t, 0.06, 'bandpass', 1000, 2, 0.4); this.burst(dst, t + 0.1, 0.06, 'bandpass', 900, 2, 0.4); this.burst(dst, t + 0.2, 0.06, 'bandpass', 1100, 2, 0.4); break;
@@ -113,11 +114,12 @@ export class AudioManager {
     let near = 60;
     for (let a = 0; a < 6.28; a += 0.785) for (let d = 4; d < near; d += 6) if (w.getHeight(p.x + Math.cos(a) * d, p.z + Math.sin(a) * d) < -0.2) { near = Math.min(near, d); break; }
     const waveVol = Math.max(0, 1 - near / 60) * 0.5 * (0.7 + 0.3 * Math.sin(t * 0.35));
-    this.waves.g.gain.setTargetAtTime(waveVol, t, 0.3); this.waves.fl.frequency.setTargetAtTime(380 + 250 * Math.sin(t * 0.32) ** 2, t, 0.2);
+    const inCave = atmos.cave || 0;
+    this.waves.g.gain.setTargetAtTime(waveVol * (1 - inCave), t, 0.3); this.waves.fl.frequency.setTargetAtTime(380 + 250 * Math.sin(t * 0.32) ** 2, t, 0.2);
     const alt = Math.min(1, Math.max(0, (p.y - 3) / 40));
     const gust = 0.5 + 0.5 * Math.sin(t * 0.21 + Math.sin(t * 0.07) * 2);
     const storm = weather ? weather.intensity : 0;
-    this.wind.g.gain.setTargetAtTime((0.05 + alt * 0.16 + gust * 0.05 + storm * 0.25) * (atmos.dayness > 0.5 ? 1 : 1.3), t, 0.4);
+    this.wind.g.gain.setTargetAtTime((0.05 + alt * 0.16 + gust * 0.05 + storm * 0.25) * (atmos.dayness > 0.5 ? 1 : 1.3) * (1 - inCave * 0.9), t, 0.4);
     this.wind.fl.frequency.setTargetAtTime(300 + gust * 350 + storm * 300, t, 0.5);
     this.rain.g.gain.setTargetAtTime(weather && weather.raining ? 0.16 * weather.intensity : 0, t, 0.6);
     // day/night wildlife
@@ -125,6 +127,9 @@ export class AudioManager {
     s.birdT -= dt; s.cricketT -= dt; s.howlT -= dt;
     const day = atmos.dayness;
     const b = this.game.world.getBiome(p.x, p.z);
+    s.dripT = (s.dripT ?? 2) - dt;
+    if (inCave > 0.5 && s.dripT <= 0) { s.dripT = 1.5 + Math.random() * 4; const a = Math.random() * 6.28; this.play('drip', { pos: { x: p.x + Math.cos(a) * 6, y: 2, z: p.z + Math.sin(a) * 6 }, vol: 1.1 }); }
+    if (inCave > 0.5) return;
     if (day > 0.6 && s.birdT <= 0 && b !== 0 && (!weather || !weather.raining)) { s.birdT = 2 + Math.random() * 6; const a = Math.random() * 6.28; this.play('bird', { pos: { x: p.x + Math.cos(a) * 18, y: 8, z: p.z + Math.sin(a) * 18 }, vol: 0.6 }); }
     if (day < 0.35 && s.cricketT <= 0) { s.cricketT = 0.5 + Math.random() * 2; const a = Math.random() * 6.28; this.play('cricket', { pos: { x: p.x + Math.cos(a) * 9, y: 0.3, z: p.z + Math.sin(a) * 9 }, vol: 0.8 }); }
     if (day < 0.25 && s.howlT <= 0) { s.howlT = 22 + Math.random() * 30; const a = Math.random() * 6.28; this.play('howl', { pos: { x: p.x + Math.cos(a) * 70, y: 3, z: p.z + Math.sin(a) * 70 }, vol: 2.0 }); }

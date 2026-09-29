@@ -5,10 +5,19 @@ import { smoothstep, clamp, lerp } from '../engine/util.js';
 
 export const WORLD = { size: 512, half: 256, n: 513, seaLevel: 0 };
 
-export const BIOME = { WATER: 0, BEACH: 1, MEADOW: 2, JUNGLE: 3, ROCK: 4, VOLCANO: 5 };
-export const BIOME_NAMES = ['Woda', 'Plaża', 'Łąka', 'Dżungla', 'Skały', 'Wulkan'];
+export const BIOME = { WATER: 0, BEACH: 1, MEADOW: 2, JUNGLE: 3, ROCK: 4, VOLCANO: 5, CAVE: 6 };
+export const BIOME_NAMES = ['Woda', 'Plaża', 'Łąka', 'Dżungla', 'Skały', 'Wulkan', 'Jaskinia'];
 
 // Fixed landmark layout (noise changes with the seed, the layout stays readable).
+// The cave complex is carved into a far corner of the heightmap (over open sea) and reached through the cave mouth on the
+// mountain flank; it is hidden from the outside world (terrain chunks are skipped unless you are close).
+export const CAVE = {
+  cx: 196, cz: 196, radius: 50, floor: 3.4, wallH: 9.5, ceiling: 3.4 + 7.2,
+  // chambers (local coords relative to cx,cz) and tunnels between them
+  rooms: [{ x: 0, z: 0, r: 8.5 }, { x: 22, z: -6, r: 9 }, { x: 40, z: -22, r: 8 }, { x: 18, z: -34, r: 12 }, { x: -6, z: -30, r: 9 }, { x: -22, z: -12, r: 7 }],
+  tunnels: [[0, 1], [1, 2], [1, 3], [3, 4], [4, 5], [5, 0]],
+  tunnelR: 3.2,
+};
 export const LAYOUT = {
   radius: 196,
   spawn: { x: 6, z: 168 },
@@ -91,6 +100,7 @@ export class World {
         this.heights[iz * n + ix] = h;
       }
     }
+    this.carveCave();
     // biomes
     for (let iz = 0; iz < n; iz++) {
       for (let ix = 0; ix < n; ix++) {
@@ -99,11 +109,11 @@ export class World {
         let b;
         const dv = Math.hypot(x - V.x, z - V.z);
         const moist = nC.fbm(x * 0.0055 + 50, z * 0.0055 - 20, 3) + 0.22 * (z / 190) - 0.18 * (x / 190);
-        if (h < -0.25) b = BIOME.WATER;
+        if (this.inCaveRegion(x, z)) b = BIOME.CAVE;
+        else if (h < -0.25) b = BIOME.WATER;
         else if (dv < V.r * 0.72 && h > 6) b = BIOME.VOLCANO;
         else if (this.mountainMask[i] > 0.34 || h > 15) b = BIOME.ROCK;
-        else if (h < 1.7 && !this.nearInland(ix, iz)) b = BIOME.BEACH;
-        else if (h < 1.3) b = BIOME.BEACH;
+        else if (h < 1.9) b = BIOME.BEACH;
         else b = moist > 0.02 ? BIOME.JUNGLE : BIOME.MEADOW;
         this.biomes[i] = b;
       }
@@ -111,7 +121,19 @@ export class World {
     // cave mouth: first flank spot of the mountain with a moderate slope
     this.cave = this.findCave();
     this.spawn = this.findSpawn();
+    this.peak = this.findPeak();
   }
+
+  // Highest point of the mountain massif (site of the signal fire).
+  findPeak() {
+    const M = LAYOUT.mountain; let best = { x: M.x, z: M.z, y: -1e9 };
+    for (let dz = -60; dz <= 60; dz += 1) for (let dx = -60; dx <= 60; dx += 1) {
+      const x = M.x + dx, z = M.z + dz; if (Math.hypot(dx, dz) > M.r * 0.7) continue;
+      const h = this.getHeight(x, z); if (h > best.y && this.getSlope(x, z) < 0.6) best = { x, z, y: h };
+    }
+    return best;
+  }
+  volcanoHeat(x, z) { const V = LAYOUT.volcano, t = Math.hypot(x - V.x, z - V.z) / V.r; return Math.max(0, 1 - t * 1.5) * (this.getHeight(x, z) > 12 ? 1 : 0.3); }
 
   // Walk inland from the south coast to the first dry beach tile.
   findSpawn() {
@@ -123,6 +145,32 @@ export class World {
   }
 
   nearInland() { return true; }
+
+  inCaveRegion(x, z) { return Math.hypot(x - CAVE.cx, z - CAVE.cz) < CAVE.radius + 4; }
+  // signed distance (m) to the cave's walkable skeleton: <0 inside chambers/tunnels
+  caveDist(x, z) {
+    const lx = x - CAVE.cx, lz = z - CAVE.cz;
+    let d = 1e9;
+    for (const r of CAVE.rooms) d = Math.min(d, Math.hypot(lx - r.x, lz - r.z) - r.r);
+    for (const [a, b] of CAVE.tunnels) {
+      const A = CAVE.rooms[a], B = CAVE.rooms[b], abx = B.x - A.x, abz = B.z - A.z, t = clamp(((lx - A.x) * abx + (lz - A.z) * abz) / (abx * abx + abz * abz), 0, 1);
+      d = Math.min(d, Math.hypot(lx - (A.x + abx * t), lz - (A.z + abz * t)) - CAVE.tunnelR);
+    }
+    return d;
+  }
+  isCave(x, z) { return Math.hypot(x - CAVE.cx, z - CAVE.cz) < CAVE.radius + 2; }
+  carveCave() {
+    const n = this.n, half = WORLD.half, nz = new Noise2D(this.seed + 909);
+    for (let iz = 0; iz < n; iz++) for (let ix = 0; ix < n; ix++) {
+      const x = ix - half, z = iz - half, rr = Math.hypot(x - CAVE.cx, z - CAVE.cz);
+      if (rr > CAVE.radius + 8) continue;
+      const i = iz * n + ix, d = this.caveDist(x, z);
+      const floor = CAVE.floor + nz.fbm(x * 0.12, z * 0.12, 3) * 0.55 + nz.noise(x * 0.5, z * 0.5) * 0.12;
+      let h = d <= 0 ? floor : floor + (1 - Math.exp(-d * 0.85)) * CAVE.wallH + nz.noise(x * 0.3, z * 0.3) * 0.6 * Math.min(1, d);
+      if (rr > CAVE.radius) h = lerp(h, -10, smoothstep(CAVE.radius, CAVE.radius + 8, rr));
+      this.heights[i] = h; this.lake[i] = 0; this.mountainMask[i] = 0;
+    }
+  }
 
   findCave() {
     const M = LAYOUT.mountain;

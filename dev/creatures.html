@@ -1,0 +1,77 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Creature viewer (dev)</title>
+<script type="importmap">{ "imports": { "three": "../lib/three.module.js", "three/addons/": "../lib/addons/" } }</script>
+<style>html,body{margin:0;background:#222;overflow:hidden;font:12px monospace;color:#fff}canvas{display:block}#l{position:fixed;left:6px;top:4px;pointer-events:none}</style></head>
+<body><div id="l"></div><script type="module">
+// Creature dev viewer. window.__sheet({ items:[{kind,seed,state,t,warm,yaw,opts,label}], cam:{pos,look,fov}, layout:'x'|'z', spacing, ground })
+//  state values may be numbers or [from,to] ramps over `t` seconds. state.dead = seconds since death at the END of the sim.
+//  window.__measure() -> per creature lowest foot y (world) of the last sheet. Without a call, URL ?kind=wolf plays a live cycle of modes.
+import * as THREE from 'three';
+import { createCreature, CREATURE_KINDS } from '../src/gfx/creatures.js';
+const r = new THREE.WebGLRenderer({ antialias: true }); r.setSize(innerWidth, innerHeight); r.shadowMap.enabled = true; document.body.appendChild(r.domElement);
+r.toneMapping = THREE.ACESFilmicToneMapping;
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x9fb8c8);
+scene.add(new THREE.HemisphereLight(0xbcd8ff, 0x6a5a40, 1.1));
+const sun = new THREE.DirectionalLight(0xfff0d8, 2.6); sun.position.set(4, 8, 6); sun.castShadow = true;
+Object.assign(sun.shadow.camera, { left: -12, right: 12, top: 8, bottom: -8 }); sun.shadow.mapSize.set(2048, 2048); scene.add(sun);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 40), new THREE.MeshLambertMaterial({ color: 0x7a9a4a })); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+const cam = new THREE.PerspectiveCamera(30, innerWidth / innerHeight, 0.1, 100);
+let live = [], last = [];
+function ramp(v, u) { return Array.isArray(v) ? v[0] + (v[1] - v[0]) * u : v; }
+function stateAt(st, u, tau, T) {
+  const o = {};
+  for (const k in st) o[k] = k === 'dead' ? -1 : (typeof st[k] === 'string' || typeof st[k] === 'boolean') ? st[k] : ramp(st[k], u);
+  if (st.dead !== undefined && st.dead >= 0) { const d = tau - (T - st.dead); o.dead = d >= 0 ? d : -1; }
+  return o;
+}
+window.__sheet = (spec) => {
+  for (const c of last) { scene.remove(c.root); c.dispose(); }
+  last = []; live = [];
+  const items = spec.items, n = items.length, sp = spec.spacing || 1.8, lay = spec.layout || 'x';
+  items.forEach((it, i) => {
+    const c = createCreature(it.kind, { seed: it.seed ?? 1, ...(it.opts || {}) });
+    const T = it.t ?? 1.5, st = it.state || {}, dt = 1 / 60;
+    for (const k in (it.set || {})) { const path = k.split('.'); let o = c; for (let j = 0; j < path.length - 1; j++) o = o[path[j]]; o[path[path.length - 1]] = it.set[k]; }   // debug: force internal fields (e.g. sitP.u)
+    const warm = it.warm ?? 60;
+    for (let k = 0; k < warm; k++) c.animate(dt, stateAt(st, 0, 0, T));
+    const N = Math.round(T * 60);
+    for (let k = 1; k <= N; k++) { const tau = k * dt; c.animate(dt, stateAt(st, tau / T, tau, T)); }
+    if (it.flash) c.setFlash(it.flash); if (it.glow) c.setGlow(it.glow); if (it.opacity !== undefined) c.setOpacity(it.opacity);
+    const off = (i - (n - 1) / 2) * sp;
+    if (lay === 'z') c.root.position.z = off; else c.root.position.x = off;
+    c.root.position.y = it.y || 0;
+    c.root.rotation.y = it.yaw || 0;
+    scene.add(c.root); last.push(c);
+  });
+  const cs = spec.cam || {};
+  const span = (n - 1) * sp / 2 + 1;
+  cam.position.set(...(cs.pos || [0, 1.6, 6 + span * 1.3])); cam.lookAt(...(cs.look || [0, 0.5, 0]));
+  cam.fov = cs.fov || 30; cam.updateProjectionMatrix();
+  r.render(scene, cam);
+};
+window.__measure = () => last.map((c) => {
+  c.root.updateMatrixWorld(true);
+  let lo = 1e9; const v = new THREE.Vector3();
+  const legs = c.legs || [];
+  for (const l of legs) { l.ank.updateMatrixWorld(true); const p = new THREE.Vector3(0, -l.l3, 0); l.ank.localToWorld(p); lo = Math.min(lo, p.y); }
+  return { kind: c.kind, footY: legs.length ? +lo.toFixed(3) : null, rootY: c.root.position.y };
+});
+// live mode
+const q = new URLSearchParams(location.search);
+if (q.get('kind')) {
+  const kinds = q.get('kind') === 'all' ? CREATURE_KINDS : [q.get('kind')];
+  kinds.forEach((k, i) => { const c = createCreature(k, { seed: 3 }); c.root.position.x = (i - (kinds.length - 1) / 2) * 2; scene.add(c.root); live.push(c); });
+  cam.position.set(0, 1.6, 6 + kinds.length); cam.lookAt(0, 0.5, 0);
+  const seq = [['idle', 0, 0], ['wander', 1.2, 0], ['chase', 6, 0], ['stalk', 1, 0], ['windup', 0, 1], ['attack', 0, 0], ['sleep', 0, 0], ['howl', 0, 0]];
+  let t = 0, prev = performance.now();
+  const loop = () => {
+    const now = performance.now(), dt = Math.min(0.05, (now - prev) / 1000); prev = now; t += dt;
+    const idx = Math.floor(t / 3) % seq.length, [mode, spd] = seq[idx], u = (t % 3) / 3;
+    document.getElementById('l').textContent = mode;
+    for (const c of live) c.animate(dt, { mode, speed: spd, maxSpeed: 8, telegraph: mode === 'windup' ? u : 0, attackKind: 'bite', attackT: mode === 'attack' ? u : 0, grounded: true });
+    r.render(scene, cam); requestAnimationFrame(loop);
+  };
+  loop();
+}
+window.__ready = true;
+</script></body></html>

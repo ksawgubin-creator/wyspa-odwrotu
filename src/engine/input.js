@@ -3,13 +3,13 @@
 const DEFAULT_BINDINGS = {
   forward: ['KeyW', 'ArrowUp'], back: ['KeyS', 'ArrowDown'], left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'],
   jump: ['Space'], sprint: ['ShiftLeft', 'ShiftRight'], sneak: ['ControlLeft', 'KeyX'], interact: ['KeyE'],
-  inventory: ['Tab', 'KeyI'], craft: ['KeyC'], build: ['KeyB'], rotate: ['KeyR'], map: ['KeyM'], pause: ['Escape'], debug: ['F3'],
+  inventory: ['Tab', 'KeyI'], craft: ['KeyC'], build: ['KeyB'], rotate: ['KeyR'], map: ['KeyM'], skills: ['KeyK'], pause: ['Escape'], debug: ['F3'],
   hotbar1: ['Digit1'], hotbar2: ['Digit2'], hotbar3: ['Digit3'], hotbar4: ['Digit4'], hotbar5: ['Digit5'],
   hotbar6: ['Digit6'], hotbar7: ['Digit7'], hotbar8: ['Digit8'], hotbar9: ['Digit9'],
 };
 export const ACTION_LABELS = {
   forward: 'Do przodu', back: 'Do tyłu', left: 'W lewo', right: 'W prawo', jump: 'Skok', sprint: 'Sprint / unik (Shift)', sneak: 'Skradanie', interact: 'Interakcja',
-  inventory: 'Ekwipunek', craft: 'Crafting', build: 'Budowanie', rotate: 'Obróć element', map: 'Mapa', pause: 'Pauza', debug: 'Debug (F3)',
+  inventory: 'Ekwipunek', craft: 'Crafting', skills: 'Umiejętności', build: 'Budowanie', rotate: 'Obróć element', map: 'Mapa', pause: 'Pauza', debug: 'Debug (F3)',
 };
 const TAP_TIME = 0.22;
 

@@ -95,19 +95,54 @@ export class HumanRig {
     this.tmpQ = new THREE.Quaternion();
   }
 
-  // Attach a held item model to the right hand (id null = empty). `mesh` is prepared by the caller.
-  setHeld(id, geometry, extra = null) {
-    if (this.heldId === id) return;
-    this.heldId = id;
-    if (this.heldMesh) { this.sockets.handR.remove(this.heldMesh); this.heldMesh = null; }
+  // Attach a held item model to a hand (id null = empty). Bows go to the left hand, everything else to the right.
+  setHeld(id, geometry, extra = null, hand = 'R') {
+    if (this.heldId === id && this.heldHand === hand) return;
+    this.heldId = id; this.heldHand = hand;
+    if (this.heldMesh) { this.heldMesh.parent?.remove(this.heldMesh); this.heldMesh = null; }
     if (!geometry) return;
     const g = new THREE.Group();
     const m = new THREE.Mesh(geometry, mats.prop); m.castShadow = true;
     g.add(m);
     if (extra) g.add(extra);
-    g.position.set(0, -0.02, 0.0);              // blade direction is steered by the wrist joint (wrR)
-    this.sockets.handR.add(g);
+    if (hand === 'L') { g.rotation.set(Math.PI / 2, 0, 0); g.position.set(0, -0.02, 0.02); this.sockets.handL.add(g); }
+    else { g.position.set(0, -0.02, 0.0); this.sockets.handR.add(g); }       // blade direction is steered by the wrist joint (wrR)
     this.heldMesh = g;
+  }
+
+  // Armour is drawn on the body: a set of extra meshes on the chest / shoulders / legs (removed with setArmor(null)).
+  setArmor(id) {
+    for (const m of this.armorMeshes || []) m.parent?.remove(m);
+    this.armorMeshes = [];
+    if (!id) return;
+    const J = this.joints;
+    const LOOK = {
+      hide_armor: { main: 0x8a5f38, alt: 0x5e3f24, trim: 0x2e2118, metal: false },
+      iron_armor: { main: 0x9aa2ac, alt: 0x6c747e, trim: 0x3a3f46, metal: true },
+      obsidian_armor: { main: 0x2a2140, alt: 0x171226, trim: 0xd9622a, metal: true },
+    }[id];
+    if (!LOOK) return;
+    const add = (parent, geo) => { const m = new THREE.Mesh(geo, mats.prop); m.castShadow = true; parent.add(m); this.armorMeshes.push(m); return m; };
+    const key = 'armor' + id;
+    add(J.chest, make('achest', key, () => merge([
+      xf(trunk({ rb: 0.2, rt: 0.25, h: 0.34, segs: 8, rows: 2, jit: LOOK.metal ? 0.008 : 0.016, wobble: 0.006, seed: 41, pos: [0, 0.01, 0], colorBase: LOOK.main, colorTop: LOOK.alt, faceVar: 0.09 }), { scale: [1.15, 1, 0.84] }),
+      blob({ r: 0.15, detail: 1, jit: 0.1, seed: 42, squash: [1.15, 0.6, 1.0], pos: [0.27, 0.34, 0], color: LOOK.main, faceVar: 0.1 }),
+      blob({ r: 0.15, detail: 1, jit: 0.1, seed: 43, squash: [1.15, 0.6, 1.0], pos: [-0.27, 0.34, 0], color: LOOK.main, faceVar: 0.1 }),
+      trunk({ rb: 0.235, rt: 0.235, h: 0.05, segs: 8, rows: 1, jit: 0.004, seed: 44, pos: [0, 0.06, 0], colorBase: LOOK.trim, colorTop: LOOK.trim }),
+    ])));
+    add(J.spine, make('aabd', key, () => merge([
+      xf(trunk({ rb: 0.19, rt: 0.2, h: 0.24, segs: 8, rows: 1, jit: 0.01, seed: 45, pos: [0, -0.02, 0], colorBase: LOOK.alt, colorTop: LOOK.main }), { scale: [1.08, 1, 0.86] }),
+    ])));
+    if (id !== 'hide_armor') {
+      for (const s of ['L', 'R']) {
+        add(J['hip' + s], make('athigh' + s, key, () => xf(trunk({ rb: 0.098, rt: 0.118, h: 0.3, segs: 7, rows: 1, jit: 0.006, seed: 46, pos: [0, 0, 0], colorBase: LOOK.alt, colorTop: LOOK.main }), { rot: [Math.PI, 0, 0] })));
+        add(J['kn' + s], make('ashin' + s, key, () => merge([xf(trunk({ rb: 0.075, rt: 0.09, h: 0.26, segs: 7, rows: 1, jit: 0.006, seed: 47, colorBase: LOOK.alt, colorTop: LOOK.main }), { rot: [Math.PI, 0, 0], pos: [0, -0.12, 0] })])));
+        add(J['el' + s], make('abr' + s, key, () => xf(trunk({ rb: 0.058, rt: 0.066, h: 0.16, segs: 6, rows: 1, jit: 0.005, seed: 48, colorBase: LOOK.alt, colorTop: LOOK.main }), { rot: [Math.PI, 0, 0], pos: [0, -0.06, 0] })));
+      }
+      add(J.head, make('ahelm', key, () => merge([blob({ r: 0.172, detail: 1, jit: 0.03, seed: 49, squash: [1.0, 0.72, 1.06], pos: [0, 0.23, -0.01], color: LOOK.main, faceVar: 0.06 }), trunk({ rb: 0.18, rt: 0.18, h: 0.035, segs: 8, rows: 1, jit: 0.003, seed: 50, pos: [0, 0.2, 0], colorBase: LOOK.trim, colorTop: LOOK.trim })])));
+    } else {
+      for (const s of ['L', 'R']) add(J['el' + s], make('abrh' + s, key, () => xf(trunk({ rb: 0.062, rt: 0.07, h: 0.14, segs: 6, rows: 1, jit: 0.01, seed: 48, colorBase: LOOK.alt, colorTop: LOOK.main }), { rot: [Math.PI, 0, 0], pos: [0, -0.06, 0] })));
+    }
   }
 
   // Apply a pose: Float32Array-like [3 * JOINTS.length] plus body offsets.

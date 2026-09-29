@@ -69,6 +69,10 @@ export function heldModel(id) {
     case 'stone_spear': return spearModel('stone');
     case 'bone_spear': return spearModel('bone');
     case 'iron_sword': return swordModel('iron');
+    case 'bone_knife': return swordModel('bone');
+    case 'iron_axe': return axeModel('iron');
+    case 'obsidian_pickaxe': return pickaxeModel('obsidian');
+    case 'crossbow': return bowModel();
     case 'obsidian_sword': return swordModel('obsidian');
     case 'torch': return torchModel();
     case 'bow': return bowModel();

@@ -40,6 +40,9 @@ export class Player {
     this.landHard = false;
     this.aimYaw = this.yaw;
     this.stats_ = { kills: 0, crafted: 0, chopped: 0 };
+    this.skills = { hunter: 0, stealth: 0, crafter: 0, hungerRes: 0, vitality: 0 };
+    this.equipment = { chest: null };
+    this.aiming = false; this.bowDraw = 0; this.bowRecover = 0;
     this.msgCooldown = 0;
     // visuals
     this.rig = new HumanRig();
@@ -62,14 +65,40 @@ export class Player {
     if (this.heldId === key) return;
     this.heldId = key;
     this.rig.heldId = undefined;
-    this.rig.setHeld(key, geo);
+    this.rig.setHeld(key, geo, key === 'torch' ? this.makeFlame() : null, key === 'bow' || key === 'crossbow' ? 'L' : 'R');
     const cls = id ? weaponFor(id).cls : null;
     this.holdClass = cls && HOLD_CLASS[cls] ? HOLD_CLASS[cls] : null;
+  }
+
+  // Flame mesh for the torch (additive cone, flickers in updateVisual)
+  makeFlame() {
+    const g = new THREE.Group();
+    const outer = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.26, 7), new THREE.MeshBasicMaterial({ color: 0xff8a20, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending }));
+    const inner = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.17, 6), new THREE.MeshBasicMaterial({ color: 0xffe9a0, transparent: true, opacity: 0.95, depthWrite: false, blending: THREE.AdditiveBlending }));
+    outer.position.y = 0.8; inner.position.y = 0.77;
+    g.add(outer, inner); g.userData.flame = [outer, inner];
+    this.flame = g;
+    return g;
   }
 
   // --- helpers ------------------------------------------------------------------------------------
   say(msg, kind = 'info') { if (this.msgCooldown > 0 && kind === 'hint') return; if (kind === 'hint') this.msgCooldown = 2.5; this.game.notify?.(msg, kind); }
   spendStamina(n) { this.stats.stamina = Math.max(0, this.stats.stamina - n); this.staminaDelay = 0.7; if (this.stats.stamina <= 0) this.exhausted = true; }
+  get armorDef() { const a = this.equipment.chest && ITEMS[this.equipment.chest.id]?.armor; return a ? a.def : 0; }
+  get armorWarm() { const a = this.equipment.chest && ITEMS[this.equipment.chest.id]?.armor; return a ? a.warm : 0; }
+  armorMul() { return 1 - this.armorDef; }
+  equip(idx) {
+    const inv = this.inventory, it = inv.slots[idx]; if (!it || !ITEMS[it.id]?.armor) return false;
+    const old = this.equipment.chest;
+    this.equipment.chest = { id: it.id, dur: it.dur }; inv.slots[idx] = old ? { id: old.id, n: 1, dur: old.dur } : null; inv.changed();
+    this.rig.setArmor?.(it.id); this.game.audio?.play('craft', { vol: 0.5 }); return true;
+  }
+  unequip() {
+    const old = this.equipment.chest; if (!old) return;
+    if (this.inventory.add(old.id, 1, { dur: old.dur }) > 0) { this.say('Ekwipunek jest pełny.', 'warn'); return; }
+    this.equipment.chest = null; this.rig.setArmor?.(null);
+  }
+  applySkills() { const v = this.skills.vitality || 0; this.stats.maxHealth = CONFIG.player.maxHealth + 10 * v; }
   get busy() { return !!(this.atk || this.dodge || this.interact || this.dead || this.stun > 0); }
 
   walkable(fx, fz, tx, tz) {
@@ -234,6 +263,7 @@ export class Player {
   // Returns 'hit' | 'dodged' | 'blocked' | 'parried' | 'dead'.
   takeHit(info) {
     if (this.dead) return 'dead';
+    if (this.game.debug?.god) return 'dodged';
     const C2 = CONFIG.player;
     if (this.invuln > 0) { this.game.audio?.play('whoosh', { pos: this.pos }); this.game.onPerfectDodge?.(info); return 'dodged'; }
     const from = info.dir;                                     // where the attacker is looking (toward us)
@@ -308,6 +338,7 @@ export class Player {
     if (this.hurt) { this.hurt.t += dt / 0.4; if (this.hurt.t >= 1) this.hurt = null; }
     if (this.parryFlash) { this.parryFlash.t += dt / 0.35; if (this.parryFlash.t >= 1) this.parryFlash = null; }
 
+    if (this.heldId === 'torch') { const it = this.weaponItem; if (it && it.dur !== undefined) { it.dur -= dt; if (it.dur <= 0) { this.inventory.slots[this.inventory.selected] = null; this.inventory.changed(); this.say('Pochodnia dogasła.', 'warn'); } } }
     // stamina regeneration
     this.staminaDelay = Math.max(0, this.staminaDelay - dt);
     if (this.staminaDelay <= 0 && !this.sprinting) st.stamina = Math.min(st.maxStamina, st.stamina + C.staminaRegen * (this.blocking ? 0.4 : 1) * dt);
@@ -326,7 +357,14 @@ export class Player {
     const free = !this.busy;
     this.sneaking = input.isDown('sneak') && !this.atk && !this.dodge;
     this.blocking = false;
-    if (!this.dead && !this.atk && !this.dodge && !this.interact && this.stun <= 0 && input.mouseDown(2) && !this.exhaustedBlock()) {
+    const isBow = this.holdClass === 'bow';
+    this.bowRecover = Math.max(0, this.bowRecover - dt);
+    this.aiming = false;
+    if (isBow && !this.dead && !this.atk && !this.dodge && !this.interact && this.stun <= 0 && input.mouseDown(2) && this.bowRecover <= 0) {
+      this.aiming = true; this.bowDraw = Math.min(1, this.bowDraw + dt / 0.85);
+      if (input.mousePressed(0) && this.bowDraw >= 0.25) this.shoot();
+    } else this.bowDraw = Math.max(0, this.bowDraw - dt * 3);
+    if (!isBow && !this.dead && !this.atk && !this.dodge && !this.interact && this.stun <= 0 && input.mouseDown(2) && !this.exhaustedBlock()) {
       this.blocking = true;
       this.blockT += dt;
     } else this.blockT = 0;
@@ -348,6 +386,7 @@ export class Player {
       if (this.sneaking) target = C.sneakSpeed;
       else if (input.sprintHeld() && moving && !this.exhausted && st.stamina > 1 && !this.blocking) { target = C.sprintSpeed; this.sprinting = true; this.spendStamina(C.sprintCost * dt); this.staminaDelay = 0.5; }
       if (this.blocking) target *= 0.5;
+      if (this.aiming) target *= 0.45;
       if (this.interact) target *= 0.15;
       if (this.wading) target *= C.wadeSlow;
       const tvx = wx * target, tvz = wz * target;
@@ -363,10 +402,28 @@ export class Player {
 
     // facing
     if (!this.atk && !this.dodge && !this.dead) {
-      if (this.blocking || (this.aiming)) this.yaw = dampAngle(this.yaw, camYaw, 18, dt);
+      if (this.blocking || this.aiming) this.yaw = dampAngle(this.yaw, camYaw, 20, dt);
       else if (moving && this.speed > 0.4) this.yaw = dampAngle(this.yaw, Math.atan2(this.vx, this.vz), 13, dt);
     }
     this.applyPhysics(dt);
+  }
+
+  shoot() {
+    const g = this.game, inv = this.inventory;
+    const ammoIds = this.holdClass === 'bow' && this.weaponId === 'crossbow' ? ['bolt'] : ['fire_arrow', 'arrow'];
+    const ammo = ammoIds.find((a) => inv.has(a));
+    if (!ammo) { this.say('Nie masz strzał.', 'hint'); this.bowDraw = 0; return; }
+    inv.remove(ammo, 1);
+    const cam = g.camera, dir = this._sd || (this._sd = new THREE.Vector3());
+    cam.getWorldDirection(dir);
+    const ox = this.pos.x + Math.sin(this.yaw) * 0.4, oy = this.pos.y + 1.5, oz = this.pos.z + Math.cos(this.yaw) * 0.4;
+    const tx = cam.position.x + dir.x * 45, ty = cam.position.y + dir.y * 45, tz = cam.position.z + dir.z * 45;
+    let dx = tx - ox, dy = ty - oy, dz = tz - oz; const l = Math.hypot(dx, dy, dz); dx /= l; dy /= l; dz /= l;
+    const d = this.bowDraw, speed = 20 + 26 * d, dmg = (12 + 24 * d) * (1 + 0.08 * (this.skills.hunter || 0)) * (ammo === 'bolt' ? 1.5 : 1);
+    g.projectiles.fire(ox, oy, oz, dx, dy, dz, speed, dmg, ammo, this);
+    g.audio?.play('swing', { pos: this.pos, pitch: 1.6, vol: 0.7 });
+    this.bowDraw = 0; this.bowRecover = 0.32; this.yaw = Math.atan2(dx, dz);
+    g.cameraRig?.shake(0.06);
   }
 
   exhaustedBlock() { return this.stats.stamina <= 0 && this.exhausted; }
@@ -382,8 +439,10 @@ export class Player {
       const dotv = (ex * this.vx + ez * this.vz) / (Math.hypot(this.vx, this.vz) * Math.max(1e-4, Math.hypot(ex, ez)));
       if (Math.hypot(ex, ez) < Math.hypot(this.vx, this.vz) * 0.35) { this.vx *= 0.6; this.vz *= 0.6; }
     }
-    // vertical
-    const ground = w.getHeight(p.x, p.z);
+    // vertical (terrain, or a tower platform we stand on)
+    let ground = w.getHeight(p.x, p.z);
+    const plat = this.game.buildings?.platformY(p.x, p.z, p.y);
+    if (plat !== null && plat !== undefined && plat > ground) ground = plat;
     if (this.grounded) {
       const diff = ground - p.y;
       if (diff > -0.45) { p.y = ground; this.vy = 0; }          // follow the terrain (also uphill)
@@ -394,6 +453,7 @@ export class Player {
       if (p.y <= ground) { this.landHard = this.vy < -9; p.y = ground; this.grounded = true; if (this.vy < -6) { this.game.audio?.play('land', { pos: p }); if (this.vy < -13) this.fallDamage(-this.vy); } this.vy = 0; }
     }
     this.wading = w.waterDepth(p.x, p.z) > 0.25 && this.grounded;
+    if (this.onTower && plat === null) this.onTower = null;
   }
 
   fallDamage(v) { const d = (v - 13) * 5; if (d > 0 && !this.dead) { this.stats.health -= d; this.hurt = { t: 0, back: false, side: 1 }; this.game.audio?.play('hurt', { pos: this.pos }); if (this.stats.health <= 0) this.die(null); } }
@@ -429,6 +489,20 @@ export class Player {
     out.x = lerp(this.prev.x, this.pos.x, alpha); out.y = lerp(this.prev.y, this.pos.y, alpha); out.z = lerp(this.prev.z, this.pos.z, alpha);
     return out;
   }
+  updateTorch(dt) {
+    const g = this.game, lit = this.heldId === 'torch' && !this.dead;
+    if (lit && !this.torchSrc) this.torchSrc = g.lights.add({ x: 0, y: 0, z: 0, color: 0xffa347, intensity: 3.2, radius: 15, flicker: 1, scare: 0.85, scareRadius: 8 });
+    if (!lit && this.torchSrc) { g.lights.remove(this.torchSrc); this.torchSrc = null; }
+    if (!lit || !this.flame) return;
+    const v = this._tv || (this._tv = new THREE.Vector3());
+    this.flame.getWorldPosition(v);
+    const flick = 1 + Math.sin(g.time * 23) * 0.12 + Math.sin(g.time * 37) * 0.08;
+    this.flame.userData.flame[0].scale.set(1, flick, 1); this.flame.userData.flame[1].scale.set(1, flick * 1.1, 1);
+    this.torchSrc.x = v.x; this.torchSrc.y = v.y + 0.35; this.torchSrc.z = v.z;
+    this.torchSrc.dim = g.weather?.raining ? 0.7 : 1;
+    if (Math.random() < dt * 14) g.fx.ember(v.x, v.y + 0.5, v.z);
+    if (Math.random() < dt * 4) g.fx.smoke(v.x, v.y + 0.7, v.z, 0.35);
+  }
   updateVisual(dt, alpha) {
     const rp = this.renderPos(alpha, this._rp || (this._rp = { x: 0, y: 0, z: 0 }));
     this.rig.root.position.set(rp.x, rp.y, rp.z);
@@ -441,17 +515,21 @@ export class Player {
       interact: this.interact ? { clip: this.interact.clip, t: Math.min(1, this.interact.t), timing: this.interact.timing, dur: this.interact.dur } : null,
       dodge: this.dodge ? { t: this.dodge.t / C.dodgeTime, back: this.dodge.back } : null,
       block: this.block, parry: this.parryFlash, hurt: this.hurt, dead: this.dead ? this.deadT : -1, deadBack: this.deadBack,
-      aim: this.aiming ? { draw: this.bowDraw || 0 } : null,
+      aim: this.aiming || this.bowRecover > 0 ? { draw: this.bowDraw || 0 } : null,
     };
     this.anim.update(dt, state);
+    this.updateTorch(dt);
   }
 
   serialize() {
-    return { x: this.pos.x, y: this.pos.y, z: this.pos.z, yaw: this.yaw, stats: { ...this.stats }, inv: this.inventory.serialize(), counters: { ...this.stats_ } };
+    return { x: this.pos.x, y: this.pos.y, z: this.pos.z, yaw: this.yaw, stats: { ...this.stats }, inv: this.inventory.serialize(), counters: { ...this.stats_ }, skills: { ...this.skills }, equipment: { chest: this.equipment.chest ? { ...this.equipment.chest } : null } };
   }
   restore(d) {
     if (!d) return;
     this.pos.x = d.x; this.pos.y = d.y; this.pos.z = d.z; this.prev = { ...this.pos }; this.yaw = d.yaw;
     Object.assign(this.stats, d.stats); this.inventory.restore(d.inv); Object.assign(this.stats_, d.counters || {});
+    if (d.skills) Object.assign(this.skills, d.skills);
+    if (d.equipment) { this.equipment.chest = d.equipment.chest; this.rig.setArmor?.(this.equipment.chest?.id || null); }
+    this.applySkills();
   }
 }

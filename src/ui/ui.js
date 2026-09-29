@@ -5,6 +5,7 @@ import { HOTBAR } from '../inventory/inventory.js';
 import { BIOME_NAMES } from '../world/worldgen.js';
 import { fmtTime, clamp } from '../engine/util.js';
 import { keyLabel } from '../engine/input.js';
+import { BUFF_NAMES } from '../player/survival.js';
 
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
 
@@ -36,7 +37,9 @@ export class HUD {
     this.prompt = el('div', 'prompt'); this.root.appendChild(this.prompt);
     this.toasts = el('div', 'toasts'); this.root.appendChild(this.toasts);
     this.bannerEl = el('div', 'banner'); this.root.appendChild(this.bannerEl);
-    this.root.appendChild(el('div', 'crosshair'));
+    this.crosshair = el('div', 'crosshair'); this.root.appendChild(this.crosshair);
+    this.buffsEl = el('div', 'buffs'); this.root.appendChild(this.buffsEl);
+    this.buildHint = el('div', 'buildhint'); this.root.appendChild(this.buildHint);
     this.mmSpan = 110;
     this.lastPrompt = null; this.bannerTimer = 0;
     this.refreshHotbar();
@@ -81,8 +84,23 @@ export class HUD {
     b.last = v; b.text = text; b.fill.style.width = `${clamp(frac, 0, 1) * 100}%`; b.val.textContent = text; b.root.classList.toggle('low', low);
   }
 
+  setBuildHint(P) {
+    const b = this.buildHint;
+    if (!P) { b.classList.remove('show'); return; }
+    b.classList.add('show'); b.classList.toggle('ok', P.valid); b.classList.toggle('bad', !P.valid);
+    b.innerHTML = P.valid ? `${P.def.name}: LPM – postaw · R – obróć · PPM – anuluj` : `${P.def.name}: ${P.reason} <span style="opacity:.7">(R – obróć · PPM – anuluj)</span>`;
+  }
+  refreshBuffs() { this._buffKey = ''; }
   update(dt) {
     const g = this.game, p = g.player, st = p.stats;
+    if (!g.buildings.placing) this.buildHint.classList.remove('show');
+    this.crosshair.classList.toggle('aim', !!p.aiming);
+    // buff chips
+    const bf = g.survival.buffs, key = Object.keys(bf).map((k) => k + Math.ceil(bf[k] / 5)).join(',');
+    if (key !== this._buffKey) {
+      this._buffKey = key; this.buffsEl.innerHTML = '';
+      for (const [id, t] of Object.entries(bf)) { const bad = id === 'poison'; this.buffsEl.appendChild(el('div', 'buff ' + (bad ? 'bad' : 'good'), `${BUFF_NAMES[id] || id} ${Math.ceil(t)}s`)); }
+    }
     this.setBar(this.bars.hp, st.health / st.maxHealth, `${Math.ceil(st.health)}`, st.health / st.maxHealth < 0.25);
     this.setBar(this.bars.food, st.hunger / 100, `${Math.ceil(st.hunger)}`, st.hunger < 15);
     this.setBar(this.bars.water, st.thirst / 100, `${Math.ceil(st.thirst)}`, st.thirst < 15);
@@ -141,7 +159,8 @@ export class HUD {
     const g = this.game, p = g.player;
     const ctx = this.mmCanvas.getContext('2d'), S = 344;
     const rp = p.renderPos(g.alpha || 1);
-    g.map.drawWindow(ctx, S, rp.x, rp.z, this.mmSpan);
+    const inCave = g.world.isCave(rp.x, rp.z);
+    g.map.drawWindow(ctx, S, rp.x, rp.z, this.mmSpan, { cave: inCave });
     g.map.drawPlayer(ctx, S, rp.x, rp.z, this.mmSpan, rp.x, rp.z, g.cameraRig ? g.cameraRig.yaw : p.yaw);
     const b = BIOME_NAMES[g.world.getBiome(rp.x, rp.z)];
     const h = Math.round(rp.y);

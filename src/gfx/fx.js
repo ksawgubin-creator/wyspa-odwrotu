@@ -80,9 +80,18 @@ export class FX {
     this.soft = new Layer(game.scene, 1800, { soft: 1.0 });
     this.glow = new Layer(game.scene, 1500, { additive: true, soft: 1.0 });
     this.shake = 0;
+    this.THREE = THREE;
+    this.rings = [];
+  }
+  // expanding shockwave ring on the ground
+  ring(x, y, z, r, dur = 0.5, color = 0xff5030) {
+    const m = new THREE.Mesh(new THREE.RingGeometry(0.8, 1.0, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }));
+    m.position.set(x, this.game.world.getHeight(x, z) + 0.15, z); this.game.scene.add(m); this.rings.push({ m, t: 0, dur, r });
   }
   resize(h) { for (const l of [this.solid, this.soft, this.glow]) l.mat.uniforms.uScale.value = h * 0.5 / Math.tan((this.game.camera.fov * Math.PI) / 360) * 0.12; }
-  update(dt) { this.solid.update(dt); this.soft.update(dt); this.glow.update(dt); this.resize(this.game.renderer.domElement.height); }
+  update(dt) {
+    for (let i = this.rings.length - 1; i >= 0; i--) { const q = this.rings[i]; q.t += dt; const k = q.t / q.dur; q.m.scale.setScalar(q.r * (0.2 + 0.9 * k)); q.m.material.opacity = 0.9 * (1 - k); if (k >= 1) { this.game.scene.remove(q.m); q.m.geometry.dispose(); q.m.material.dispose(); this.rings.splice(i, 1); } }
+    this.solid.update(dt); this.soft.update(dt); this.glow.update(dt); this.resize(this.game.renderer.domElement.height); }
 
   burst(layer, x, y, z, n, o) {
     const L = this[layer];
@@ -128,5 +137,11 @@ export class FX {
   footDust(x, y, z, biome) { this.burst('soft', x, y + 0.05, z, 2, { color: biome === 1 ? ['#e8d59c'] : ['#8a7a5a', '#6a5a3a'], speed: [0.2, 0.8], up: [0.2, 0.7], size: [0.6, 1.2], life: [0.35, 0.7], grav: -0.2, drag: 1.5, alpha: 0.28, grow: 1.0 }); }
   splash(x, z, n = 6) { this.burst('soft', x, 0.05, z, n, { color: ['#dff2ff', '#ffffff'], speed: [0.6, 2], up: [1, 3], size: [0.5, 1.0], life: [0.4, 0.8], grav: 9, alpha: 0.7 }); }
   smoke(x, y, z, s = 1) { this.burst('soft', x, y, z, 1, { color: ['#5a5550', '#7a746c'], speed: [0.05, 0.3], up: [0.8, 1.6], size: [1.2 * s, 2.2 * s], life: [1.6, 2.8], grav: -0.2, drag: 0.4, alpha: 0.28, grow: 2.2 }); }
+  // continuous fire: call every ~0.04s per fire; s = scale (1 campfire ... 2.3 great fire)
+  flame(x, y, z, s = 1) {
+    const n = Math.ceil(2 * s);
+    this.burst('glow', x, y, z, n, { color: ['#ff7a1a', '#ffb03a', '#ffd76a', '#ff5a10'], speed: [0.05, 0.35 * s], up: [1.2 * s, 2.6 * s], size: [0.55 * s, 1.1 * s], life: [0.35, 0.7], grav: -1.5, drag: 1.4, spread: 0.18 * s, alpha: 0.9 });
+    if (Math.random() < 0.5) this.burst('glow', x, y + 0.1, z, 1, { color: ['#fff2b0', '#ffffff'], speed: [0.02, 0.15], up: [1.5 * s, 2.4 * s], size: [0.3 * s, 0.6 * s], life: [0.2, 0.4], grav: -1.5, drag: 1.5, spread: 0.08 * s, alpha: 0.9 });
+  }
   ember(x, y, z) { this.burst('glow', x, y, z, 1, { color: ['#ff9a2a', '#ffd27a', '#ff5a1a'], speed: [0.1, 0.5], up: [0.8, 2.4], size: [0.16, 0.34], life: [0.6, 1.4], grav: -0.6, drag: 0.5, spread: 0.12 }); }
 }

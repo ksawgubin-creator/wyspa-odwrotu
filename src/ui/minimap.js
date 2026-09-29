@@ -1,9 +1,9 @@
 // Pre-rendered world map with fog of war; the minimap and the full map (M) both sample it.
-import { WORLD, BIOME } from '../world/worldgen.js';
+import { WORLD, BIOME, CAVE } from '../world/worldgen.js';
 
 const FOG_CELL = 4;                                   // metres per fog cell
 const FN = WORLD.size / FOG_CELL;                     // 128
-const COLORS = { [BIOME.WATER]: [40, 88, 140], [BIOME.BEACH]: [226, 208, 152], [BIOME.MEADOW]: [134, 176, 72], [BIOME.JUNGLE]: [48, 118, 58], [BIOME.ROCK]: [138, 132, 124], [BIOME.VOLCANO]: [86, 66, 64] };
+const COLORS = { [BIOME.WATER]: [40, 88, 140], [BIOME.BEACH]: [226, 208, 152], [BIOME.MEADOW]: [134, 176, 72], [BIOME.JUNGLE]: [48, 118, 58], [BIOME.ROCK]: [138, 132, 124], [BIOME.VOLCANO]: [86, 66, 64], [BIOME.CAVE]: [40, 88, 140] };
 
 export class MapSystem {
   constructor(world) {
@@ -17,7 +17,20 @@ export class MapSystem {
     this.lastX = 1e9; this.lastZ = 1e9;
     this.markers = [];
     this.render();
+    this.renderCave();
     this.redrawFog();
+  }
+  renderCave() {
+    const w = this.world, n = w.n, S = 112;
+    this.caveMap = document.createElement('canvas'); this.caveMap.width = this.caveMap.height = S;
+    const g = this.caveMap.getContext('2d'), img = g.createImageData(S, S);
+    for (let z = 0; z < S; z++) for (let x = 0; x < S; x++) {
+      const wx = CAVE.cx - S / 2 + x, wz = CAVE.cz - S / 2 + z, d = w.caveDist(wx, wz), o = (z * S + x) * 4;
+      const inside = Math.hypot(wx - CAVE.cx, wz - CAVE.cz) < CAVE.radius;
+      const c = !inside ? [10, 12, 16] : d <= 0 ? [128, 116, 96] : [46, 42, 40];
+      img.data[o] = c[0]; img.data[o + 1] = c[1]; img.data[o + 2] = c[2]; img.data[o + 3] = 255;
+    }
+    g.putImageData(img, 0, 0);
   }
   render() {
     const w = this.world, n = w.n, g = this.map.getContext('2d'), img = g.createImageData(this.size, this.size);
@@ -55,8 +68,9 @@ export class MapSystem {
     const sx = cx + WORLD.half - span / 2, sz = cz + WORLD.half - span / 2;
     ctx.imageSmoothingEnabled = true;
     ctx.fillStyle = '#0c1014'; ctx.fillRect(0, 0, size, size);
-    ctx.drawImage(this.map, sx, sz, span, span, 0, 0, size, size);
-    if (!opts.noFog) {
+    if (opts.cave) { const S = 112, k = this.caveMap.width / S; ctx.drawImage(this.caveMap, cx - CAVE.cx + S / 2 - span / 2, cz - CAVE.cz + S / 2 - span / 2, span, span, 0, 0, size, size); }
+    else ctx.drawImage(this.map, sx, sz, span, span, 0, 0, size, size);
+    if (!opts.noFog && !opts.cave) {
       ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(this.fog, sx / FOG_CELL, sz / FOG_CELL, span / FOG_CELL, span / FOG_CELL, 0, 0, size, size);
     }

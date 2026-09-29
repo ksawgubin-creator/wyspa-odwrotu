@@ -18,7 +18,7 @@ export class Drops {
     mesh.castShadow = false;
     const drop = {
       id, n, dur: opts.dur, x, y, z, vx: opts.vx ?? (Math.random() - 0.5) * 2.2, vy: opts.vy ?? 3 + Math.random() * 1.5, vz: opts.vz ?? (Math.random() - 0.5) * 2.2,
-      age: 0, delay: opts.delay ?? 0.55, mesh, spin: Math.random() * 6, settled: false, ttl: 420, glow: d.cat === 'tool' || d.cat === 'weapon',
+      age: 0, delay: opts.delay ?? 0.55, mesh, spin: Math.random() * 6, settled: false, ttl: opts.ttl ?? 420, glow: d.cat === 'tool' || d.cat === 'weapon',
     };
     mesh.position.set(x, y, z);
     this.group.add(mesh);

@@ -1,6 +1,7 @@
 // Pure, deterministic scatter of resource nodes and scenery over the island.
 // Every node is placed ON the ground (height sampled from the terrain) and never on steep slopes or in deep water.
-import { BIOME, WORLD, LAYOUT } from './worldgen.js';
+import { BIOME, WORLD, LAYOUT, CAVE } from './worldgen.js';
+import { NOTES } from '../../data/lore.js';
 import { mulberry32, hash2 } from '../engine/rng.js';
 
 const CELL = 3.2;
@@ -29,12 +30,12 @@ const TABLES = {
   ],
 };
 
-export const VARIANTS = { tree_pine: 4, tree_oak: 4, tree_jungle: 4, tree_palm: 4, tree_dead: 3, rock: 3, ore_iron: 2, ore_obsidian: 2, ore_sulfur: 2, bush_berry: 3, bush: 3, fern: 3, liana: 2, reed: 3, bones: 2, sticks: 3, stone_small: 3, crate: 1, barrel: 1, hull: 3 };
+export const VARIANTS = { crystal: 3, note: 1, tree_pine: 4, tree_oak: 4, tree_jungle: 4, tree_palm: 4, tree_dead: 3, rock: 3, ore_iron: 2, ore_obsidian: 2, ore_sulfur: 2, bush_berry: 3, bush: 3, fern: 3, liana: 2, reed: 3, bones: 2, sticks: 3, stone_small: 3, crate: 1, barrel: 1, hull: 3 };
 const SCALE = {
   tree_pine: [0.85, 1.35], tree_oak: [0.85, 1.3], tree_jungle: [0.85, 1.35], tree_palm: [0.85, 1.25], tree_dead: [0.8, 1.3], rock: [0.6, 1.6], ore_iron: [0.9, 1.3], ore_obsidian: [0.9, 1.3],
   ore_sulfur: [0.9, 1.3], bush_berry: [0.85, 1.2], bush: [0.7, 1.5], fern: [0.8, 1.5], liana: [0.9, 1.3], reed: [0.8, 1.3], bones: [0.9, 1.1], sticks: [0.9, 1.1], stone_small: [0.9, 1.2],
 };
-const RADIUS = { tree_pine: 1.1, tree_oak: 1.6, tree_jungle: 1.7, tree_palm: 1.0, tree_dead: 0.9, rock: 1.4, ore_iron: 1.4, ore_obsidian: 1.4, ore_sulfur: 1.4, bush_berry: 0.9, bush: 0.8, fern: 0.5, liana: 0.9, reed: 0.4, bones: 0.5, sticks: 0.4, stone_small: 0.4 };
+const RADIUS = { crystal: 0.6, note: 0.6, tree_pine: 1.1, tree_oak: 1.6, tree_jungle: 1.7, tree_palm: 1.0, tree_dead: 0.9, rock: 1.4, ore_iron: 1.4, ore_obsidian: 1.4, ore_sulfur: 1.4, bush_berry: 0.9, bush: 0.8, fern: 0.5, liana: 0.9, reed: 0.4, bones: 0.5, sticks: 0.4, stone_small: 0.4 };
 
 export function generateNodes(world, seed = world.seed) {
   const rng = mulberry32(seed ^ 0x51ed);
@@ -106,16 +107,66 @@ export function generateNodes(world, seed = world.seed) {
     }
   }
 
+  // --- hidden ore veins next to big boulders: a lightning strike splits the rock and reveals them ---------
+  {
+    const big = nodes.filter((n) => n.type === 'rock' && n.scale > 1.15);
+    let made = 0;
+    for (const r of big) {
+      if (made >= 34) break;
+      if (rng() > 0.4) continue;
+      const b = world.getBiome(r.x, r.z);
+      const type = b === BIOME.VOLCANO ? (rng() < 0.5 ? 'ore_obsidian' : 'ore_sulfur') : b === BIOME.ROCK ? (rng() < 0.7 ? 'ore_iron' : 'ore_sulfur') : 'ore_iron';
+      const a = rng() * Math.PI * 2;
+      const x = r.x + Math.cos(a) * 2.2, z = r.z + Math.sin(a) * 2.2;
+      if (!spacingOk(x, z, 1.4) || world.getSlope(x, z) > 0.9 || world.getHeight(x, z) < 0.6) continue;
+      reserve(x, z, 1.4);
+      const n = push(type, x, z, {}); n.hidden = true; made++;
+    }
+  }
+  // --- cave interior: ore veins along the walls, crystals, bones ---------------------------------------
+  for (let cz = -CAVE.radius; cz < CAVE.radius; cz += 2.6) for (let cx = -CAVE.radius; cx < CAVE.radius; cx += 2.6) {
+    const gx = Math.floor((cx + 512) / 2.6), gz = Math.floor((cz + 512) / 2.6);
+    const x = CAVE.cx + cx + hash2(gx, gz, seed + 21) * 2.6, z = CAVE.cz + cz + hash2(gx, gz, seed + 22) * 2.6;
+    if (Math.hypot(x - CAVE.cx, z - CAVE.cz) > CAVE.radius - 2) continue;
+    const d = world.caveDist(x, z);
+    if (d > -0.6) continue;
+    if (Math.hypot(x - (CAVE.cx + CAVE.rooms[0].x), z - (CAVE.cz + CAVE.rooms[0].z)) < 4) continue;      // keep the entrance clear
+    const roll = hash2(gx, gz, seed + 23);
+    const wall = d > -3.2;
+    let type = null, o = {};
+    if (wall) { if (roll < 0.14) type = 'ore_iron'; else if (roll < 0.18) type = 'ore_sulfur'; else if (roll < 0.42) { type = 'crystal'; o = { decor: true }; } else if (roll < 0.5) { type = 'rock'; o = { pal: 'grey' }; } }
+    else { if (roll < 0.03) type = 'crystal', o = { decor: true }; else if (roll < 0.06) type = 'stone_small'; else if (roll < 0.065) type = 'bones'; else if (roll < 0.075) type = 'rock', o = { pal: 'brown' }; }
+    if (!type) continue;
+    const r = RADIUS[type] ?? 0.8; if (!spacingOk(x, z, r)) continue;
+    reserve(x, z, r); push(type, x, z, o);
+  }
+  // --- notes left by the previous castaway --------------------------------------------------------------
+  {
+    const findSpot = (x0, z0, rad, ok) => { for (let i = 0; i < 400; i++) { const a = rng() * Math.PI * 2, r = Math.sqrt(rng()) * rad; const x = x0 + Math.cos(a) * r, z = z0 + Math.sin(a) * r; const h = world.getHeight(x, z); if (h > 0.9 && world.getSlope(x, z) < 0.5 && (!ok || ok(x, z)) && spacingOk(x, z, 1.2)) return { x, z }; } return null; };
+    const sp = world.spawn, M = LAYOUT.mountain, V = LAYOUT.volcano, hull2 = nodes.filter((n) => n.type === 'hull')[1];
+    const targets = {
+      spawn: [sp.x - 9, sp.z - 5, 6], meadow: [30, 62, 14], lake: [-92, 82, 12], jungle: [-38, 74, 24], mountain: [world.cave.x + 8, world.cave.z + 4, 8],
+      volcano: [V.x - 42, V.z + 46, 12], peak: [world.peak.x + 3, world.peak.z + 3, 5], wreck: hull2 ? [hull2.x, hull2.z, 8] : [-40, 150, 20],
+    };
+    for (const note of NOTES) {
+      const t = targets[note.where]; if (!t) continue;
+      const spot = findSpot(t[0], t[1], t[2], note.where === 'jungle' ? (x, z) => world.getBiome(x, z) === BIOME.JUNGLE : null) || findSpot(t[0], t[1], t[2] * 2.5);
+      if (!spot) continue;
+      reserve(spot.x, spot.z, 1.2);
+      const n = push('note', spot.x, spot.z, {}); n.noteId = note.id; n.scale = 1; n.tilt = [0, 0];
+    }
+  }
   // --- shipwrecks along the coast ------------------------------------------------------------------
   const wrecks = [];
-  const tryWreck = (x0, z0, forceStarter) => {
+  const tryWreck = (x0, z0, forceStarter, hidden = false) => {
     // walk toward the sea until water depth ~ 0.5, place hull half in the surf
     for (let attempt = 0; attempt < 200; attempt++) {
       const a = rng() * Math.PI * 2, d = attempt * 0.25;
       const x = x0 + Math.cos(a) * d, z = z0 + Math.sin(a) * d;
       const h = world.getHeight(x, z);
       if (h > -0.8 && h < 0.7 && world.getSlope(x, z) < 0.25 && world.getBiome(x, z) !== BIOME.ROCK) {
-        wrecks.push({ x, z, forceStarter });
+        if (wrecks.some((q) => Math.hypot(q.x - x, q.z - z) < 30)) return false;
+        wrecks.push({ x, z, forceStarter, hidden });
         return true;
       }
     }
@@ -130,21 +181,30 @@ export function generateNodes(world, seed = world.seed) {
       if (world.getHeight(x, z) > -0.4) { tryWreck(x, z, false); break; }
     }
   }
-  let firstCrate = true;
+  // three more wrecks that only appear later (washed ashore by a storm / at dawn)
+  for (let i = 0, made = 0; i < 12 && made < 3; i++) {
+    const ang = rng() * Math.PI * 2;
+    for (let r = 230; r > 60; r -= 2) { const x = Math.cos(ang) * r, z = Math.sin(ang) * r; if (world.getHeight(x, z) > -0.4) { if (tryWreck(x, z, false, true)) made++; break; } }
+  }
+  let firstCrate = true, groupId = 0;
   for (const w of wrecks) {
+    const gid = w.hidden ? groupId++ : undefined;
     const hullNode = push('hull', w.x, w.z, {});
+    if (w.hidden) { hullNode.hidden = true; hullNode.wreckGroup = gid; }
     hullNode.scale = 1; hullNode.tilt = [(rng() - 0.5) * 0.12, (rng() - 0.5) * 0.4]; hullNode.yaw = rng() * Math.PI * 2;
     hullNode.y = world.getHeight(w.x, w.z) - 0.35;
     hullNode.decor = false;
-    const n = 1 + ((rng() * 2) | 0);
-    for (let k = 0; k < n; k++) {
-      const a = rng() * Math.PI * 2, d = 2.2 + rng() * 3;
+    let n = 1 + ((rng() * 2) | 0), placed = 0, tries = 0;
+    while (placed < n && tries++ < 80) {
+      const a = rng() * Math.PI * 2, d = 2.2 + rng() * 3.5;
       const px = w.x + Math.cos(a) * d, pz = w.z + Math.sin(a) * d;
-      if (world.getHeight(px, pz) < -0.3) continue;
-      const c = push(rng() < 0.65 ? 'crate' : 'barrel', px, pz, {});
+      if (world.getHeight(px, pz) < 0.15 || world.getSlope(px, pz) > 0.6) continue;
+      const c = push(rng() < 0.65 || (firstCrate && w.forceStarter) ? 'crate' : 'barrel', px, pz, {});
+      if (w.hidden) { c.hidden = true; c.wreckGroup = gid; }
       c.scale = 1; c.tilt = [(rng() - 0.5) * 0.2, (rng() - 0.5) * 0.2];
       c.loot = (firstCrate && w.forceStarter) ? 'starter' : 'wreck';
       if (firstCrate && w.forceStarter) { c.type = 'crate'; firstCrate = false; }
+      placed++;
     }
   }
   return nodes;

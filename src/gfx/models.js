@@ -247,3 +247,81 @@ export function hull(seed) {
   parts.push(box(1.1, 0.06, 0.5, 0.01, seed + 91, 0xa89a7a, [-0.3, 0.14, -2.5], [0.05, 0.5, 0.05]));
   return merge(parts);
 }
+
+// ---------------------------------------------------------------------------------------------------
+// Later additions: cave, endgame and event props
+export function crystal(seed) {
+  const r = rng(seed), parts = [];
+  const hue = [[0x3a7bff, 0x9ad0ff], [0x8a4aff, 0xd6a8ff], [0x2ad0c0, 0xa0fff0]][seed % 3];
+  const n = 5 + ((r() * 4) | 0);
+  for (let i = 0; i < n; i++) {
+    const a = r() * TAU, d = r() * 0.5, h = 0.5 + r() * 1.1;
+    parts.push(cone({ r: 0.09 + r() * 0.1, h, segs: 5, jit: 0.08, seed: seed + i, pos: [Math.cos(a) * d, 0.02, Math.sin(a) * d], rot: [(r() - 0.5) * 0.7, r() * TAU, (r() - 0.5) * 0.7], colorBase: hue[0], colorTop: hue[1], faceVar: 0.16 }));
+  }
+  parts.push(blob({ r: 0.32, detail: 1, jit: 0.3, seed, squash: [1.3, 0.5, 1.3], pos: [0, 0.05, 0], color: 0x3a3630 }));
+  return merge(parts);
+}
+export function noteProp(seed) {
+  const parts = [blob({ r: 0.5, detail: 1, jit: 0.3, seed, squash: [1.2, 0.5, 1.0], pos: [0, 0.18, 0], color: grad(0x5f5f66, 0x9a9aa0, 0, 0.5) })];
+  parts.push(box(0.36, 0.05, 0.28, 0.008, seed + 1, 0xefe4c4, [0, 0.46, 0], [0.12, 0.3, 0.06]));
+  parts.push(box(0.4, 0.04, 0.32, 0.008, seed + 2, 0x6b4a2a, [0.01, 0.43, 0.01], [0.12, 0.3, 0.06]));
+  return merge(parts);
+}
+export function caveMouth(seed) {
+  // an arch of big boulders around a black opening, facing +Z
+  const r = rng(seed), parts = [];
+  const rockPal = ['grey', 'brown', 'grey'];
+  for (let i = 0; i < 9; i++) {
+    const t = i / 8, a = Math.PI * t, x = Math.cos(a) * 2.6, y = Math.sin(a) * 2.7 + 0.2;
+    parts.push(xf(rock(seed * 7 + i, rockPal[i % 3]), { pos: [x, y - 0.4, (r() - 0.5) * 0.7], rot: [0, r() * TAU, 0], scale: [1.6 + r() * 0.7, 1.5 + r() * 0.8, 1.6 + r() * 0.7] }));
+  }
+  for (let i = 0; i < 5; i++) parts.push(xf(rock(seed * 11 + i, 'brown'), { pos: [(r() - 0.5) * 6.4, 2.3 + r() * 1.2, -1.2 - r() * 1.2], rot: [0, r() * TAU, 0], scale: [2.2 + r(), 1.8 + r(), 2.2 + r()] }));
+  const g = merge(parts);
+  return g;
+}
+export function caveVoid() {
+  const g = new THREE.CircleGeometry(2.3, 14); g.deleteAttribute('uv'); const ng = g.toNonIndexed();
+  paint(ng, () => 0x030303, 0, 1); ng.deleteAttribute('normal'); ng.computeVertexNormals();
+  return ng;
+}
+export function raftModel(seed = 5) {
+  const r = rng(seed), parts = [];
+  // logs lashed side by side
+  for (let i = -3; i <= 3; i++) parts.push(trunk({ rb: 0.2 + r() * 0.04, rt: 0.19 + r() * 0.03, h: 4.4 + r() * 0.5, segs: 7, rows: 3, jit: 0.02, wobble: 0.03, seed: seed + i, pos: [i * 0.42, 0.14, -2.2], rot: [Math.PI / 2, 0, 0], colorBase: 0x6a4a2c, colorTop: 0x7d5a38, faceVar: 0.1 }));
+  for (const z of [-1.4, 0.4, 1.7]) parts.push(trunk({ rb: 0.09, rt: 0.09, h: 3.2, segs: 6, rows: 1, jit: 0.01, seed: seed + 20, pos: [-1.6, 0.44, z], rot: [0, 0, -Math.PI / 2], colorBase: 0x5b4330, colorTop: 0x7a5c40 }));
+  for (const z of [-1.4, 0.4, 1.7]) for (const x of [-1.2, 0, 1.2]) parts.push(blob({ r: 0.09, detail: 0, jit: 0.1, seed: seed + z * 10 + x, pos: [x, 0.5, z], color: 0xb59a6a }));
+  parts.push(trunk({ rb: 0.12, rt: 0.09, h: 4.6, segs: 6, rows: 3, jit: 0.015, wobble: 0.02, seed: seed + 30, pos: [0, 0.5, -0.4], colorBase: 0x6b4a2f, colorTop: 0x8a6338 }));
+  return merge(parts);
+}
+export function raftSail(seed = 3) {
+  const g = leaf({ len: 2.6, w: 1.4, droop: 0.05, seg: 4, seed, colorBase: 0xc8b48a, colorTip: 0xe4d2a4, pos: [0, 0, 0], rot: [0, 0, 0] });
+  xf(g, { pos: [0, 1.0, -0.4], rot: [-Math.PI / 2 + 0.05, 0, 0], scale: [1.1, 1, 1.5] });
+  return finish(g);
+}
+export function raftRudder(seed = 3) {
+  const parts = [trunk({ rb: 0.06, rt: 0.05, h: 1.8, segs: 6, rows: 1, jit: 0.01, seed, pos: [0, 0.2, 2.5], rot: [-0.9, 0, 0], colorBase: 0x2a2040, colorTop: 0x4a3a78 })];
+  parts.push(xf(blob({ r: 0.4, detail: 1, jit: 0.15, seed: seed + 1, squash: [0.12, 1.2, 0.5], color: 0x1c1430 }), { pos: [0, -0.2, 3.1] }));
+  return merge(parts);
+}
+export function signalFireModel(seed = 4) {
+  const r = rng(seed), parts = [];
+  for (let i = 0; i < 24; i++) {
+    const a = (i / 24) * TAU * 2, ring = i < 12 ? 1.0 : 0.55, y = 0.2 + Math.floor(i / 8) * 0.55 + ((i % 8) > 3 ? 0.15 : 0);
+    parts.push(trunk({ rb: 0.12, rt: 0.1, h: 1.7 + r() * 0.5, segs: 5, rows: 2, jit: 0.02, wobble: 0.03, seed: seed + i, pos: [Math.cos(a) * ring, y, Math.sin(a) * ring], rot: [Math.sin(a) * 0.5, 0, -Math.cos(a) * 0.5], colorBase: 0x5b4030, colorTop: 0x8a6338 }));
+  }
+  for (let i = 0; i < 14; i++) { const a = (i / 14) * TAU; parts.push(blob({ r: 0.35 + r() * 0.18, detail: 1, jit: 0.3, seed: seed + 50 + i, squash: [1.1, 0.8, 1.0], pos: [Math.cos(a) * 2.0, 0.25, Math.sin(a) * 2.0], color: grad(0x5f5f66, 0x9a9aa0, 0, 0.6) })); }
+  return merge(parts);
+}
+export function traderBoat(seed = 2) {
+  const r = rng(seed), parts = [];
+  const L = 6.2;
+  for (const side of [-1, 1]) for (let row = 0; row < 3; row++) for (let c = 0; c < 8; c++) {
+    const z0 = -L / 2 + (c / 8) * L, z1 = z0 + L / 8, zc = (z0 + z1) / 2, t = (zc + L / 2) / L, w = Math.sin(Math.PI * (0.06 + 0.88 * t)) ** 0.7;
+    const th = 0.25 + row * 0.42, x = side * Math.sin(th) * 1.2 * w, y = 0.08 + (1 - Math.cos(th)) * 1.0 * w + 0.2;
+    parts.push(xf(box(0.09, 0.4, (z1 - z0) * 0.98, 0.01, seed + row * 9 + c, [0x6b4a2a, 0x8a6338, 0x5a3d22][(r() * 3) | 0], [0, 0, 0], [0, 0, 0]), { pos: [x, y, zc], rot: [0, 0, side * (Math.PI / 2 - th)] }));
+  }
+  parts.push(trunk({ rb: 0.11, rt: 0.08, h: 4.8, segs: 6, rows: 3, jit: 0.015, seed: seed + 9, pos: [0, 0.3, 0.4], colorBase: 0x5b4330, colorTop: 0x7a5c40 }));
+  parts.push(xf(leaf({ len: 3.0, w: 1.3, droop: 0.05, seg: 3, seed: seed + 4, colorBase: 0xd8c8a0, colorTip: 0xeee0b8 }), { pos: [0, 2.1, 0.3], rot: [-Math.PI / 2 + 0.05, 0, 0], scale: [1, 1, 1.2] }));
+  parts.push(blob({ r: 0.5, detail: 1, jit: 0.15, seed: seed + 5, squash: [1.4, 0.5, 1.6], pos: [0, 0.45, -2.2], color: 0x8a5f38 }));
+  return merge(parts);
+}

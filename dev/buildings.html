@@ -1,0 +1,68 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Buildings viewer (dev)</title>
+<script type="importmap">{ "imports": { "three": "../lib/three.module.js", "three/addons/": "../lib/addons/" } }</script>
+<style>html,body{margin:0;background:#222;overflow:hidden}canvas{display:block}#info{position:fixed;left:6px;top:4px;color:#fff;font:12px monospace;text-shadow:0 0 3px #000;white-space:pre}</style></head>
+<body><div id="info"></div><script type="module">
+// Dev viewer for src/gfx/buildings.js.
+//  window.__sheet({ items:[{type, opts:{seed,damage,state,growth,lit}, yaw, fig, label}], cam:{pos,look,fov,up}, colliders:true, gap:0.8, cols })
+//  Lays items in a row (or grid with `cols`), ground plane, sun + hemisphere, 1.8 m capsule figure (fig:true) for scale.
+//  colliders:true draws userData.colliders (red boxes / green circles), interact points (blue door, magenta bed, cyan use),
+//  fireAnchor (orange), platform (yellow) and prints triangle counts / bounding boxes in #info.
+import * as THREE from 'three';
+import { buildModel, buildDebris, BUILDING_TYPES } from '../src/gfx/buildings.js';
+window.__B = { buildModel, buildDebris, BUILDING_TYPES, THREE };
+const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); r.setSize(innerWidth, innerHeight); r.shadowMap.enabled = true; document.body.appendChild(r.domElement);
+r.toneMapping = THREE.ACESFilmicToneMapping;
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x9fb8c8);
+scene.add(new THREE.HemisphereLight(0xbcd8ff, 0x6a5a40, 1.1));
+const sun = new THREE.DirectionalLight(0xfff0d8, 2.6); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); scene.add(sun); scene.add(sun.target);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshLambertMaterial({ color: 0x7a9a4a })); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+const cam = new THREE.PerspectiveCamera(30, innerWidth / innerHeight, 0.1, 200);
+const line = (pts, color, y = 0.06) => { const g = new THREE.BufferGeometry().setFromPoints(pts.map((p) => new THREE.Vector3(p[0], y, p[1]))); const l = new THREE.LineLoop(g, new THREE.LineBasicMaterial({ color, depthTest: false })); l.renderOrder = 10; return l; };
+const dot = (x, z, color, y = 0.1) => { const m = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), new THREE.MeshBasicMaterial({ color, depthTest: false })); m.position.set(x, y, z); m.renderOrder = 11; return m; };
+let info = '';
+window.__sheet = (spec) => {
+  for (const o of [...scene.children]) if (o.userData.item) scene.remove(o);
+  info = '';
+  const items = spec.items, gap = spec.gap ?? 0.8, cols = spec.cols || items.length;
+  const dims = items.map((it) => { const s = BUILDING_TYPES[it.type]?.size || { w: 1, d: 1 }; return it.yaw ? Math.max(s.w, s.d) : s.w; });
+  const rowsN = Math.ceil(items.length / cols), rowW = [], rowD = [];
+  for (let rr = 0; rr < rowsN; rr++) { let w = 0, d = 0; for (let c = 0; c < cols; c++) { const i = rr * cols + c; if (i < items.length) { w += dims[i] + gap; d = Math.max(d, BUILDING_TYPES[items[i].type]?.size.d || 1); } } rowW.push(w - gap); rowD.push(d); }
+  let zc = 0; const zrow = []; for (let rr = 0; rr < rowsN; rr++) { zrow.push(zc + rowD[rr] / 2); zc += rowD[rr] + gap * 1.6 + 1.2; }
+  const zoff = (zc - gap * 1.6 - 1.2) / 2;
+  items.forEach((it, i) => {
+    const rr = Math.floor(i / cols), c = i % cols;
+    let x = -rowW[rr] / 2; for (let k = 0; k < c; k++) x += dims[rr * cols + k] + gap; x += dims[i] / 2;
+    const w = new THREE.Group(); w.userData.item = true; w.position.set(x, 0, zrow[rr] - zoff); w.rotation.y = it.yaw || 0;
+    const m = it.type === 'debris' ? buildDebris(it.debrisOf || 'wooden_hut', it.opts?.seed || 0) : buildModel(it.type, it.opts || {});
+    w.add(m);
+    const u = m.userData;
+    if (u.tris) { const bb = new THREE.Box3().setFromObject(m); info += `${it.label || it.type} d${u.damage} ${u.state || ''} tris=${u.tris | 0} y[${bb.min.y.toFixed(2)},${bb.max.y.toFixed(2)}] x[${bb.min.x.toFixed(2)},${bb.max.x.toFixed(2)}] z[${bb.min.z.toFixed(2)},${bb.max.z.toFixed(2)}]${spec.stats && u.stats ? ' ' + JSON.stringify(Object.fromEntries(Object.entries(u.stats).map(([k, v]) => [k, v | 0]))) : ''}\n`; }
+    if (spec.colliders && u.colliders) {
+      for (const cl of u.colliders) {
+        if (cl.kind === 'box') { const pts = [[-cl.hw, -cl.hd], [cl.hw, -cl.hd], [cl.hw, cl.hd], [-cl.hw, cl.hd]]; const l = line(pts, 0xff2020); l.position.set(cl.x, 0, cl.z); l.rotation.y = cl.rot || 0; w.add(l); }
+        else { const pts = []; for (let a = 0; a < 24; a++) pts.push([Math.cos(a / 24 * Math.PI * 2) * cl.r, Math.sin(a / 24 * Math.PI * 2) * cl.r]); const l = line(pts, 0x20ff20); l.position.set(cl.x, 0, cl.z); w.add(l); }
+      }
+      const I = u.interact || {};
+      if (I.door) w.add(dot(I.door.x, I.door.z, 0x3080ff)); if (I.bed) w.add(dot(I.bed.x, I.bed.z, 0xff30ff)); if (I.use) w.add(dot(I.use.x, I.use.z, 0x30ffff));
+      if (u.fireAnchor) w.add(dot(u.fireAnchor.x, u.fireAnchor.z, 0xff8000, u.fireAnchor.y));
+      if (u.platform) { const p = u.platform; w.add(line([[-p.hw, -p.hd], [p.hw, -p.hd], [p.hw, p.hd], [-p.hw, p.hd]], 0xffee00, p.y)); }
+    }
+    if (it.fig) {
+      const fx = it.fig.x ?? 0, fz = it.fig.z ?? ((BUILDING_TYPES[it.type]?.size.d || 1) / 2 + 0.7);
+      const f = new THREE.Mesh(new THREE.CapsuleGeometry(0.28, 1.24, 4, 10), new THREE.MeshLambertMaterial({ color: 0xd04040 })); f.position.set(fx, 0.9, fz); f.castShadow = true; w.add(f);
+    }
+    scene.add(w);
+  });
+  const c = spec.cam || {}, tw = Math.max(...rowW);
+  const sc = Math.max(tw, zc);
+  cam.up.set(...(c.up || [0, 1, 0]));
+  cam.position.set(...(c.pos || [0, 3, tw * 0.9 + 6])); cam.lookAt(...(c.look || [0, 1, 0]));
+  cam.fov = c.fov || 30; cam.updateProjectionMatrix();
+  const sd = sun.position; sd.set(spec.sunDir?.[0] ?? 0.5, spec.sunDir?.[1] ?? 0.9, spec.sunDir?.[2] ?? 0.65).normalize().multiplyScalar(60);
+  const h = Math.max(sc / 2 + 4, 6); sun.shadow.camera.left = -h; sun.shadow.camera.right = h; sun.shadow.camera.top = h; sun.shadow.camera.bottom = -h; sun.shadow.camera.far = 150; sun.shadow.camera.updateProjectionMatrix();
+  document.getElementById('info').textContent = spec.showInfo === false ? '' : info;
+  r.render(scene, cam);
+};
+window.__ready = true;
+</script></body></html>

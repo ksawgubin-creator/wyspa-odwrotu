@@ -22,6 +22,21 @@ import { FX } from './gfx/fx.js';
 import { Player } from './player/player.js';
 import { CameraRig } from './player/camera.js';
 import { Drops } from './entities/drops.js';
+import { LightPool } from './world/lights.js';
+import { EntityManager } from './entities/manager.js';
+import { ANIMALS } from '../data/animals.js';
+import { BuildingSystem } from './building/building.js';
+import { Survival } from './player/survival.js';
+import { Projectiles } from './entities/projectiles.js';
+import { Weather } from './world/weather.js';
+import { CaveSystem } from './world/cave.js';
+import { Volcano } from './world/volcano.js';
+import { Events } from './world/events.js';
+import { Ending } from './world/ending.js';
+import { TradeUI, NoteUI, EndScreen } from './ui/trade-ui.js';
+import { CraftUI, BuildUI, ContextMenu } from './ui/panels.js';
+import { checkCraft, craft as doCraft } from './crafting/crafting.js';
+import { BUILDINGS } from '../data/buildings.js';
 import { AudioManager } from './audio/audio.js';
 import { SaveSystem } from './save/save.js';
 import { MapSystem } from './ui/minimap.js';
@@ -54,6 +69,7 @@ export class Game {
     this.save = new SaveSystem(this);
     this.fx = new FX(this);
     this.atmos = new Atmosphere(this.scene, this.renderer);
+    this.lights = new LightPool(this);
     this.applyAllSettings();
     this.wireInput();
   }
@@ -132,20 +148,36 @@ export class Game {
     this.drops = new Drops(this);
     this.player = new Player(this);
     this.player.rig.root.visible = false;
+    this.PackClass = (await import('./ai/brains.js')).Pack;
     this.cameraRig = new CameraRig(this);
     this.cameraRig.sens = CONFIG.camera.sensitivity * this.settings.sensitivity; this.cameraRig.invertY = this.settings.invertY;
-    this.entities = null;
+    this.cave = new CaveSystem(this);
+    this.volcano = new Volcano(this);
+    this.weather = new Weather(this);
+    this.survival = new Survival(this);
+    this.projectiles = new Projectiles(this);
+    try { this.models = await import('./gfx/buildings.js'); } catch (e) { console.warn('buildings models missing', e); this.models = null; }
+    this.buildings = new BuildingSystem(this, this.models);
+    this.events = new Events(this);
+    this.ending = new Ending(this);
+    this.playTime = 0;
+    this.respawnPoint = null;
+    this.entities = new EntityManager(this);
     this.afterWorldCreated?.();
     progress(0.95, 'Prawie gotowe…'); await tick();
     this.terrain.update(this.player.pos.x, this.player.pos.z, Infinity);
     if (!this.hud) {
-      this.hud = new HUD(this); this.invUI = new InventoryUI(this); this.menus = new Menus(this); this.dbg = new DebugPanel(this);
+      this.hud = new HUD(this); this.invUI = new InventoryUI(this); this.craftUI = new CraftUI(this); this.buildUI = new BuildUI(this); this.ctxMenu = new ContextMenu(this); this.tradeUI = new TradeUI(this); this.noteUI = new NoteUI(this); this.endScreen = new EndScreen(this); this.menus = new Menus(this); this.dbg = new DebugPanel(this);
+      this.fadeEl = document.createElement('div'); this.fadeEl.className = 'fadeblack'; document.body.appendChild(this.fadeEl);
     }
     this.hud.refreshHotbar();
     progress(1, 'Gotowe'); await tick();
   }
   disposeWorld() {
     if (!this.world) return;
+    if (this.weather) { this.scene.remove(this.weather.rain); }
+    if (this.cave) this.scene.remove(this.cave.group); if (this.volcano) this.scene.remove(this.volcano.mesh);
+    this.buildings?.dispose(); if (this.projectiles) this.scene.remove(this.projectiles.group);
     for (const o of [this.terrain?.group, this.field?.group, this.water?.mesh, this.grass?.group, this.drops?.group, this.player?.rig?.root]) if (o) { this.scene.remove(o); o.traverse?.((c) => { c.geometry?.dispose?.(); }); }
     this.field?.geoCache.forEach((g) => g.dispose());
     this.entities?.dispose?.();
@@ -183,22 +215,99 @@ export class Game {
   }
   pauseGame() { if (this.mode !== 'play') return; this.mode = 'pause'; this.input.enabled = false; this.input.exitLock(); this.menus.showPause(); this.save.save(); }
   resume() { this.menus.hidePause(); this.menus.hideOverlay(); this.mode = 'play'; this.input.enabled = true; this.input.clearLatches(); this.input.requestLock(); }
-  openPanel(name) {
+  openPanel(name, arg) {
     if (this.mode !== 'play') return;
     this.mode = 'panel'; this.panel = name; this.input.enabled = false; this.input.exitLock();
     if (name === 'inventory') this.invUI.open();
+    if (name === 'container') this.invUI.open(arg);
     if (name === 'map') this.menus.showMap();
+    if (name === 'craft') this.craftUI.open(arg?.stations, arg?.tab);
+    if (name === 'build') this.buildUI.open();
+    if (name === 'context') this.ctxMenu.open(arg);
+    if (name === 'trade') this.tradeUI.open();
+    if (name === 'note') this.noteUI.open(arg);
     this.audio.play('ui');
   }
   closePanel() {
     if (this.mode !== 'panel') return;
-    if (this.panel === 'inventory') this.invUI.close();
-    if (this.panel === 'map') this.menus.hideMap();
+    const pn = this.panel;
+    if (pn === 'inventory' || pn === 'container') this.invUI.close();
+    if (pn === 'map') this.menus.hideMap();
+    if (pn === 'craft') this.craftUI.close();
+    if (pn === 'build') this.buildUI.close();
+    if (pn === 'context') this.ctxMenu.close();
+    if (pn === 'trade') this.tradeUI.close();
+    if (pn === 'note') this.noteUI.close();
     this.panel = null; this.mode = 'play'; this.input.enabled = true; this.input.clearLatches(); this.input.requestLock();
   }
+  currentStations() { return this.buildings.stationsNear(this.player.pos.x, this.player.pos.z); }
+  openCraft(stations = null, tab = 'craft') { this.openPanel('craft', { stations, tab }); }
+  openContainer(struct) { if (this.mode === 'panel') this.closePanel(); this.openPanel('container', struct); }
+  beginPlacement(type) { this.closePanel(); this.buildings.startPlacement(type); }
+  craftRecipe(r, ctx) {
+    const res = doCraft(this.player.inventory, r, ctx);
+    if (!res.ok) { this.notify(res.reason, 'warn'); return res; }
+    this.audio.play('craft'); this.player.stats_.crafted += r.out.reduce((a, o) => a + o.n, 0);
+    this.notify(`Wytworzono: ${r.out.map((o) => `${o.n > 1 ? o.n + '× ' : ''}${itemName(o.id)}`).join(', ')}`, 'good');
+    this.player.gainXp(2 + r.tier * 2);
+    return res;
+  }
+  useItem(idx) {
+    const p = this.player, inv = p.inventory, it = inv.slots[idx]; if (!it) return;
+    const d = ITEMS[it.id];
+    if (d.food) { if (this.survival.consume(it.id)) { it.n--; if (it.n <= 0) inv.slots[idx] = null; inv.changed(); } }
+    else if (d.armor) p.equip(idx);
+    else if (d.place) { this.closePanel(); this.beginPlacement(d.place); }
+    else if (idx >= 9 && (d.tool || d.weapon)) inv.swap(idx, inv.selected);
+    else if (d.tool || d.weapon) inv.select(idx);
+  }
+  quickMove(tag, idx) {
+    const ui = this.invUI, from = ui.invOf(tag), to = tag === 'c' ? this.player.inventory : ui.container?.inv;
+    if (!from || !to) return; const it = from.slots[idx]; if (!it) return;
+    const left = to.add(it.id, it.n, { dur: it.dur }); it.n = left; if (left <= 0) from.slots[idx] = null; from.changed(); to.changed();
+  }
+  sleepIn(s) {
+    if (!this.clock.isNight) return;
+    this.closePanel();
+    this.respawnPoint = { x: s.x, z: s.z };
+    this.fadeEl.classList.add('on'); this.mode = 'dead'; this.input.enabled = false;   // freeze input while fading
+    setTimeout(() => {
+      const secs = this.clock.secondsToDawn + 0.02;
+      const st = this.player.stats; st.hunger = Math.max(8, st.hunger - 18); st.thirst = Math.max(8, st.thirst - 24); st.health = Math.min(st.maxHealth, st.health + 40); st.fear = 0;
+      for (const e of this.clock.advance(secs)) this.onClockEvent(e);
+      for (const e of this.entities.list) if (e.nightSpawned) e.remove = true;
+      this.mode = 'play'; this.input.enabled = true; this.input.clearLatches();
+      this.fadeEl.classList.remove('on'); this.notify('Odpocząłeś. Nowy dzień zaczyna się.', 'good'); this.save.save();
+    }, 1400);
+  }
+  toggleTower(s) {
+    const p = this.player, pf = s.info?.platform;
+    if (!pf) return;
+    this.closePanel();
+    if (p.onTower === s) { const q = { x: s.x + Math.sin(s.ry) * 2.2, z: s.z + Math.cos(s.ry) * 2.2 }; p.pos.x = q.x; p.pos.z = q.z; p.onTower = null; p.pos.y = this.world.getHeight(q.x, q.z); p.grounded = true; }
+    else { p.pos.x = s.x; p.pos.z = s.z; p.pos.y = s.y + pf.y + 0.05; p.onTower = s; p.grounded = true; p.vx = p.vz = 0; this.notify('Z wieży widzisz dalej. Użyj łuku!'); }
+    p.prev = { ...p.pos };
+  }
+  // where monsters go: the player, or a structure of the base
+  pickMonsterTarget(e) {
+    const p = this.player;
+    if (e.tStruct === undefined) e.tStruct = e.def.boss || (e.def.brain === 'shadow' && this.clock.day >= 2 && Math.random() < 0.5);
+    if (e.tStruct && e.playerDist > 9 && this.buildings.list.length) {
+      const s = e.structTarget && this.buildings.list.includes(e.structTarget) ? e.structTarget : (e.structTarget = this.buildings.nearestTarget(e.x, e.z, 60, (q) => q.def.cat !== 'trap'));
+      if (s) return { x: s.x, z: s.z, struct: s, half: Math.max(s.info?.size?.w || 1, s.info?.size?.d || 1) / 2 };
+    }
+    return p.pos;
+  }
+  serializeExtra() { return { survival: this.survival.serialize(), buildings: this.buildings.serialize(), respawn: this.respawnPoint, events: this.events.serialize(), ending: this.ending.serialize(), weather: { kind: this.weather.kind }, playTime: this.playTime }; }
+  restoreExtra(x) { this.survival.restore(x.survival); this.respawnPoint = x.respawn || null; this.buildings.restore(x.buildings); this.events.restore(x.events); this.ending.restore(x.ending); this.playTime = x.playTime || 0; }
+  bloodMoonTonight() { return this.clock.day % 7 === 0; }
+  readNote(n) { this.events.notesFound.add(n.noteId); this.audio.play('ui'); this.openPanel('note', n.noteId); }
+  showEnding(type) { this.mode = 'dead'; this.endScreen.show(type); this.save.save(); }
+  afterEnding(toMenu) { this.mode = 'play'; this.input.enabled = true; this.input.clearLatches(); if (toMenu) this.toMainMenu(); else { this.input.requestLock(); this.notify('Możesz dalej odkrywać wyspę.'); } }
 
   wireInput() {
     const I = this.input;
+    window.addEventListener('keydown', (e) => { if (this.mode === 'panel' && this.panel === 'context' && this.ctxMenu?.key(e.code)) e.preventDefault(); });
     I.onLockChange = (locked) => { if (!locked && this.mode === 'play') this.pauseGame(); };
     this.canvas.addEventListener('click', () => { if (this.mode === 'play') I.requestLock(); });
     I.listeners.add((a, type) => {
@@ -206,12 +315,18 @@ export class Game {
       if (this.mode === 'menu' || this.mode === 'boot') return;
       if (a === 'debug') { this.dbg.toggle(); return; }
       if (this.mode === 'play') {
-        if (a === 'inventory' || a === 'craft') this.openPanel(a === 'craft' && this.craftUI ? 'craft' : 'inventory');
+        if (a === 'inventory') this.openPanel('inventory');
+        else if (a === 'craft') this.openCraft();
+        else if (a === 'skills') this.openCraft(null, 'skills');
+        else if (a === 'build') { if (this.buildings.placing) this.buildings.cancelPlacement(); else this.openPanel('build'); }
         else if (a === 'map') this.openPanel('map');
-        else if (a === 'pause') this.pauseGame();
+        else if (a === 'pause') { if (this.buildings.placing) this.buildings.cancelPlacement(); else this.pauseGame(); }
         else if (a.startsWith('hotbar')) this.player.inventory.select(Number(a.slice(6)) - 1);
       } else if (this.mode === 'panel') {
-        if (a === 'pause' || a === 'inventory' && this.panel === 'inventory' || a === 'map' && this.panel === 'map' || a === 'craft') this.closePanel();
+        const pn = this.panel;
+        if (pn === 'context') { if (a === 'pause' || a === 'interact') this.closePanel(); return; }
+        if (pn === 'trade' || pn === 'note') { if (a === 'pause' || a === 'interact') this.closePanel(); return; }
+        if (a === 'pause' || (a === 'inventory' && (pn === 'inventory' || pn === 'container')) || (a === 'map' && pn === 'map') || ((a === 'craft' || a === 'skills') && pn === 'craft') || (a === 'build' && pn === 'build')) this.closePanel();
       } else if (this.mode === 'pause') {
         if (a === 'pause') { if (this.menus.overlayOpen) this.menus.hideOverlay(); else this.resume(); }
       } else if (this.mode === 'dead') { /* handled by death panel */ }
@@ -246,6 +361,59 @@ export class Game {
     if (left > 0) { const p = this.player, f = p.facingVec(); this.drops.spawn(id, left, p.pos.x + f.x, p.pos.z + f.z, { delay: 1.2 }); this.notify('Ekwipunek pełny – przedmiot leży na ziemi.', 'warn'); }
   }
 
+  updateAfterVisual(dt) { this.entities?.updateVisual(dt, this.alpha); }
+  spawnList() { return Object.entries(ANIMALS).map(([id, d]) => [id, d.name]); }
+  spawnEntity(kind) {
+    const p = this.player, f = p.facingVec();
+    const def = ANIMALS[kind]; if (!def) return;
+    const x = p.pos.x + f.x * 9, z = p.pos.z + f.z * 9;
+    const n = def.group ? def.group[1] : 1;
+    const pack = kind === 'wolf' || kind === 'crab' ? new (this.PackClass)(this) : null;
+    for (let i = 0; i < (kind === 'wolf' ? 3 : 1); i++) { const e = this.entities.spawn(kind, x + i * 1.6, z + (i % 2) * 1.2, { pack, nightSpawned: !!def.night_only }); e.fade = 1; if (def.night_only) e.nightSpawned = true; }
+  }
+
+  teleport(x, z, yaw) {
+    const p = this.player;
+    this.fadeEl.classList.add('on');
+    setTimeout(() => {
+      p.pos.x = x; p.pos.z = z; p.pos.y = this.world.getHeight(x, z) + 0.05; p.prev = { ...p.pos }; p.vx = p.vz = 0; p.onTower = null;
+      if (yaw !== undefined) { p.yaw = yaw; this.cameraRig.yaw = yaw; }
+      this.terrain.update(x, z, Infinity); this.grass?.clear();
+      this.map.reveal(x, z, 30);
+      setTimeout(() => this.fadeEl.classList.remove('on'), 200);
+    }, 450);
+  }
+
+  // ---- death & respawn ----
+  onPlayerDied(info) {
+    const p = this.player;
+    this.mode = 'dead'; this.input.enabled = false; this.input.exitLock();
+    // part of the inventory stays in a "grave" where you fell
+    const inv = p.inventory;
+    for (let i = 0; i < inv.slots.length; i++) {
+      const s = inv.slots[i]; if (!s || Math.random() > 0.55) continue;
+      const n = Math.max(1, Math.ceil(s.n * 0.5)); const out = inv.drop(i, n);
+      this.drops.spawn(out.id, out.n, p.pos.x + (Math.random() - 0.5) * 1.6, p.pos.z + (Math.random() - 0.5) * 1.6, { dur: out.dur, delay: 3, ttl: 1500 });
+    }
+    setTimeout(() => {
+      if (this.mode !== 'dead') return;
+      const text = this.hardcore ? 'Tryb hardcore: to koniec Twojej wyprawy. Zapis został usunięty.' : 'Część ekwipunku została tam, gdzie upadłeś. Obudzisz się w bezpiecznym miejscu.';
+      this.menus.showDeath({ text, hardcore: this.hardcore }, () => this.afterDeath());
+    }, 2600);
+  }
+  afterDeath() {
+    if (this.hardcore) { this.save.deleteSave(); this.toMainMenu(); return; }
+    const sp = this.respawnPoint || this.world.spawn;
+    const y = this.world.getHeight(sp.x, sp.z);
+    this.player.respawn({ x: sp.x, y, z: sp.z });
+    this.player.invuln = 5;
+    // clear monsters around the respawn point
+    for (const e of this.entities.list) if (!e.dead && Math.hypot(e.x - sp.x, e.z - sp.z) < 45 && e.def.brain !== 'prey') e.despawning = true;
+    this.mode = 'play'; this.input.enabled = true; this.input.clearLatches(); this.input.requestLock();
+    this.notify('Budzisz się, obolały. Twoje rzeczy leżą w miejscu śmierci.', 'warn');
+    this.save.save();
+  }
+
   // ---------------------------------------------------------------------------------------------
   // Interaction
   updateInteraction() {
@@ -267,12 +435,34 @@ export class Game {
       if ((k === 'hand' || k === 'loot') && !n.looted) consider('node', n, n.x, n.z, (n.res.radius || 0.4) * n.scale, n.res.verb ? `${n.res.verb}` : n.res.name);
     });
     for (const d of this.drops.list) consider('drop', d, d.x, d.z, 0.2, `Podnieś: ${itemName(d.id)}${d.n > 1 ? ' ×' + d.n : ''}`);
+    const trader = this.events.traderNear(p.pos);
+    if (trader) { bs = -4; best = { kind: 'trader', label: 'Porozmawiaj z handlarzem' }; }
+    const portal = this.cave.portalNear(p.pos);
+    if (portal) { bs = -5; best = { kind: 'portal', portal, label: portal.label }; }
+    if (!this.buildings.placing) {
+      const st = this.buildings.interactable(p.pos, f, reach);
+      if (st) { const half = Math.max(st.info?.size?.w || 1, st.info?.size?.d || 1) / 2, d = Math.hypot(st.x - p.pos.x, st.z - p.pos.z) - half; const sc = d - 0.9; if (sc < bs) { bs = sc; best = { kind: 'struct', ref: st, label: `${st.def.name}${st.hp < st.maxHp ? ` (${Math.ceil(st.hp / st.maxHp * 100)}%)` : ''}` }; } }
+      // drinking / filling from water in front of the player
+      const wx = p.pos.x + f.x * 1.8, wz = p.pos.z + f.z * 1.8;
+      if (bs > 1.2 && this.world.getHeight(wx, wz) < -0.05 && p.grounded) {
+        const fresh = this.world.isLake(wx, wz);
+        best = { kind: 'water', fresh, label: fresh ? (p.inventory.has('waterskin') ? 'Napełnij bukłak' : 'Napij się z jeziora') : 'Woda morska (słona!)' };
+      }
+    }
     this.interactTarget = best;
   }
   doInteract() {
     const t = this.interactTarget, p = this.player;
     if (!t || p.busy) return;
     if (t.kind === 'drop') { this.drops.pickup(t.ref, p); return; }
+    if (t.kind === 'trader') { this.openPanel('trade'); return; }
+    if (t.kind === 'portal') { this.cave.use(t.portal.kind); return; }
+    if (t.kind === 'struct') { this.openPanel('context', t.ref); return; }
+    if (t.kind === 'water') {
+      if (t.fresh && p.inventory.has('waterskin')) { p.inventory.remove('waterskin', 1); this.giveItem('waterskin_full', 1); this.audio.play('drink'); }
+      else p.startInteract('pick', 0.9, () => this.survival.drinkWater(t.fresh), 0.6);
+      return;
+    }
     const n = t.ref, res = n.res;
     p.yaw = Math.atan2(n.x - p.pos.x, n.z - p.pos.z);
     p.vx = p.vz = 0;
@@ -281,6 +471,7 @@ export class Game {
   harvestNode(n) {
     const res = n.res;
     if (n.state !== 'alive') return;
+    if (res.noteItem) { this.readNote(n); this.gainXpNode(res); return; }
     if (res.kind === 'loot') {
       if (n.looted) return;
       this.field.markLooted(n); this.audio.play('craft', { pos: { x: n.x, y: n.y, z: n.z }, vol: 0.6 });
@@ -303,12 +494,25 @@ export class Game {
   step(dt) {
     const p = this.player, I = this.input;
     I.tick(dt);
-    if (this.mode === 'play' || this.mode === 'panel') {
+    if (this.mode === 'play' || this.mode === 'panel' || this.mode === 'dead') {
+      if (this.buildings.placing && this.mode === 'play') {
+        if (I.mousePressed(0)) this.buildings.confirmPlacement();
+        if (I.mousePressed(2)) this.buildings.cancelPlacement();
+        if (I.pressed('rotate')) this.buildings.rotatePlacement();
+      }
       if (!this.debug.free) p.update(dt, I, this.cameraRig.yaw);
       else p.update(dt, { axis: () => ({ x: 0, z: 0 }), isDown: () => false, pressed: () => false, mousePressed: () => false, mouseDown: () => false, sprintHeld: () => false }, this.cameraRig.yaw);
       if (this.mode === 'play' && I.pressed('interact')) this.doInteract();
       const wheel = I.takeWheel(); if (wheel && this.mode === 'play') p.inventory.select(p.inventory.selected + wheel);
+      this.weather.update(dt);
+      this.cave.update(dt, p.pos);
+      this.events.update(dt); this.ending.update(dt); this.playTime += dt;
+      { const bm = this.bloodMoonTonight() && this.clock.isNight ? 1 : 0; this.atmos.blood += (bm - this.atmos.blood) * Math.min(1, dt * 0.4); this.atmos.nightVision += ((this.survival.hasBuff('nightvision') ? 1 : 0) - this.atmos.nightVision) * Math.min(1, dt * 2); }
+      this.volcano.update(dt);
       this.entities?.update(dt);
+      this.buildings.update(dt);
+      this.projectiles.update(dt);
+      this.survival.update(dt);
       this.drops.update(dt, p);
       this.field.update(dt, p.pos);
       const events = this.clock.advance(dt * this.clockSpeed);
@@ -316,7 +520,6 @@ export class Game {
       this.map.reveal(p.pos.x, p.pos.z, 26);
       this.updateInteraction();
       this.updateFootsteps(dt);
-      this.updateSurvival?.(dt);
       this.postStep?.(dt);
       this.hurtFlash = Math.max(0, this.hurtFlash - dt * 1.6);
       if (this.time - this.lastAutosave > 180 && !p.dead) { this.save.save(); this.lastAutosave = this.time; }
@@ -324,6 +527,8 @@ export class Game {
     this.flushPickups(dt);
   }
   onClockEvent(e) {
+    if (e === 'dawn') { this.events.onDawn(); this.ending.onDawn(); }
+    if (e === 'dusk') { this.events.onDusk(); if (this.bloodMoonTonight()) this.hud.banner('Krwawy Księżyc', 'Coś dużego idzie prosto na Twoją bazę.', 4.5); }
     if (e === 'dusk') { this.hud.banner('Zapada zmrok…', 'Noc należy do drapieżników.', 3.6); this.audio.play('dusk'); this.onDusk?.(); }
     if (e === 'dawn') { this.hud.banner('Świt', `Przetrwałeś noc ${this.clock.day - 1}.`, 3.6); this.audio.play('dawn'); this.save.save(); this.lastAutosave = this.time; this.onDawn?.(); }
     this.onPhase?.(e);
@@ -377,11 +582,14 @@ export class Game {
     if (playing) { const rp = p.renderPos(this.alpha); focus.set(rp.x, rp.y, rp.z); } else focus.set(p.pos.x, p.pos.y, p.pos.z);
     shared.uTime.value = this.time;
     this.atmos.update(this.clock, focus, this.camera, this.time);
+    this.lights.update(dt, this.camera.position, focus, this.atmos.dayness);
     this.water.update(this.time, this.camera.position, this.atmos);
     this.terrain.update(focus.x, focus.z, 3);
     this.grass.update(this.camera.position.x, this.camera.position.z, 3);
     this.fx.update(dt);
-    if (this.mode === 'panel' && this.panel === 'inventory') this.invUI.refresh();
+    if (this.mode === 'panel' && (this.panel === 'inventory' || this.panel === 'container')) this.invUI.refresh();
+    if (this.craftUI?.visible) this.craftUI.update(dt);
+    if (this.buildings?.placing) this.buildings.frame(dt);
     if (this.menus?.mapOpen) this.menus.drawBigMap();
     this.audio.update(dt, this.camera, p, this.atmos, this.weather);
     if (playing && this.hud) this.hud.update(dt);

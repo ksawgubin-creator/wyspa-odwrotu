@@ -116,8 +116,8 @@ export class Menus {
   drawBigMap() {
     if (!this.mapOpen) return;
     const g = this.game, ctx = this.mapCanvas.getContext('2d'), rp = g.player.renderPos(1);
-    g.map.drawWindow(ctx, 640, 0, 0, 512, { big: true });
-    g.map.drawPlayer(ctx, 640, 0, 0, 512, rp.x, rp.z, g.cameraRig.yaw);
+    if (g.world.isCave(rp.x, rp.z)) { const cx = 196, cz = 196; g.map.drawWindow(ctx, 640, cx, cz, 110, { cave: true, big: true }); g.map.drawPlayer(ctx, 640, cx, cz, 110, rp.x, rp.z, g.cameraRig.yaw); }
+    else { g.map.drawWindow(ctx, 640, 0, 0, 512, { big: true }); g.map.drawPlayer(ctx, 640, 0, 0, 512, rp.x, rp.z, g.cameraRig.yaw); }
     ctx.fillStyle = '#fff'; ctx.font = '600 12px Segoe UI'; ctx.fillText('N', 620, 20);
   }
   hideMap() { this.mapOpen = false; this.hideOverlay(); }

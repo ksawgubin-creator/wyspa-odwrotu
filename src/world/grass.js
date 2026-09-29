@@ -52,7 +52,7 @@ export class Grass {
       if (!w.inBounds(x, z, 4)) continue;
       const b = w.getBiome(x, z);
       const h = w.getHeight(x, z);
-      if (b === BIOME.WATER || b === BIOME.ROCK && h > 16 || b === BIOME.VOLCANO) continue;
+      if (b === BIOME.WATER || b === BIOME.CAVE || b === BIOME.ROCK && h > 16 || b === BIOME.VOLCANO) continue;
       const sl = w.getSlope(x, z);
       if (sl > 0.85) continue;
       const beachThin = b === BIOME.BEACH ? hash2(i, cx + cz, seed) : 0;

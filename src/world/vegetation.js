@@ -8,7 +8,7 @@ import { easeOutCubic, clamp } from '../engine/util.js';
 
 const CELL = 64;
 const MAT = {
-  tall: foliage(0.62, 10), mid: foliage(0.4, 6), low: foliage(0.09, 1.2), reed: foliage(0.32, 2, 0.02), palm: foliage(0.75, 7), prop: mats.prop,
+  glow: new THREE.MeshBasicMaterial({ vertexColors: true }), tall: foliage(0.62, 10), mid: foliage(0.4, 6), low: foliage(0.09, 1.2), reed: foliage(0.32, 2, 0.02), palm: foliage(0.75, 7), prop: mats.prop,
 };
 // type -> {build(variant, pal), mat, shadow, sink}
 const DEFS = {
@@ -32,6 +32,8 @@ const DEFS = {
   crate: { build: () => M.crate(960), mat: 'prop', shadow: true, sink: 0.05 },
   barrel: { build: () => M.barrel(970), mat: 'prop', shadow: true, sink: 0.05 },
   hull: { build: (v) => M.hull(980 + v * 3), mat: 'prop', shadow: true, sink: 0 },
+  crystal: { build: (v) => M.crystal(1000 + v), mat: 'glow', shadow: false, sink: 0.02 },
+  note: { build: () => M.noteProp(1010), mat: 'prop', shadow: true, sink: 0.0 },
 };
 const STUMP_TYPES = new Set(['tree_pine', 'tree_oak', 'tree_jungle', 'tree_palm', 'tree_dead']);
 
@@ -117,6 +119,11 @@ export class ResourceField {
     n.res = res || null;
     n.grow = 1; n.shake = 0;
     n.baseY = n.y - (DEFS[n.type]?.sink ?? 0) * n.scale;
+    if (n.hidden) { n.state = 'gone'; n.grow = 0; return; }
+    this.makeColliders(n);
+  }
+  makeColliders(n) {
+    const res = n.res;
     if (res && res.radius > 0 && !n.decor) {
       const solid = res.kind === 'tool' || res.kind === 'loot';
       if (solid) n.collider = this.colliders.add({ x: n.x, z: n.z, r: res.radius * n.scale, top: res.height * n.scale, base: n.y, tag: 'node', ref: n });
@@ -129,6 +136,12 @@ export class ResourceField {
         n.colliders.push(this.colliders.add({ x: n.x + lx, z: n.z + lz, r: 0.9, top: 2.5, base: n.y, tag: 'wreck', noCamera: true, ref: n }));
       }
     }
+  }
+  // a hidden node (washed-up wreck, lightning ore) appears
+  revealNode(n) {
+    if (!n.hidden) return;
+    n.hidden = false; n.state = 'alive'; n.hp = n.res ? n.res.hp : 1; n.grow = 0.1;
+    this.makeColliders(n); this.growing.add(n); this.writeNode(n);
   }
 
   // Compose the instance matrix for a node in its current state.
@@ -209,6 +222,19 @@ export class ResourceField {
   }
 
   markLooted(n) { n.looted = true; }
+
+  // hidden ore veins near (x,z) become visible (used by lightning)
+  revealNear(x, z, r) {
+    let found = 0;
+    for (const n of this.nodes) {
+      if (!n.hidden || n.state !== 'gone' || Math.hypot(n.x - x, n.z - z) > r) continue;
+      n.hidden = false; n.state = 'alive'; n.hp = n.res.hp; n.grow = 0.1;
+      n.collider = this.colliders.add({ x: n.x, z: n.z, r: n.res.radius * n.scale, top: n.res.height * n.scale, base: n.y, tag: 'node', ref: n });
+      this.growing.add(n); this.writeNode(n); found++;
+    }
+    if (found) this.game?.notify?.('Piorun rozłupał skałę i odsłonił rudę!', 'good');
+    return found;
+  }
 
   restoreNode(n) {
     n.state = 'alive'; n.depleted = false; n.hp = n.res ? n.res.hp : 1; n.grow = 0.12; n.respawnAt = 0;

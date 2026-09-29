@@ -82,8 +82,8 @@ const SKY_FRAG = /* glsl */`
 const K = (e, top, hor, fog, sun, amb, ambG, ambI, sunI, moonI, exp, stars) => ({ e, top: new THREE.Color(top), hor: new THREE.Color(hor), fog: new THREE.Color(fog), sun: new THREE.Color(sun), amb: new THREE.Color(amb), ambG: new THREE.Color(ambG), ambI, sunI, moonI, exp, stars });
 // Keyframes indexed by sun elevation (sin of the angle). ROBOCZE look values, tuned by eye.
 const KEYS = [
-  K(-0.40, '#02050d', '#050a17', '#04070f', '#000000', '#0b1430', '#04060a', 0.30, 0.0, 1.0, 1.00, 1.0),
-  K(-0.16, '#050b1e', '#111a36', '#0c1226', '#000000', '#0e1938', '#05070c', 0.32, 0.0, 1.0, 1.00, 1.0),
+  K(-0.40, '#02050d', '#050a17', '#060b18', '#000000', '#24387a', '#0a0e1a', 0.85, 0.0, 1.0, 1.00, 1.0),
+  K(-0.16, '#050b1e', '#111a36', '#0e1428', '#000000', '#22346c', '#0a0e1a', 0.85, 0.0, 1.0, 1.00, 1.0),
   K(-0.05, '#111d4a', '#5a3d66', '#3a2e50', '#ff6a38', '#3a2f5a', '#15121c', 0.50, 0.15, 0.55, 1.05, 0.55),
   K(0.04, '#2b4585', '#ff8f50', '#c8825f', '#ff9250', '#8a6a78', '#3b2c2a', 0.78, 1.0, 0.0, 1.05, 0.12),
   K(0.16, '#3a6cba', '#f2b98c', '#c9b49c', '#ffd7a0', '#9db4d4', '#5a5040', 1.00, 2.0, 0.0, 1.0, 0.0),
@@ -102,6 +102,7 @@ export class Atmosphere {
     this.sunVis = 1; this.moonVis = 0; this.waterLight = 1; this.dayness = 1;
     this.weather = { cloud: 0.42, dark: 0, fogMul: 1, lightMul: 1 };   // driven by the weather system
     this.blood = 0;                                                       // blood moon tint 0..1
+    this.nightVision = 0; this.cave = 0; this.flash = 0;
 
     const geo = new THREE.SphereGeometry(1, 32, 16);
     this.skyMat = new THREE.ShaderMaterial({
@@ -172,7 +173,7 @@ export class Atmosphere {
     sunI *= dim * wx.lightMul; ambI *= lerp(1, 0.8, wx.dark);
     this.sunVis = clamp(sunI / 2, 0, 1) * (1 - wx.dark);
     this.moonVis = nightness * (1 - wx.dark);
-    this.waterLight = clamp(0.22 + this.dayness * 0.9 + 0.12 * (1 - this.dayness) * (moonI > 0.5 ? 1 : 0), 0.14, 1.1) * (1 - wx.dark * 0.35);
+    this.waterLight = clamp(0.07 + this.dayness * 1.0, 0.07, 1.1) * (1 - wx.dark * 0.35);
 
     // hemisphere + fog
     this.hemi.color.copy(amb); this.hemi.groundColor.copy(ambG); this.hemi.intensity = ambI;
@@ -188,7 +189,7 @@ export class Atmosphere {
     else {
       const mc = new THREE.Color(0x9bb4ff).lerp(bloodCol, this.blood * 0.6);
       this.light.color.copy(mc);
-      this.light.intensity = moonI * 0.55 * smoothstep(-0.02, -0.18, e) * (1 - wx.dark * 0.6);
+      this.light.intensity = moonI * 1.5 * smoothstep(-0.02, -0.18, e) * (1 - wx.dark * 0.6);
     }
     // texel-snapped shadow follow
     const ts = 92 / this.shadowSize;
@@ -207,6 +208,14 @@ export class Atmosphere {
     u.uCloud.value = wx.cloud; u.uCloudDark.value = wx.dark; u.uSunGlow.value = 1 - wx.dark * 0.9; u.uBloodMix.value = this.blood;
     this.dome.position.copy(camera.position);
 
+    if (this.flash > 0.01) { this.hemi.intensity += this.flash * 3.2; this.light.intensity += this.flash * 2.4; this.top.lerp(new THREE.Color(0xdfe8ff), this.flash * 0.5); u.uTop.value.copy(this.top); }
+    // caves: no sky light, dark ambience even by day
+    const cv = this.cave || 0;
+    if (cv > 0.001) { this.light.intensity *= 1 - cv; this.hemi.intensity = lerp(this.hemi.intensity, 0.16, cv); this.fog.color.lerp(new THREE.Color(0x05060a), cv); this.fog.near = lerp(this.fog.near, 4, cv); this.fog.far = lerp(this.fog.far, 42, cv); this.dome.visible = cv < 0.98; }
+    else this.dome.visible = true;
+    // night vision potion
+    const nv = this.nightVision || 0;
+    if (nv > 0) { this.hemi.intensity += nv * 1.1 * (1 - this.dayness); this.hemi.color.lerp(new THREE.Color(0x66ff99), nv * 0.5 * (1 - this.dayness)); this.fog.far = lerp(this.fog.far, 260, nv * (1 - this.dayness)); }
     this.renderer.toneMappingExposure = lerp(a.exp, b.exp, t) * (this.exposureMul || 1);
   }
 }

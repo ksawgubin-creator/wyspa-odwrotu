@@ -1,6 +1,6 @@
 // Chunked heightfield terrain with LOD, skirts and baked vertex colours (biome / height / slope / noise).
 import * as THREE from 'three';
-import { WORLD, BIOME } from './worldgen.js';
+import { WORLD, BIOME, CAVE } from './worldgen.js';
 import { Noise2D } from '../engine/noise.js';
 import { smoothstep, clamp } from '../engine/util.js';
 import { hash2 } from '../engine/rng.js';
@@ -14,6 +14,7 @@ const PAL = {
   meadowA: c3(0x86b445), meadowB: c3(0x6a9a3a), meadowC: c3(0xa4c052),
   jungleA: c3(0x3c7a38), jungleB: c3(0x2b6234), jungleSoil: c3(0x54402c),
   rockA: c3(0x8a857c), rockB: c3(0x6c675f), rockHi: c3(0xb0aba0), cliff: c3(0x77726a),
+  caveFloor: c3(0x5c5448), caveFloor2: c3(0x746a5a), caveWall: c3(0x3c3835), caveMoss: c3(0x3a5a3a),
   ashA: c3(0x3d3537), ashB: c3(0x574745), rust: c3(0x7d3f24), obs: c3(0x1e1a22),
 };
 
@@ -61,6 +62,12 @@ export class Terrain {
             c.copy(PAL.rockB).lerp(PAL.rockA, a).lerp(PAL.rockHi, smoothstep(18, 40, h) * 0.6);
             if (bb > 0.7) c.lerp(PAL.meadowB, 0.22);
             break;
+          case BIOME.CAVE: {
+            const dd = w.caveDist(x, z);
+            c.copy(dd <= 0.3 ? PAL.caveFloor : PAL.caveWall).lerp(PAL.caveMoss, smoothstep(0.55, 0.85, bb) * (dd <= 0.3 ? 0.35 : 0.1));
+            if (dd <= 0.3 && a > 0.62) c.lerp(PAL.caveFloor2, 0.5);
+            break;
+          }
           case BIOME.VOLCANO:
             c.copy(PAL.ashA).lerp(PAL.ashB, a).lerp(PAL.rust, smoothstep(24, 38, h) * (0.3 + 0.5 * bb));
             if (bb > 0.86) c.lerp(PAL.obs, 0.6);
@@ -174,6 +181,7 @@ export class Terrain {
       const mx = cx * CHUNK - WORLD.half + CHUNK / 2, mz = cz * CHUNK - WORLD.half + CHUNK / 2;
       const d = Math.hypot(mx - x, mz - z);
       if (d > range) continue;
+      if (this.hideCave && Math.hypot(mx - CAVE.cx, mz - CAVE.cz) < CAVE.radius + 30) continue;
       want.push({ cx, cz, d, lod: this.lodFor(d) });
     }
     want.sort((a, b) => a.d - b.d);

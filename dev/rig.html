@@ -1,0 +1,38 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Rig viewer (dev)</title>
+<script type="importmap">{ "imports": { "three": "../lib/three.module.js", "three/addons/": "../lib/addons/" } }</script>
+<style>html,body{margin:0;background:#222;overflow:hidden}canvas{display:block}</style></head>
+<body><script type="module">
+import * as THREE from 'three';
+import { HumanRig } from '../src/gfx/rig.js';
+import { HumanAnimator } from '../src/player/anim.js';
+import { heldModel } from '../src/gfx/itemmodels.js';
+const r = new THREE.WebGLRenderer({ antialias: true }); r.setSize(innerWidth, innerHeight); r.shadowMap.enabled = true; document.body.appendChild(r.domElement);
+r.toneMapping = THREE.ACESFilmicToneMapping;
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x9fb8c8);
+const hemi = new THREE.HemisphereLight(0xbcd8ff, 0x6a5a40, 1.1); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff0d8, 2.6); sun.position.set(4, 8, 6); sun.castShadow = true; sun.shadow.camera.left = -12; sun.shadow.camera.right = 12; sun.shadow.camera.top = 6; sun.shadow.camera.bottom = -6; sun.shadow.mapSize.set(2048, 2048); scene.add(sun);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(60, 30), new THREE.MeshLambertMaterial({ color: 0x7a9a4a })); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+const cam = new THREE.PerspectiveCamera(30, innerWidth / innerHeight, 0.1, 100);
+window.__sheet = (items, camSpec, holdId) => {
+  for (const o of [...scene.children]) if (o.userData.rig) scene.remove(o);
+  const n = items.length, sp = 1.5;
+  items.forEach((it, i) => {
+    const rig = new HumanRig(); rig.root.userData.rig = true;
+    if (holdId) { const g = heldModel(holdId); rig.setHeld(holdId, g); }
+    const an = new HumanAnimator(rig);
+    const base = { speed: 0, grounded: true, vy: 0, walkSpeed: 4.2, sprintSpeed: 7, ...it.state };
+    for (let k = 0; k < (it.warm ?? 90); k++) an.update(1 / 60, { ...base, speed: it.state?.speed || 0 });
+    if (it.phase !== undefined) { an.phase = it.phase; }
+    an.update(1 / 600, base);
+    if (camSpec && camSpec.axisZ) rig.root.position.z = (i - (n - 1) / 2) * sp; else rig.root.position.x = (i - (n - 1) / 2) * sp; rig.root.rotation.y = it.yaw || 0;
+    scene.add(rig.root);
+  });
+  const c = camSpec || {};
+  const span = (n - 1) * sp / 2 + 1;
+  cam.position.set(...(c.pos || [0, 1.4, 9 + span * 1.2])); cam.lookAt(...(c.look || [0, 0.9, 0]));
+  cam.fov = c.fov || 30; cam.updateProjectionMatrix();
+  r.render(scene, cam);
+};
+window.__ready = true;
+</script></body></html>

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8"><title>Wyspa Odwrotu – testy</title>
+  <script type="importmap">{ "imports": { "three": "./lib/three.module.js", "three/addons/": "./lib/addons/" } }</script>
+  <style>
+    body { font: 14px/1.5 Consolas, monospace; background:#111; color:#ddd; margin:20px; }
+    h1 { font-size:18px; color:#e9b44c; } .ok { color:#6dbb54; } .fail { color:#ff6a5a; } .err { margin-left:40px; color:#ffb0a0; white-space:pre-wrap; }
+    #summary { font-size:16px; margin:12px 0; } canvas { position:fixed; right:0; bottom:0; width:320px; height:180px; opacity:.5; } #ui { display:none; }
+    input { background:#222; color:#eee; border:1px solid #555; padding:3px 6px; }
+  </style>
+</head>
+<body>
+  <h1>Wyspa Odwrotu – testy zachowań</h1>
+  <div>Filtr: <input id="filter" placeholder="np. unik, crafting, zapis"> <button id="run">Uruchom</button></div>
+  <div id="summary">Ładowanie…</div><div id="out"></div>
+  <canvas id="game"></canvas><div id="ui"></div>
+  <div id="loading"><div id="loading-fill"></div><div id="loading-text"></div></div>
+  <script type="module">
+    import { runAll } from './tests/framework.js';
+    const out = document.getElementById('out'), sum = document.getElementById('summary');
+    async function go() {
+      out.innerHTML = ''; sum.textContent = 'Uruchamiam…'; window.__testDone = false;
+      await import('./tests/pure.test.js');
+      await import('./tests/game.test.js');
+      const filter = document.getElementById('filter').value || new URLSearchParams(location.search).get('filter') || '';
+      const res = await runAll(filter, (r) => {
+        const d = document.createElement('div'); d.className = r.ok ? 'ok' : 'fail'; d.textContent = `${r.ok ? '✔' : '✘'} ${r.name} (${r.ms.toFixed(0)} ms)`; out.appendChild(d);
+        if (!r.ok) { const e = document.createElement('div'); e.className = 'err'; e.textContent = r.error; out.appendChild(e); }
+      });
+      const bad = res.filter((r) => !r.ok);
+      sum.innerHTML = `<span class="${bad.length ? 'fail' : 'ok'}">${res.length - bad.length}/${res.length} testów przeszło${bad.length ? ` — błędy: ${bad.length}` : ''}</span>`;
+      window.__testResults = res; window.__testDone = true;
+    }
+    document.getElementById('run').addEventListener('click', () => location.search = '?filter=' + encodeURIComponent(document.getElementById('filter').value));
+    go();
+  </script>
+</body>
+</html>

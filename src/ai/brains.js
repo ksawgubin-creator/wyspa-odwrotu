@@ -33,7 +33,7 @@ class PreyBrain {
       e.moveTo(e.home.x, e.home.z, def.run * 0.7); e.setMode('flee'); return;
     }
     const dist = e.playerDist, p = P(e);
-    const threat = dist < e.detectRange() || e.anger > 0 && dist < def.safe;
+    const threat = dist < e.detectRange() || (e.mode === 'flee' && dist < def.safe) || (e.anger > 0 && dist < def.safe);
     if (threat) {
       if (e.mode !== 'flee') { e.setMode('flee'); e.zigT = 0; }
       e.zigT -= dt; if (e.zigT <= 0) { e.zig = -e.zig; e.zigT = 0.35 + e.rng() * 0.5; }

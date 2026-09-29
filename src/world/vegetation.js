@@ -119,6 +119,7 @@ export class ResourceField {
     n.res = res || null;
     n.grow = 1; n.shake = 0;
     n.baseY = n.y - (DEFS[n.type]?.sink ?? 0) * n.scale;
+    n.wasHidden = !!n.hidden;
     if (n.hidden) { n.state = 'gone'; n.grow = 0; return; }
     this.makeColliders(n);
   }
@@ -300,8 +301,10 @@ export class ResourceField {
 
   // --- save / load -----------------------------------------------------------------------------------
   serialize() {
-    const out = { t: this.time, gone: [], looted: [] };
+    const out = { t: this.time, gone: [], looted: [], revealed: [] };
     for (const n of this.nodes) {
+      if (n.wasHidden && !n.hidden) out.revealed.push(n.id);
+      if (n.hidden) continue;
       if (n.looted) out.looted.push(n.id);
       if (n.state && n.state !== 'alive' || n.depleted) out.gone.push([n.id, n.state, Math.max(0, (n.respawnAt || 0) - this.time), !!n.depleted]);
     }
@@ -310,6 +313,7 @@ export class ResourceField {
   restore(data) {
     if (!data) return;
     const lookup = this.byId;
+    for (const id of data.revealed || []) { const n = lookup.get(id); if (n && n.hidden) { this.revealNode(n); n.grow = 1; this.growing.delete(n); this.writeNode(n); } }
     for (const id of data.looted || []) { const n = lookup.get(id); if (n) n.looted = true; }
     for (const [id, state, remain, depleted] of data.gone || []) {
       const n = lookup.get(id); if (!n || !DEFS[n.type]) continue;

@@ -183,7 +183,7 @@ export class Player {
     if (phase === 'active') this.swingHits(a);
     if (phase === 'recover' || phase === 'done') {
       const chainAt = st.windup + st.active + st.recover * st.chain;
-      if (this.atkBuffer > 0 && a.t >= chainAt) { this.atk = null; this.state = 'free'; this.startAttack(this.comboIdx); return; }
+      if (this.atkBuffer > 0 && a.t >= chainAt) { this.atkBuffer = 0; this.atk = null; this.state = 'free'; this.startAttack(this.comboIdx); return; }
     }
     if (phase === 'done') { this.atk = null; this.state = 'free'; }
   }
@@ -372,7 +372,7 @@ export class Player {
 
     if (free) {
       if (input.pressed('dodge') && this.dodgeCd <= 0 && st.stamina >= 8 && (this.grounded)) this.startDodge(wx, wz, moving);
-      else if (input.mousePressed(0) || this.atkBuffer > 0) { if (this.atkBuffer > 0 || true) { this.atkBuffer = 0; this.startAttack(this.comboIdx); } }
+      else if (input.mousePressed(0) || this.atkBuffer > 0) { this.atkBuffer = 0; this.startAttack(this.comboIdx); }
       else if (input.pressed('jump') && this.grounded && st.stamina >= C.jumpCost) { this.vy = C.jumpSpeed; this.grounded = false; this.spendStamina(C.jumpCost); this.game.audio?.play('jump', { pos: this.pos }); }
     }
     if (this.atk) this.updateAttack(dt);

@@ -100,6 +100,6 @@ export class Events {
     }
   }
   traderNear(p) { const t = this.trader; if (!t || t.leaving) return null; return Math.hypot(p.x - t.x, p.z - t.z) < 3.2 ? t : null; }
-  serialize() { return { lastTraderDay: this.lastTraderDay, notes: [...this.notesFound], revealed: this.game.nodes.filter((n) => n.wreckGroup !== undefined && !n.hidden).map((n) => n.id) }; }
-  restore(d) { if (!d) return; this.lastTraderDay = d.lastTraderDay || 0; (d.notes || []).forEach((n) => this.notesFound.add(n)); for (const id of d.revealed || []) { const n = this.game.field.byId.get(id); if (n && n.hidden) this.game.field.revealNode(n); } }
+  serialize() { return { lastTraderDay: this.lastTraderDay, notes: [...this.notesFound] }; }
+  restore(d) { if (!d) return; this.lastTraderDay = d.lastTraderDay || 0; (d.notes || []).forEach((n) => this.notesFound.add(n)); }
 }

@@ -494,6 +494,7 @@ export class Game {
   step(dt) {
     const p = this.player, I = this.input;
     I.tick(dt);
+    this.atmos.syncClock(this.clock);
     if (this.mode === 'play' || this.mode === 'panel' || this.mode === 'dead') {
       if (this.buildings.placing && this.mode === 'play') {
         if (I.mousePressed(0)) this.buildings.confirmPlacement();
@@ -626,7 +627,7 @@ export class Game {
     const g = this;
     return {
       free: false, god: false, colliders: null,
-      setTime(f) { g.clock.t = f * g.clock.cycle; g.clock.prevNight = g.clock.isNight; },
+      setTime(f) { g.clock.t = f * g.clock.cycle; g.clock.prevNight = g.clock.isNight; g.atmos.syncClock(g.clock); },
       give(id, n) { g.giveItem(id, n); },
       spawn(type) { g.spawnEntity?.(type); },
       revealMap() { g.map.fogGrid.fill(1); g.map.redrawFog(); },

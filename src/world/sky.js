@@ -134,6 +134,10 @@ export class Atmosphere {
     this.shadowSize = 2048;
   }
 
+  // brightness of the sky 0..1 from the clock (used by AI, survival, audio — must not depend on the render pass)
+  static daynessOf(clock) { const e = clock.sunDir().y; return smoothstep(-0.06, 0.2, e); }
+  syncClock(clock) { this.dayness = Atmosphere.daynessOf(clock); }
+
   setShadowQuality(size) {
     if (size === this.shadowSize) return;
     this.shadowSize = size;

@@ -2,7 +2,8 @@
 // Each carries a buried earth block so it never floats over uneven terrain. Colliders are omitted on purpose
 // (traps are walk-over triggers) except the bear trap chain stake. Local +Z = front.
 import * as THREE from 'three';
-import { blob, stone, log, beam, band, anchor, pebble, slab, xf, finish, paintTris, orient, PAL, pick, shade, lerp, TAU, V3, frand, hash3, cone } from './kit.js';
+import { leaf } from '../meshkit.js';
+import { blob, stone, log, beam, band, anchor, pebble, slab, xf, finish, paintTris, orient, PAL, pick, shade, lerp, TAU, V3, frand } from './kit.js';
 
 const LEAF_SOLID = (fr) => pick(fr < 0.3 ? PAL.dryLeaf : PAL.leaf, fr * 3.3 % 1);
 function leafPatch(B, x, z, r, seed, y = 0.03) {
@@ -22,8 +23,8 @@ export function spike_trap(B) {
   });
   for (let i = 0; i < 3; i++) B.add(beam({ a: [-0.6, 0.11, -0.4 + i * 0.4 + (frand(s, i, 3) - 0.5) * 0.06], b: [0.6, 0.12, -0.4 + i * 0.4], w: 0.11, t: 0.04, color: pick(PAL.grey, frand(s, i, 4)), seed: i, endCol: PAL.cutOld, up: [0, 1, 0] }));
   // stakes: 3x3 grid, jittered, tilted outwards/upwards
-  for (let i = 0; i < 9; i++) {
-    const gx = (i % 3) - 1, gz = Math.floor(i / 3) - 1, x = gx * 0.4 + (frand(s, i, 5) - 0.5) * 0.12, z = gz * 0.4 + (frand(s, i, 6) - 0.5) * 0.12;
+  for (let i = 0; i < 13; i++) {
+    const gx = i < 9 ? (i % 3) - 1 : (i % 2 ? 0.5 : -0.5) * (i > 10 ? -1 : 1), gz = i < 9 ? Math.floor(i / 3) - 1 : (i < 11 ? 0.5 : -0.5), x = gx * 0.4 + (frand(s, i, 5) - 0.5) * 0.12, z = gz * 0.4 + (frand(s, i, 6) - 0.5) * 0.12;
     const tl = 0.12 + frand(s, i, 7) * 0.22;
     B.add(stakeUp({ x, z, y: 0.1, len: 0.42 + frand(s, i, 8) * 0.16, r: 0.04 + frand(s, i, 9) * 0.015, tilt: [gx * tl + (frand(s, i, 10) - 0.5) * 0.1, gz * tl + (frand(s, i, 11) - 0.5) * 0.1], seed: i + 4 * s }));
   }
@@ -36,8 +37,8 @@ export function snare(B) {
   B.add(anchor({ hw: 0.45, hd: 0.45, top: 0.02, bottom: -1, seed: 5, color: 0x3a2e22 }));
   // bent sapling rooted at the back-left, arching over the trap and held down by a trigger stick
   const bx = -0.32, bz = -0.28;
-  B.add(log({ a: [bx, -0.9, bz], b: [0.12, 0.62, 0.06], r: 0.05, rt: 0.012, segs: 5, rows: 6, seed: 3 + s, bark: 0x6a5238, bark2: 0x7f6a48, caps: 2, wobble: 0.01, bend: -0.34 }));
-  for (let i = 0; i < 4; i++) B.add(blob({ r: 0.07 + r() * 0.03, detail: 0, jit: 0.3, seed: 50 + i, squash: [1.4, 0.35, 1], pos: [bx + 0.06 + i * 0.09, 0.28 + i * 0.13 + (r() - 0.5) * 0.05, bz + 0.05 + i * 0.09], rot: [0.3, r() * TAU, 0.2], color: (x, y, z, fr) => LEAF_SOLID(fr), faceVar: 0.12 }));
+  B.add(log({ a: [bx, -0.9, bz], b: [0.12, 0.62, 0.06], r: 0.06, rt: 0.014, segs: 5, rows: 6, seed: 3 + s, bark: 0x6a5238, bark2: 0x7f6a48, caps: 2, wobble: 0.01, bend: -0.34 }));
+  for (let i = 0; i < 3; i++) B.add(leaf({ len: 0.16 + r() * 0.08, w: 0.045, droop: 0.5, seg: 1, seed: 50 + i, colorBase: 0x4f7a34, colorTip: 0x8a9a45, pos: [0.12 + (r() - 0.5) * 0.04, 0.6 + (r() - 0.5) * 0.04, 0.06], rot: [-0.4 - r() * 0.5, i * 2.1 + r(), 0] }));
   // cord from the sapling tip down to the noose, a trigger peg + notched stick
   B.add(beam({ a: [0.12, 0.6, 0.06], b: [0.2, 0.09, 0.32], w: 0.014, t: 0.014, color: PAL.rope, seed: 2, faceVar: 0.1 }));
   B.add(beam({ a: [0.26, -0.5, 0.36], b: [0.26, 0.14, 0.36], w: 0.05, t: 0.05, color: 0x6a5238, seed: 5, endCol: PAL.cutOld, up: [1, 0, 0] }));
@@ -55,12 +56,13 @@ export function snare(B) {
 export function pit_trap(B) {
   const s = B.seed, r = B.r, open = B.state !== 'covered';
   B.add(anchor({ hw: 0.85, hd: 0.85, top: -0.02, bottom: -1, seed: 6, color: 0x2a2018 }));
-  // raised earth rim of lumps and stones around the hole
-  const n = 13;
+  // raised earth rim of small lumps, a few stones and grass tufts around the hole
+  const n = 18, soil = [0x5a4632, 0x4a3a2a, 0x6a5238, 0x54402c];
   for (let i = 0; i < n; i++) {
-    const a = (i / n) * TAU + (r() - 0.5) * 0.3, rr = 0.88 + (r() - 0.5) * 0.08, sz = 0.2 + r() * 0.12;
-    B.add(blob({ r: sz, detail: 0, jit: 0.3, seed: 10 + i, squash: [1.3, 0.55, 1.1], pos: [Math.cos(a) * rr, 0.06 + sz * 0.15, Math.sin(a) * rr], rot: [0, -a, 0], color: (x, y, z, fr) => (fr < 0.6 ? pick(PAL.soil ? [0x5a4632, 0x4a3a2a, 0x6a5238] : [0x5a4632], fr / 0.6) : PAL.leaf[1]), faceVar: 0.12 }));
-    if (i % 3 === 0) B.add(stone({ p: [Math.cos(a) * (rr + 0.06), 0.1, Math.sin(a) * (rr + 0.06)], s: [0.3, 0.2, 0.24], rot: [0, -a, 0], seed: 40 + i, color: pick(PAL.stone, r()), round: true, moss: 0.4 }));
+    const a = (i / n) * TAU + (r() - 0.5) * 0.25, rr = 0.86 + (r() - 0.5) * 0.1, sz = 0.11 + r() * 0.1;
+    B.add(blob({ r: sz, detail: 0, jit: 0.3, seed: 10 + i, squash: [1.4, 0.55, 1.1], pos: [Math.cos(a) * rr, 0.05 + sz * 0.2, Math.sin(a) * rr], rot: [0, -a, 0], color: (x, y, z, fr) => (fr < 0.85 ? pick(soil, fr / 0.85) : PAL.leaf[1]), faceVar: 0.12 }));
+    if (i % 4 === 0) B.add(stone({ p: [Math.cos(a) * (rr + 0.1), 0.09, Math.sin(a) * (rr + 0.1)], s: [0.26, 0.18, 0.22], rot: [0, -a, 0], seed: 40 + i, color: pick(PAL.stone, r()), round: true, moss: 0.4 }));
+    if (i % 3 === 1) for (let q = 0; q < 2; q++) B.add(leaf({ len: 0.2, w: 0.03, droop: 0.4, seg: 1, seed: i * 3 + q, colorBase: 0x4f7a34, colorTip: 0x8a9a45, pos: [Math.cos(a) * (rr + 0.14), 0.05, Math.sin(a) * (rr + 0.14)], rot: [-1.1, a + q * 0.8, 0] }));
   }
   if (open) {
     // dark pit floor + stakes rising out of it
@@ -100,7 +102,7 @@ export function bear_trap(B) {
     const tg = tor.toNonIndexed(); tg.deleteAttribute('normal');
     paintTris(tg, (x, y, z, fr) => (fr < 0.3 ? PAL.rust : PAL.iron), 0.15, 5 + k);
     // torus lies in XY plane, arc from angle 0..PI (through +Y). Rotate so the arc lies in the XZ plane, bulging +X:
-    xf(tg, { rot: [0, 0, -Math.PI / 2] });      // now arc endpoints on the Z axis? (0..PI over +Y -> +X)
+    xf(tg, { rot: [Math.PI / 2, 0, -Math.PI / 2] });      // arc now lies in the XZ plane, endpoints on the Z axis, bulging +X
     parts.push(finish(tg));
     // teeth along the inner side, pointing toward the centre of the ring
     for (let i = 1; i < 8; i++) {
@@ -119,7 +121,7 @@ export function bear_trap(B) {
     const ang = sprung ? side * (Math.PI / 2 - 0.16) : side * 0.03;
     for (const g of parts) {
       if (side < 0) xf(g, { rot: [0, Math.PI, 0] });        // mirror bulge toward -X
-      xf(g, { pos: [side * 0.13, 0.05, 0], rot: [0, 0, sprung ? -side * (Math.PI / 2 - 0.14) : 0] });
+      xf(g, { pos: [side * 0.13, 0.05, 0], rot: [0, 0, sprung ? side * 2.15 : side * -0.03] });
     }
     B.add(parts);
     B.add(log({ a: [side * 0.12, 0.05, -0.28], b: [side * 0.12, 0.05, 0.28], r: 0.022, segs: 4, rows: 1, seed: 5, bark: PAL.iron, caps: 3, wobble: 0.004 }));

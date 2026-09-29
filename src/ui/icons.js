@@ -37,6 +37,15 @@ function drawItem(g, d) {
   const c = d.color || '#999';
   g.lineJoin = 'round'; g.lineCap = 'round';
   if (d.model && ['axe', 'pickaxe', 'spear', 'sword'].includes(d.model)) return drawHandleTool(g, d.model, c);
+  if (d.model === 'knife') {
+    g.save(); g.translate(32, 32); g.rotate(-Math.PI / 4);
+    g.fillStyle = '#5a3a24'; g.beginPath(); g.roundRect(-3, 6, 6, 20, 2); g.fill();
+    facet(g, () => { g.beginPath(); g.moveTo(-6, 6); g.lineTo(0, -26); g.lineTo(6, 6); g.closePath(); }, d.color || '#e6ddc8'); g.restore(); return;
+  }
+  if (d.model === 'bow') {
+    g.save(); g.translate(32, 32); g.strokeStyle = '#7b5632'; g.lineWidth = 5; g.beginPath(); g.arc(-4, 0, 26, -1.1, 1.1); g.stroke();
+    g.strokeStyle = 'rgba(240,230,200,.9)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(-4 + Math.cos(-1.1) * 26, Math.sin(-1.1) * 26); g.lineTo(-4 + Math.cos(1.1) * 26, Math.sin(1.1) * 26); g.stroke(); g.restore(); return;
+  }
   if (d.model === 'torch') {
     g.save(); g.translate(32, 32); g.rotate(-0.5);
     g.fillStyle = '#6b4a2f'; g.beginPath(); g.roundRect(-4, -8, 8, 34, 3); g.fill(); g.strokeStyle = 'rgba(0,0,0,.5)'; g.lineWidth = 2; g.stroke();

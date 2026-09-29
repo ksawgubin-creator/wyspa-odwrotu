@@ -17,13 +17,13 @@ const scene = new THREE.Scene(); scene.background = new THREE.Color(0x9fb8c8);
 scene.add(new THREE.HemisphereLight(0xbcd8ff, 0x6a5a40, 1.1));
 const sun = new THREE.DirectionalLight(0xfff0d8, 2.6); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); scene.add(sun); scene.add(sun.target);
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshLambertMaterial({ color: 0x7a9a4a })); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
-const cam = new THREE.PerspectiveCamera(30, innerWidth / innerHeight, 0.1, 200);
-const line = (pts, color, y = 0.06) => { const g = new THREE.BufferGeometry().setFromPoints(pts.map((p) => new THREE.Vector3(p[0], y, p[1]))); const l = new THREE.LineLoop(g, new THREE.LineBasicMaterial({ color, depthTest: false })); l.renderOrder = 10; return l; };
-const dot = (x, z, color, y = 0.1) => { const m = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), new THREE.MeshBasicMaterial({ color, depthTest: false })); m.position.set(x, y, z); m.renderOrder = 11; return m; };
-let info = '';
+const cam = new THREE.PerspectiveCamera(30, innerWidth / innerHeight, 0.1, 200); r.autoClear = true;
+const line = (pts, color, y = 0.06) => { const g = new THREE.BufferGeometry().setFromPoints(pts.map((p) => new THREE.Vector3(p[0], y, p[1]))); const l = new THREE.LineLoop(g, new THREE.LineBasicMaterial({ color, depthTest: false })); l.renderOrder = 10; l.layers.set(1); return l; };
+const dot = (x, z, color, y = 0.1) => { const m = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), new THREE.MeshBasicMaterial({ color, depthTest: false })); m.position.set(x, y, z); m.renderOrder = 11; m.layers.set(1); return m; };
+let info = '', itemPos = [];
 window.__sheet = (spec) => {
   for (const o of [...scene.children]) if (o.userData.item) scene.remove(o);
-  info = '';
+  info = ''; itemPos = [];
   const items = spec.items, gap = spec.gap ?? 0.8, cols = spec.cols || items.length;
   const dims = items.map((it) => { const s = BUILDING_TYPES[it.type]?.size || { w: 1, d: 1 }; return it.yaw ? Math.max(s.w, s.d) : s.w; });
   const rowsN = Math.ceil(items.length / cols), rowW = [], rowD = [];
@@ -52,17 +52,48 @@ window.__sheet = (spec) => {
       const fx = it.fig.x ?? 0, fz = it.fig.z ?? ((BUILDING_TYPES[it.type]?.size.d || 1) / 2 + 0.7);
       const f = new THREE.Mesh(new THREE.CapsuleGeometry(0.28, 1.24, 4, 10), new THREE.MeshLambertMaterial({ color: 0xd04040 })); f.position.set(fx, 0.9, fz); f.castShadow = true; w.add(f);
     }
-    scene.add(w);
+    scene.add(w); itemPos.push(w.position.clone());
   });
   const c = spec.cam || {}, tw = Math.max(...rowW);
   const sc = Math.max(tw, zc);
-  cam.up.set(...(c.up || [0, 1, 0]));
-  cam.position.set(...(c.pos || [0, 3, tw * 0.9 + 6])); cam.lookAt(...(c.look || [0, 1, 0]));
-  cam.fov = c.fov || 30; cam.updateProjectionMatrix();
   const sd = sun.position; sd.set(spec.sunDir?.[0] ?? 0.5, spec.sunDir?.[1] ?? 0.9, spec.sunDir?.[2] ?? 0.65).normalize().multiplyScalar(60);
   const h = Math.max(sc / 2 + 4, 6); sun.shadow.camera.left = -h; sun.shadow.camera.right = h; sun.shadow.camera.top = h; sun.shadow.camera.bottom = -h; sun.shadow.camera.far = 150; sun.shadow.camera.updateProjectionMatrix();
   document.getElementById('info').textContent = spec.showInfo === false ? '' : info;
-  r.render(scene, cam);
+  const W = innerWidth, H = innerHeight;
+  const setCam = (cc, aspect) => { cam.aspect = aspect; cam.up.set(...(cc.up || [0, 1, 0])); const io = cc.item != null ? itemPos[cc.item] : new THREE.Vector3(); cam.position.set(...(cc.pos || [0, 3, tw * 0.9 + 6])).add(io); const lk = cc.look || [0, 1, 0]; cam.lookAt(lk[0] + io.x, lk[1] + io.y, lk[2] + io.z); cam.fov = cc.fov || 30; cam.layers.set(0); if (cc.col ?? spec.colliders) cam.layers.enable(1); cam.updateProjectionMatrix(); };
+  if (spec.views) {
+    // contact sheet: several cameras tiled into one image
+    const n = spec.views.length, cols = spec.tileCols || Math.min(3, n), rows = Math.ceil(n / cols), tw2 = W / cols, th2 = H / rows;
+    r.setScissorTest(true); r.setClearColor(0x9fb8c8);
+    spec.views.forEach((cc, i) => { const x = (i % cols) * tw2, y = H - (Math.floor(i / cols) + 1) * th2; r.setViewport(x, y, tw2, th2); r.setScissor(x, y, tw2, th2); setCam(cc, tw2 / th2); r.render(scene, cam); });
+    r.setScissorTest(false); r.setViewport(0, 0, W, H);
+  } else { setCam(c, W / H); r.render(scene, cam); }
 };
+// ---- interactive mode (when opened by hand): ?type=all|campfire,hut..&damage=0..3|all&seed=0&state=&lit=1&col=1&fig=1
+// drag = orbit, wheel = zoom, right-drag/shift = pan.
+const q = new URLSearchParams(location.search);
+if (!navigator.webdriver || q.has('type')) {
+  const types = (q.get('type') || 'all') === 'all' ? Object.keys(BUILDING_TYPES) : q.get('type').split(',');
+  const dm = q.get('damage') || '0', dmgs = dm === 'all' ? [0, 1, 2, 3] : dm.split(',').map(Number);
+  const items = [];
+  for (const t of types) for (const d of dmgs) {
+    const info = BUILDING_TYPES[t]; if (!info) continue;
+    for (const st of (q.get('state') ? [q.get('state')] : (info.states || [undefined]))) items.push({ type: t, opts: { seed: +(q.get('seed') || 0), damage: d, state: st, growth: q.has('growth') ? +q.get('growth') : 1, lit: q.get('lit') !== '0' }, fig: q.get('fig') !== '0' ? {} : null, label: t });
+  }
+  const cols = +(q.get('cols') || Math.min(items.length, dmgs.length > 1 ? 4 : 6));
+  const st = { az: 0.5, el: 0.45, dist: 16, target: new THREE.Vector3(0, 1.2, 0) };
+  const draw = () => { const c = st; window.__sheet({ items, cols, gap: 1.2, colliders: q.get('col') === '1', cam: { pos: [c.target.x + Math.sin(c.az) * Math.cos(c.el) * c.dist, c.target.y + Math.sin(c.el) * c.dist, c.target.z + Math.cos(c.az) * Math.cos(c.el) * c.dist], look: [c.target.x, c.target.y, c.target.z], fov: 35 } }); };
+  window.__interactive = draw;
+  let drag = null;
+  r.domElement.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY, pan: e.button === 2 || e.shiftKey }; r.domElement.setPointerCapture(e.pointerId); });
+  r.domElement.addEventListener('pointerup', () => { drag = null; });
+  r.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
+  r.domElement.addEventListener('pointermove', (e) => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY; if (drag.pan) { const k = st.dist * 0.0015; st.target.x -= (Math.cos(st.az) * dx) * k; st.target.z += (Math.sin(st.az) * dx) * k; st.target.y += dy * k; } else { st.az -= dx * 0.008; st.el = Math.max(0.02, Math.min(1.5, st.el + dy * 0.008)); } draw(); });
+  r.domElement.addEventListener('wheel', (e) => { e.preventDefault(); st.dist = Math.max(2, Math.min(200, st.dist * (1 + Math.sign(e.deltaY) * 0.1))); draw(); }, { passive: false });
+  addEventListener('resize', () => { r.setSize(innerWidth, innerHeight); draw(); });
+  // frame the whole sheet
+  const nItems = items.length, rowsN = Math.ceil(nItems / cols); st.dist = Math.max(10, cols * 3.2 + rowsN * 2.5); st.target.z = 0;
+  draw();
+}
 window.__ready = true;
 </script></body></html>

@@ -109,6 +109,13 @@ export class EntityManager {
         if (d < min && d > 1e-4) { const push = (min - d) * 0.5; e.x += (dx / d) * push * 0.5; e.z += (dz / d) * push * 0.5; }
       });
     }
+    // creatures do not walk through the player
+    const pl = g.player;
+    if (!pl.dead) for (const e of this.list) {
+      if (e.dead || e.def.flyHeight) continue;
+      const dx = e.x - pl.pos.x, dz = e.z - pl.pos.z, d = Math.hypot(dx, dz), min = e.radius + pl.radius * 0.9;
+      if (d < min) { const nx = d > 1e-4 ? dx / d : 1, nz = d > 1e-4 ? dz / d : 0; e.x += nx * (min - d); e.z += nz * (min - d); }
+    }
     this.slotT -= dt; if (this.slotT <= 0) { this.slotT = 0.6; this.manageSlots(); }
     this.director.update(dt);
   }

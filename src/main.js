@@ -24,8 +24,11 @@ const fill = document.getElementById('loading-fill'), text = document.getElement
         if (game.mode !== 'menu') { game.cameraRig.update(1 / 60, game.player, 1); game.player.updateVisual(1 / 60, 1); game.updateAfterVisual?.(1 / 60); game.fx.update(1 / 60); }
         if (cb) cb(i);
       }
+      if (game.mode !== 'menu') game.terrain.update(game.player.pos.x, game.player.pos.z, Infinity);
       game.renderFrame(1 / 60);
     };
+    // logic-only stepping (no rendering): fast simulation for behaviour tests
+    window.__sim = (sec) => { game.manual = true; const n = Math.max(1, Math.round(sec * 60)); for (let i = 0; i < n; i++) { game.step(1 / 60); game.time += 1 / 60; } };
     window.__hold = (code, down) => { if (down) game.input.down.add(code); else game.input.down.delete(code); };
     window.__press = (code) => { game.input.onKey({ code, repeat: false, preventDefault() {} }, true); game.input.onKey({ code, repeat: false, preventDefault() {} }, false); };
     window.__click = (b = 0) => { game.input.locked = true; game.input.buttons[b] = true; game.input.buttonLatch[b] = true; };

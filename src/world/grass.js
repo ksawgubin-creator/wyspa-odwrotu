@@ -38,7 +38,7 @@ export class Grass {
     this.scene = scene; this.world = world;
     this.group = new THREE.Group(); this.group.name = 'grass'; scene.add(this.group);
     this.geo = tuftGeometry();
-    this.mat = foliage(0.14, 0.6, 0.0, [CONFIG.world.grassRadius - 12, CONFIG.world.grassRadius]); this.mat.side = THREE.FrontSide;
+    this.mat = foliage(0.14, 0.6, 0.0, [CONFIG.world.grassRadius - 12, CONFIG.world.grassRadius], false); this.mat.side = THREE.FrontSide;
     this.cells = new Map();
     this.enabled = true;
     this.density = 1;

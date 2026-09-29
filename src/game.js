@@ -581,6 +581,7 @@ export class Game {
     const focus = this._focus || (this._focus = new THREE.Vector3());
     if (playing) { const rp = p.renderPos(this.alpha); focus.set(rp.x, rp.y, rp.z); } else focus.set(p.pos.x, p.pos.y, p.pos.z);
     shared.uTime.value = this.time;
+    shared.uCamPos.value.copy(this.camera.position); shared.uPlayerPos.value.copy(focus);
     this.atmos.update(this.clock, focus, this.camera, this.time);
     this.lights.update(dt, this.camera.position, focus, this.atmos.dayness);
     this.water.update(this.time, this.camera.position, this.atmos);
@@ -632,7 +633,7 @@ export class Game {
       tp(place) {
         const w = g.world, L = { volcano: { x: 96, z: -104 }, mountain: { x: -78, z: -48 }, cave: w.cave }[place]; if (!L) return;
         // find the nearest walkable point
-        const y = w.getHeight(L.x, L.z); g.player.pos.x = L.x; g.player.pos.z = L.z; g.player.pos.y = y + 0.1; g.player.prev = { ...g.player.pos };
+        const y = w.getHeight(L.x, L.z); g.player.pos.x = L.x; g.player.pos.z = L.z; g.player.pos.y = y + 0.1; g.player.prev = { ...g.player.pos }; g.terrain.update(L.x, L.z, Infinity); g.grass?.clear();
       },
       toggleFreeCam() { this.free = !this.free; g.freePos = null; g.notify('Wolna kamera: ' + (this.free ? 'TAK (WASD, Spacja/Ctrl)' : 'NIE')); },
       toggleColliders() {

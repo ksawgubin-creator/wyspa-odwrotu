@@ -29,7 +29,7 @@ export const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a)); return 
 
 // ---- palette (muted, weathered) ------------------------------------------------------------------
 export const PAL = {
-  log: [0x7c5e42, 0x72563b, 0x8a6c4c, 0x8c785c, 0x76583c, 0x816446],
+  log: [0x8a6a4a, 0x7f6244, 0x9a7a56, 0x9a866a, 0x846648, 0x8f7050],
   wood: [0x6f4f36, 0x7b5a3d, 0x62452f, 0x86664a, 0x5a4230, 0x76573a],
   bark: [0x5e4632, 0x6a4e37, 0x53402f, 0x715339, 0x655039],
   grey: [0x8a8478, 0x9b9486, 0x7c766a, 0xa39c8c, 0x736d63],       // silvered old planks
@@ -219,6 +219,7 @@ export function rope(points, { w = 0.035, color = 0xb59a68, seed = 1, up } = {})
 
 // Light "earth" anchor reaching below ground: dark soil lump (hidden when terrain is flat).
 export function anchor({ x = 0, z = 0, hw = 0.5, hd = 0.5, top = 0.1, bottom = -1, color = 0x3a2e22, seed = 1 }) {
+  top = Math.min(top, -0.04);   // never coplanar with / above the ground: invisible on flat terrain, filler on slopes
   return stone({ p: [x, (top + bottom) / 2, z], s: [hw * 2, top - bottom, hd * 2], seed, color, jit: 0.1, bevel: 0.25, faceVar: 0.08 });
 }
 
@@ -226,11 +227,11 @@ export function anchor({ x = 0, z = 0, hw = 0.5, hd = 0.5, top = 0.1, bottom = -
 // `out` (optional) = hint for the outward normal (U is flipped if needed). The surface is a grid (nu x nv) of thin slabs
 // (so holes can open), each covered by rows of drooping tufts (style 'thatch': pointed straw, 'tile': slate/shingle quads).
 // warp(u,v) -> offset along the normal (sag / lumps).
-export function roofSlope({ O, U, V, out, nu = 4, nv = 3, rows = 3, tw = 0.42, drop = 0.4, thick = 0.09, seed = 1, D, idBase = 0, colors = PAL.thatch, baseColor = 0x6a5a34, droop = 0.05, holeBias = 1, ragged = 0.35, style = 'thatch', warp = null, skipCells = null }) {
+export function roofSlope({ O, U, V, out, nu = 4, nv = 3, rows = 3, tw = 0.42, drop = 0.4, thick = 0.09, seed = 1, D, idBase = 0, colors = PAL.thatch, baseColor = 0x8f7a48, droop = 0.05, holeBias = 1, ragged = 0.35, style = 'thatch', warp = null, skipCells = null }) {
   let Ov = toV(O), Uv = toV(U);
   const Vv = toV(V);
   if (out && Uv.clone().cross(Vv).dot(toV(out)) < 0) { Ov = Ov.clone().add(Uv); Uv = Uv.clone().multiplyScalar(-1); }
-  const N = Uv.clone().cross(Vv).normalize(), Vh = Vv.clone().normalize(), Uh = Uv.clone().normalize(), ulen = Uv.length();
+  const N = Uv.clone().cross(Vv).normalize(), Vh = Vv.clone().normalize(), Uh = Uv.clone().normalize(), ulen = Uv.length(), vlen = Vv.length();
   const P = (u, v) => { const q = Ov.clone().addScaledVector(Uv, u).addScaledVector(Vv, v); if (warp) q.addScaledVector(N, warp(u, v)); return q; };
   const parts = [], tri = [], triC = [];
   const pushTri = (a, b, c, ca, cb, cc) => {
@@ -246,28 +247,38 @@ export function roofSlope({ O, U, V, out, nu = 4, nv = 3, rows = 3, tw = 0.42, d
     const u0 = iu / nu, u1 = (iu + 1) / nu, v0 = iv / nv, v1 = (iv + 1) / nv;
     parts.push(slab({ p: [P(u0, v0), P(u1, v0), P(u1, v1), P(u0, v1)], thick, N, seed: seed + id, color: baseColor, color2: shade(baseColor, 0.8), faceVar: 0.08, sides: false }));
     for (let r = 0; r < rows; r++) {
-      const vt = lerp(v0, v1, (r + 1) / rows), off = (r % 2) * 0.5;
-      const cw = tw / ulen, n = Math.max(1, Math.round((u1 - u0) / cw));
-      for (let k = 0; k < n + 1; k++) {
-        const key = id * 31 + r * 7 + k;
-        const uc = u0 + ((k + off) / n) * (u1 - u0) + (frand(seed, key, 1) - 0.5) * cw * 0.4;
-        if (uc < u0 - cw * 0.3 || uc > u1 + cw * 0.3) continue;
-        const wu = style === 'tile' ? cw * (0.6 + frand(seed, key, 2) * 0.5) * 0.5 : cw * (0.95 + frand(seed, key, 2) * 0.4) * 0.5;
-        const tl = P(uc - wu, vt), tr = P(uc + wu, vt);
-        const lift = 0.018 * (r + 1);
-        tl.addScaledVector(N, thick * 0.4 + lift); tr.addScaledVector(N, thick * 0.4 + lift);
-        const c0 = cols[Math.floor(frand(seed, key, 7) * cols.length)], top = shade(c0.getHex(), 0.72), tip = shade(c0.getHex(), 1.0 + 0.1 * frand(seed, key, 8));
-        const sx = (frand(seed, key, 5) - 0.5) * (style === 'tile' ? 0.22 : 0.08), tip2 = shade(c0.getHex(), 1.05 + 0.15 * frand(seed, key, 9));
-        if (style === 'tile') {
+      const vt = lerp(v0, v1, (r + 1) / rows) + (frand(seed, id * 13 + r, 60) - 0.5) * (v1 - v0) / rows * 0.4, off = (r % 2) * 0.5;
+      const cw = tw / ulen, lift = 0.018 * (r + 1);
+      if (style === 'tile') {
+        const n = Math.max(1, Math.round((u1 - u0) / cw));
+        for (let k = 0; k < n + 1; k++) {
+          const key = id * 31 + r * 7 + k;
+          const uc = u0 + ((k + off) / n) * (u1 - u0) + (frand(seed, key, 1) - 0.5) * cw * 0.4;
+          if (uc < u0 - cw * 0.3 || uc > u1 + cw * 0.3) continue;
+          const wu = cw * (0.6 + frand(seed, key, 2) * 0.5) * 0.5;
+          const tl = P(uc - wu, vt), tr = P(uc + wu, vt);
+          tl.addScaledVector(N, thick * 0.4 + lift); tr.addScaledVector(N, thick * 0.4 + lift);
+          const c0 = cols[Math.floor(frand(seed, key, 7) * cols.length)], top = shade(c0.getHex(), 0.72), tip = shade(c0.getHex(), 1.0 + 0.1 * frand(seed, key, 8));
+          const sx = (frand(seed, key, 5) - 0.5) * 0.22;
           const dl = drop * (0.85 + 0.15 * frand(seed, key, 3)), dr = drop * (0.85 + 0.15 * frand(seed, key, 4));
           const bl = tl.clone().addScaledVector(Vh, -dl).addScaledVector(N, droop * dl + 0.02).addScaledVector(Uh, sx), br = tr.clone().addScaledVector(Vh, -dr).addScaledVector(N, droop * dr + 0.02).addScaledVector(Uh, sx);
           pushTri(tl, tr, br, top, top, tip); pushTri(tl, br, bl, top, tip, tip);
-        } else {
-          // sawtooth course: one pointed tooth per tuft; alternating rows staggered => layered, ragged straw
-          const dd = drop * (1 - ragged * frand(seed, key, 3));
-          const tip = tl.clone().add(tr).multiplyScalar(0.5).addScaledVector(Vh, -dd).addScaledVector(N, droop * dd + 0.04).addScaledVector(Uh, sx * 2);
-          const shadeRow = 0.9 + 0.2 * ((r + iv) % 2);
-          const tt = top.clone().multiplyScalar(shadeRow), tp = tip2.clone().multiplyScalar(shadeRow);
+        }
+      } else {
+        // thatch: irregular pointed straw bundles, alternating rows staggered, low-frequency colour patches
+        let u = u0 + off * cw * frand(seed, id * 17 + r, 61) - cw * 0.3, k = 0;
+        while (u < u1) {
+          const key = id * 131 + r * 17 + k++;
+          const w = cw * (0.6 + frand(seed, key, 2) * 1.0), uc = u + w / 2;
+          u += w * 0.88;
+          if (uc < u0 - cw * 0.2 || uc > u1 + cw * 0.2) continue;
+          const tl = P(uc - w / 2, vt), tr = P(uc + w / 2, vt);
+          tl.addScaledVector(N, thick * 0.4 + lift); tr.addScaledVector(N, thick * 0.4 + lift);
+          const dd = drop * (1 - ragged * frand(seed, key, 3)), sx = (frand(seed, key, 5) - 0.5) * w * 1.1 * ulen / ulen;
+          const tip = tl.clone().add(tr).multiplyScalar(0.5).addScaledVector(Vh, -dd).addScaledVector(N, droop * dd + 0.04).addScaledVector(Uh, sx * ulen);
+          const c0 = cols[Math.floor(frand(seed, key, 7) * cols.length)];
+          const patch = 0.82 + 0.34 * frand(seed, Math.floor(uc * ulen / 0.9) * 97 + Math.floor((vt) * vlen / 0.8) + id * 3, 62);
+          const tt = shade(c0.getHex(), 0.7 * patch), tp = shade(c0.getHex(), (1.02 + 0.2 * frand(seed, key, 9)) * patch);
           pushTri(tl, tr, tip, tt, tt, tp);
         }
       }
@@ -291,6 +302,12 @@ export function subtract(segs, holes, minW = 0.2) {
     cur = nx;
   }
   return cur.filter(([a, b]) => b - a >= minW);
+}
+
+// Rotate geometries about a pivot [x,y,z] by Euler rot [rx,ry,rz] (order YXZ, like xf).
+export function rotAbout(list, pivot, rot) {
+  for (const g of list) { xf(g, { pos: [-pivot[0], -pivot[1], -pivot[2]] }); xf(g, { rot }); xf(g, { pos: pivot }); }
+  return list;
 }
 
 // Lean every geometry above y=0 by (sx, sz) per metre of height (whole-structure tilt for damaged buildings).
@@ -321,7 +338,7 @@ export function wearOpenings({ seed, level, len, H, holes = 1, holeW = 0.6, hole
 
 // Irregular masonry wall in wall-local coords: x along the wall (-len/2..len/2), z thickness (centred), y from y0 (buried) to H.
 // Courses of stones of varied size, staggered, with a recessed mortar core. `openings` = [[x0,x1,y0,y1]] rects left empty.
-export function masonry({ len, H, d = 0.5, y0 = -1, seed = 1, openings = [], colors = PAL.stone, minW = 0.55, maxW = 1.15, minH = 0.42, maxH = 0.66, D, idBase = 0, firstTop = 0.34, moss = 0.35, core = false, sc = 0.965, cap = false, flatTop = true, stagger = 0, dark = 1 }) {
+export function masonry({ len, H, d = 0.5, y0 = -1, seed = 1, openings = [], colors = PAL.stone, minW = 0.55, maxW = 1.15, minH = 0.42, maxH = 0.66, D, idBase = 0, firstTop = 0.34, moss = 0.35, core = false, sc = 0.965, cap = false, flatTop = true, stagger = 0, dark = 1, splitP = 0.42 }) {
   const parts = [], rows = [];
   let y = y0, rr = 0;
   rows.push([y0, firstTop + frand(seed, 0, 400) * 0.12]); y = rows[0][1];
@@ -345,17 +362,25 @@ export function masonry({ len, H, d = 0.5, y0 = -1, seed = 1, openings = [], col
     if (ri % 2 && cells.length && cells[0][0] > -len / 2 + 0.01) cells.unshift([-len / 2, cells[0][0]]);
     const holes = openings.filter((o) => o[2] < yb - 0.03 && o[3] > ya + 0.03).map((o) => [o[0], o[1]]);
     const runs = [];
+    const emit = (pa, pb, ya2, yb2, id, sub) => {
+      const w = pb - pa, h = yb2 - ya2, r1 = frand(seed, id, 403 + sub), r2 = frand(seed, id, 404 + sub), r3 = frand(seed, id, 405 + sub);
+      parts.push(stone({ p: [(pa + pb) / 2 + (r2 - 0.5) * 0.03, (ya2 + yb2) / 2, (r3 - 0.5) * 0.07], s: [w * sc, h * sc, d * (0.88 + 0.2 * r2)], seed: seed * 97 + id * 3 + sub, color: shade(pick(colors, r1), dark * (1 - 0.1 * (1 - ri / rows.length))), rot: [(r2 - 0.5) * 0.07, (r3 - 0.5) * 0.08, (r1 - 0.5) * 0.1], moss: ya2 < 0.7 ? moss : 0, jit: 0.17, bevel: 0.16, faceVar: 0.08 }));
+    };
     cells.forEach(([a, b], ci) => {
       for (const [pa, pb] of subtract([[a, b]], holes, 0.2)) {
         const id = idBase + ri * 40 + ci;
         const isCut = pa > a + 0.01 || pb < b - 0.01;
-        const gone = D && !isCut && D.gone(id, 0.25 + 0.75 * (ri / rows.length));
+        // erosion from the top down (per column) so no stone is left floating over a gap
+        const gone = D && D.level > 0 && !isCut && (((ya - y0) / (H - y0)) > 1 - D.thr * 1.3 * frand(seed, Math.floor(((pa + pb) / 2 + len / 2) / 0.6), 440));
         runs.push([pa, pb, gone]);
         if (gone) continue;
-        const w = pb - pa, h = yb - ya, r1 = frand(seed, id, 403), r2 = frand(seed, id, 404), r3 = frand(seed, id, 405);
-        const col0 = pick(colors, r1);
-        const small = w < 0.34 || h < 0.3;
-        parts.push(stone({ p: [(pa + pb) / 2 + (r2 - 0.5) * 0.03, (ya + yb) / 2, (r3 - 0.5) * 0.06], s: [w * sc, h * sc, d * (0.9 + 0.16 * r2)], seed: seed * 97 + id, color: shade(col0, dark * (1 - 0.1 * (1 - ri / rows.length))), rot: [(r2 - 0.5) * 0.05, (r3 - 0.5) * 0.06, (r1 - 0.5) * 0.08], round: small && r1 < 0.5, moss: ya < 0.7 ? moss : 0, jit: 0.12, bevel: 0.1, faceVar: 0.08 }));
+        const w = pb - pa, h = yb - ya;
+        if (ri > 0 && w >= 0.8 && h >= 0.42 && frand(seed, id, 406) < splitP) {
+          // split: tall stone + short stone with a small stone on top of it
+          const f = 0.38 + frand(seed, id, 407) * 0.26, left = frand(seed, id, 408) < 0.5, xm = pa + w * f, hs = h * (0.6 + frand(seed, id, 409) * 0.15);
+          if (left) { emit(pa, xm, ya, yb, id, 0); emit(xm, pb, ya, ya + hs, id, 1); emit(xm, pb, ya + hs, yb, id, 2); }
+          else { emit(pa, xm, ya, ya + hs, id, 0); emit(pa, xm, ya + hs, yb, id, 1); emit(xm, pb, ya, yb, id, 2); }
+        } else emit(pa, pb, ya, yb, id, 0);
       }
     });
     if (core) {
@@ -389,14 +414,14 @@ export function masonry({ len, H, d = 0.5, y0 = -1, seed = 1, openings = [], col
 export function bedGeoms({ seed = 1, roll = false, sc = 1, light = false }) {
   const p = [], r = rng(seed * 13 + 7);
   if (!roll) {
-    for (const [x, z, h] of [[-0.48, -0.92, 0.62], [0.48, -0.92, 0.55], [-0.48, 0.92, 0.32], [0.48, 0.92, 0.3]]) p.push(log({ a: [x + (r() - 0.5) * 0.03, -1, z], b: [x, h, z + (r() - 0.5) * 0.03], r: 0.05, rt: 0.045, segs: 5, rows: 1, seed: seed + x * 7 + z, bark: pick(PAL.wood, r()), caps: 2 }));
+    for (const [x, z, h] of (light === 2 ? [[-0.48, -0.92, 0.62], [0.48, -0.92, 0.55]] : [[-0.48, -0.92, 0.62], [0.48, -0.92, 0.55], [-0.48, 0.92, 0.32], [0.48, 0.92, 0.3]])) p.push(log({ a: [x + (r() - 0.5) * 0.03, -1, z], b: [x, h, z + (r() - 0.5) * 0.03], r: 0.05, rt: 0.045, segs: 5, rows: 1, seed: seed + x * 7 + z, bark: pick(PAL.wood, r()), caps: 2 }));
     for (const x of [-0.5, 0.5]) p.push(log({ a: [x, 0.27, -0.98], b: [x + (r() - 0.5) * 0.04, 0.3 + (r() - 0.5) * 0.02, 0.98], r: 0.045, rt: 0.04, segs: 5, rows: 1, seed: seed + 3 + x, bark: pick(PAL.wood, r()), bark2: pick(PAL.wood, r()), bend: (r() - 0.5) * 0.04 }));
     p.push(beam({ a: [-0.55, 0.6, -0.93], b: [0.55, 0.56, -0.93], w: 0.16, t: 0.04, seed: seed + 1, color: pick(PAL.wood, r()), up: [0, 0, 1], endCol: PAL.cutOld }));
-    for (let i = 0; i < (light ? 2 : 5); i++) p.push(beam({ a: [-0.5, 0.285 + r() * 0.01, -0.5 + i * (light ? 1.0 : 0.4) + (r() - 0.5) * 0.06], b: [0.5, 0.285, -0.5 + i * (light ? 1.0 : 0.4) + (r() - 0.5) * 0.06], w: 0.1 + r() * 0.05, t: 0.03, seed: seed + 20 + i, color: pick(PAL.grey, r()), endCol: PAL.cutOld, up: [0, 1, 0] }));
+    for (let i = 0; i < (light === 2 ? 0 : light ? 2 : 5); i++) p.push(beam({ a: [-0.5, 0.285 + r() * 0.01, (light ? -0.5 + i : -0.75 + i * 0.4) + (r() - 0.5) * 0.06], b: [0.5, 0.285, (light ? -0.5 + i : -0.75 + i * 0.4) + (r() - 0.5) * 0.06], w: 0.1 + r() * 0.05, t: 0.03, seed: seed + 20 + i, color: pick(PAL.grey, r()), endCol: PAL.cutOld, up: [0, 1, 0] }));
   }
   const y0 = roll ? 0.08 : 0.34;
-  p.push(blob({ r: 0.5, detail: light ? 0 : 1, jit: 0.18, seed: seed + 5, squash: [0.98, 0.16, 1.85], pos: [0, y0 + 0.02, 0], color: (x, y, z, fr) => pick(PAL.straw, fr), faceVar: 0.1 }));
-  p.push(blob({ r: 0.5, detail: light ? 0 : 1, jit: 0.16, seed: seed + 6, squash: [0.99, 0.13, 1.05], pos: [0, y0 + 0.1, 0.42], color: (x, y, z, fr) => shade(pick(PAL.hide, fr), 0.95), faceVar: 0.14 }));
+  p.push(blob({ r: 0.5, detail: light ? 0 : 1, jit: 0.12, seed: seed + 5, squash: [0.98, 0.16, 1.7], pos: [0, y0 + 0.02, 0], color: (x, y, z, fr) => pick(PAL.straw, fr), faceVar: 0.1 }));
+  p.push(blob({ r: 0.5, detail: light ? 0 : 1, jit: 0.09, seed: seed + 6, squash: [0.99, 0.12, 1.02], pos: [0, y0 + 0.1, 0.42], color: (x, y, z, fr) => shade(pick(PAL.hide, fr), 0.95), faceVar: 0.14 }));
   p.push(blob({ r: 0.2, detail: 1, jit: 0.15, seed: seed + 7, squash: [1.4, 0.6, 1], pos: [0.02, y0 + 0.16, -0.72], color: (x, y, z, fr) => shade(pick(PAL.hide, fr), 1.1), faceVar: 0.12 }));
   if (sc !== 1) for (const g of p) xf(g, { scale: [sc, 1, sc] });
   return p;
@@ -405,39 +430,49 @@ export function bedGeoms({ seed = 1, roll = false, sc = 1, light = false }) {
 // Stone-and-clay chimney stack of stacked irregular stones (2 per course), clay cap. x,z = base centre.
 export function chimney({ x = 0, z = 0, w = 0.9, d = 0.8, h = 3, seed = 1, D, idBase = 0, taper = 0.75, colors = PAL.stone, y0 = -1, yawJ = 0.1, rowH = 0.42 }) {
   const p = [], rows = Math.max(3, Math.round((h - y0) / rowH));
-  let y = y0;
+  const cut = D && D.level ? 1 - D.thr * 0.85 * (0.6 + 0.8 * frand(seed, idBase, 430)) : 1;   // top part collapses first
+  let y = y0, ytop = y0;
   for (let i = 0; i < rows; i++) {
     const t = (y - y0) / (h - y0), s = lerp(1, taper, t * t), hh = (h - y0) / rows * (0.9 + frand(seed, i, 420) * 0.25);
-    if (D && D.gone(idBase + i, 0.05 + 0.5 * t)) { y += hh; continue; }
+    if (t > cut) break;
     const split = 0.35 + frand(seed, i, 421) * 0.3, ww = w * s;
     for (let k = 0; k < 2; k++) {
       const wa = k ? ww * (1 - split) : ww * split;
       const cx = x + (k ? (-ww / 2 + ww * split + wa / 2) : (-ww / 2 + wa / 2)) + (frand(seed, i, 422) - 0.5) * 0.05;
       p.push(stone({ p: [cx, y + hh / 2, z + (frand(seed, i * 2 + k, 423) - 0.5) * 0.05], s: [wa * 1.02, hh * 1.02, d * s * (0.95 + 0.1 * frand(seed, i, 424))], seed: seed * 31 + i * 2 + k, color: pick(colors, frand(seed, i * 2 + k, 425)), rot: [0, (frand(seed, i, 426) - 0.5) * yawJ * 2, (frand(seed, i, 427) - 0.5) * 0.06], jit: 0.12, moss: y < 0.6 ? 0.3 : 0 }));
-      }
-    y += hh;
+    }
+    y += hh; ytop = y;
   }
-  const cs = lerp(1, taper, 1);
-  p.push(stone({ p: [x, y + 0.06, z], s: [w * cs * 1.2, 0.16, d * cs * 1.2], seed: seed + 9, color: 0x7a6a58, jit: 0.1, bevel: 0.2 }));
-  p.push(stone({ p: [x, y + 0.13, z], s: [w * cs * 0.55, 0.05, d * cs * 0.55], seed: seed + 10, color: 0x1e1a17, jit: 0.1, bevel: 0.1 }));
+  if (cut >= 0.999) {
+    const cs = taper;
+    p.push(stone({ p: [x, ytop + 0.06, z], s: [w * cs * 1.2, 0.16, d * cs * 1.2], seed: seed + 9, color: 0x7a6a58, jit: 0.1, bevel: 0.2 }));
+    p.push(stone({ p: [x, ytop + 0.13, z], s: [w * cs * 0.55, 0.05, d * cs * 0.55], seed: seed + 10, color: 0x1e1a17, jit: 0.1, bevel: 0.1 }));
+  } else if (ytop > 0.2) {
+    // ragged broken top: a couple of leaning stones and fallen ones
+    p.push(stone({ p: [x + 0.12, ytop + 0.1, z], s: [w * 0.4, 0.28, d * 0.5], seed: seed + 11, color: pick(colors, 0.3), rot: [0, 0.4, 0.2], jit: 0.16 }));
+  }
   return p;
 }
 
 // ---- damage --------------------------------------------------------------------------------------------
 // Deterministic per-piece fates. gone(i, bias): bias<1 = sturdier piece. Pieces gone at level k stay gone at k+1.
 export function makeDmg(seed, level) {
-  const thr = [0, 0.06, 0.3, 0.58][level] || 0;
-  const amp = [0, 0.03, 0.12, 0.28][level] || 0;
-  return {
+  const thr = [0, 0.10, 0.32, 0.58][level] || 0;
+  const amp = [0, 0.05, 0.14, 0.3][level] || 0;
+  const forced = new Set();
+  const D = {
     level,
     f: (i, k = 0) => frand(seed, i, 100 + k),
-    gone: (i, bias = 1) => level > 0 && frand(seed, i, 101) < thr * bias,
+    gone: (i, bias = 1) => level > 0 && (forced.has(i) || frand(seed, i, 101) < thr * bias),
     // signed random lean (radians) that grows with level
     lean: (i, k = 0, s = 1) => (frand(seed, i, 110 + k) - 0.5) * 2 * amp * s,
-    // extra bite: pieces that are also shortened/broken at higher levels
-    broken: (i, bias = 1) => level > 1 && frand(seed, i, 120) < (level === 2 ? 0.28 : 0.55) * bias,
+    // extra bite: pieces that are also shortened/broken at higher levels (a few splintered tops already at level 1)
+    broken: (i, bias = 1) => level > 0 && frand(seed, i, 120) < [0, 0.07, 0.3, 0.55][level] * bias,
+    // guarantees that the weakest of n pieces (ids base..base+n-1) is gone from level 1 on (small pieces, visible damage)
+    force: (n, base = 0) => { let bi = base, bv = 2; for (let i = base; i < base + n; i++) { const v = frand(seed, i, 101); if (v < bv) { bv = v; bi = i; } } forced.add(bi); return bi; },
     amp, thr,
   };
+  return D;
 }
 
 // Weathering / scorch / cracks by damage level, applied to the finished merged geometry.
@@ -451,7 +486,7 @@ export function weather(g, level, seed, { scorch = true } = {}) {
     const fr = hash3(cx, cy, cz, 77);
     let m = base;
     if (level > 0 && fr < crackP) m *= 0.62;
-    if (scorch && level > 0) { const d = Math.hypot(cx - sx, cy - sy, cz - sz); m *= 1 - 0.55 * smooth(1.3 * level, 0.2, d) * (level / 3 + 0.3); }
+    if (scorch && level > 0) { const d = Math.hypot(cx - sx, cy - sy, cz - sz); m *= 1 - 0.5 * smooth(0.4 + 0.3 * level, 0.15, d) * (level / 3 + 0.3); }
     for (let k = 0; k < 3; k++) {
       _c.setRGB(c.getX(i + k), c.getY(i + k), c.getZ(i + k));
       if (level > 0) _c.lerp(grey, 0.06 * level);
@@ -473,9 +508,9 @@ export function rubble(parts, { cx = 0, cz = 0, n = 3, spread = 0.6, seed = 1, k
 }
 
 // Vertical, slightly leaning, sharpened stake / post with pointed top. base->top. Returns a log with a cone tip.
-export function stake({ x, z, y0 = -0.4, y1 = 2, r = 0.1, lean = [0, 0], seed = 1, bark = 0x6b4a33, tip = 0.35, cap = PAL.cut, segs = 5, rows = 1 }) {
+export function stake({ x, z, y0 = -0.4, y1 = 2, r = 0.1, lean = [0, 0], seed = 1, bark = 0x6b4a33, tip = 0.35, cap = PAL.cut, segs = 5, rows = 1, bend = 0 }) {
   const top = [x + lean[0] * (y1 - y0), y1, z + lean[1] * (y1 - y0)];
-  const body = log({ a: [x, y0, z], b: [top[0], y1 - tip, top[2]].map((v, i) => v), r, rt: r * 0.85, segs, rows, seed, bark, bark2: shade(bark, 1.1), caps: 1, wobble: 0.012 });
+  const body = log({ a: [x, y0, z], b: [top[0], y1 - tip, top[2]].map((v, i) => v), r, rt: r * 0.85, segs, rows, seed, bark, bark2: shade(bark, 1.1), caps: 1, wobble: 0.012, bend });
   const pt = log({ a: [top[0], y1 - tip, top[2]], b: top, r: r * 0.85, rt: 0.012, segs, rows: 1, seed: seed + 1, bark: cap, bark2: shade(cap, 1.05), caps: 0, wobble: 0, jit: 0.05 });
   return [body, pt];
 }

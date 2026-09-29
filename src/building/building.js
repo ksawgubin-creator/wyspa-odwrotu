@@ -137,7 +137,7 @@ export class BuildingSystem {
         else {
           const stepx = Math.max(0.4, c.hw * 2 / Math.ceil(c.hw * 2 / 0.5)), stepz = Math.max(0.4, c.hd * 2 / Math.ceil(c.hd * 2 / 0.5));
           for (let ix = -c.hw; ix <= c.hw + 1e-6; ix += stepx) for (let iz = -c.hd; iz <= c.hd + 1e-6; iz += stepz) {
-            const cr = Math.cos(-(c.rot || 0)), sr = Math.sin(-(c.rot || 0));
+            const cr = Math.cos(c.rot || 0), sr = Math.sin(c.rot || 0);
             const p = BuildingSystem.toWorld(x, z, ry, c.x + ix * cr + iz * sr, c.z - ix * sr + iz * cr);
             if (test(p.x, p.z, 0.32)) { valid = false; break outer; }
           }
@@ -214,12 +214,11 @@ export class BuildingSystem {
     s.colliders = [];
     if (s.def.walkable) return;
     let cols = s.info?.colliders || [];
-    if (s.def.gate && s.state === 'open') cols = cols.filter((c) => c.kind === 'circle' || c.open === true);   // open gate: only posts stay solid
     for (const c of cols) {
       const p = BuildingSystem.toWorld(s.x, s.z, s.ry, c.x, c.z);
       const base = s.y, top = s.info?.size?.h ?? 2.5;
       if (c.kind === 'circle') s.colliders.push(this.game.colliders.add({ x: p.x, z: p.z, r: c.r, base, top, tag: 'building', ref: s, noCamera: false }));
-      else s.colliders.push(this.game.colliders.add({ x: p.x, z: p.z, hw: c.hw, hd: c.hd, rot: -(s.ry) + (c.rot || 0), base, top, tag: 'building', ref: s }));
+      else s.colliders.push(this.game.colliders.add({ x: p.x, z: p.z, hw: c.hw, hd: c.hd, rot: -(s.ry + (c.rot || 0)), base, top, tag: 'building', ref: s }));
     }
   }
   remove(s) {

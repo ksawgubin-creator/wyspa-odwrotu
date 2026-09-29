@@ -118,7 +118,7 @@ export function buildDebris(type, seed = 0) {
   if (!geo) {
     const info = BUILDING_TYPES[type] || { mat: 'wood' }, parts = [], n = 8 + (frand(s, 1) * 4 | 0);
     const kind = (i) => info.mat === 'stone' ? 'stone' : info.mat === 'iron' ? (i % 2 ? 'plank' : 'stone') : info.mat === 'mixed' ? (i % 2 ? 'stone' : 'log') : (i % 3 === 0 ? 'log' : 'plank');
-    for (let i = 0; i < n; i++) rubble(parts, { cx: (frand(s, i, 3) - 0.5) * 1.2, cz: (frand(s, i, 4) - 0.5) * 1.2, n: 1, spread: 0.1, seed: s * 50 + i * 3 + typeIdx(type), kind: kind(i), size: 0.28 + frand(s, i, 5) * 0.2 });
+    for (let i = 0; i < n; i++) rubble(parts, { cx: (frand(s, i, 3) - 0.5) * 1.2, cz: (frand(s, i, 4) - 0.5) * 1.2, n: 1, spread: 0.1, seed: s * 50 + i * 3 + typeIdx(type), kind: kind(i), size: 0.2 + frand(s, i, 5) * 0.16 });
     geo = merge(parts); dcache.set(key, geo);
   }
   const g = new THREE.Group(); g.name = 'debris:' + type;

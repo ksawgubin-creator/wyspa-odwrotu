@@ -1,7 +1,7 @@
 // Fortifications: palisade_wall, stone_wall, spike_wall (all 2.0 m modules, snap end-to-end along local X),
 // gate (closed/open) and watchtower. Local +Z = outside/front. Damage: pieces removed/tilted/broken via B.D,
 // wall openings via wearOpenings (holes + crown collapse), rubble at the base, whole-structure lean via shear().
-import { blob, stone, log, beam, band, anchor, slab, roofSlope, subtract, shear, wearOpenings, masonry, rubble, xf, PAL, pick, shade, lerp, clamp, TAU, V3, frand, stake } from './kit.js';
+import { blob, stone, log, beam, band, anchor, slab, roofSlope, subtract, shear, rotAbout, wearOpenings, masonry, rubble, xf, PAL, pick, shade, lerp, clamp, TAU, V3, frand, stake } from './kit.js';
 
 const ROPE = PAL.rope;
 const spike = ({ a, b, r = 0.08, seed = 1, bark = 0x6b4a33, cap = PAL.cut }) => log({ a, b, r, rt: 0.012, segs: 5, rows: 1, seed, bark, bark2: shade(cap, 0.92), caps: 1, wobble: 0.01, jit: 0.08, faceVar: 0.12 });
@@ -10,6 +10,7 @@ const spike = ({ a, b, r = 0.08, seed = 1, bark = 0x6b4a33, cap = PAL.cut }) => 
 export function palisade_wall(B) {
   const r = B.r, D = B.D, s = B.seed, L = B.level, N = 8;
   const fallen = [];
+  D.force(N);
   B.add(anchor({ hw: 0.9, hd: 0.2, top: -0.2, bottom: -1, seed: 2, color: 0x33291f }));
   for (let i = 0; i < N; i++) {
     const x = -0.905 + i * (1.81 / (N - 1)) + (frand(s, i, 1) - 0.5) * 0.05, rad = 0.115 + frand(s, i, 2) * 0.075;
@@ -17,7 +18,7 @@ export function palisade_wall(B) {
     const h = 2.3 + frand(s, i, 4) * 0.5 + (i % 3 === 1 ? 0.0 : 0.0);
     const bark = pick(frand(s, i, 5) < 0.25 ? PAL.grey : PAL.log, frand(s, i, 6));
     if (D.gone(i, 0.9)) { if (L >= 2 && frand(s, i, 7) < 0.6) fallen.push([x, zc, rad]); continue; }
-    const lx = D.lean(i, 0, 1) / 2 + (frand(s, i, 8) - 0.5) * 0.035, lz = D.lean(i, 1, 0.9) / 2 + (frand(s, i, 9) - 0.5) * 0.02;
+    const lx = D.lean(i, 0, 1) / 2 + (frand(s, i, 8) - 0.5) * 0.06, lz = D.lean(i, 1, 0.9) / 2 + (frand(s, i, 9) - 0.5) * 0.03;
     if (D.broken(i, 0.95)) {
       const hb = h * (0.35 + frand(s, i, 10) * 0.35), top = [x + lx * (hb + 1), hb, zc + lz * (hb + 1)];
       B.add(log({ a: [x, -1, zc], b: top, r: rad, rt: rad * 0.85, segs: 5, rows: 1, seed: i + s * 9, bark, bark2: shade(bark, 1.08), cap: PAL.cut, caps: 2, wobble: 0.015 }));
@@ -26,7 +27,7 @@ export function palisade_wall(B) {
       if (L >= 2 && frand(s, i, 12) < 0.7) fallen.push([x + 0.1, zc, rad * 0.9, h - hb]);
       continue;
     }
-    B.add(stake({ x, z: zc, y0: -1, y1: h, r: rad, lean: [lx, lz], seed: i + s * 9, bark, tip: 0.3 + frand(s, i, 13) * 0.15 }));
+    B.add(stake({ x, z: zc, y0: -1, y1: h, r: rad, lean: [lx, lz], seed: i + s * 9, bark, tip: 0.3 + frand(s, i, 13) * 0.15, rows: 2, bend: (frand(s, i, 14) - 0.5) * 0.09 }));
   }
   // horizontal rails at the back, bound to the logs with rope (rope hangs slack between logs)
   const rails = [0.65, 1.7];
@@ -95,6 +96,7 @@ export function spike_wall(B) {
 
 // ---- gate ---------------------------------------------------------------------------------------------------------------------
 function gateLeaf(B, sgn, k) {
+  B.D.force(5, 300 + k * 10);
   // leaf built with the hinge at the origin, extending along sgn*x (0..0.95); 5 uneven planks, 3 cross bars, brace, iron straps
   const D = B.D, s = B.seed, parts = [];
   const cols = [PAL.wood[3], PAL.grey[0], PAL.wood[1], PAL.grey[1], PAL.wood[5]];
@@ -179,6 +181,7 @@ export function watchtower(B) {
     B.add(beam({ a: [-0.36, y, z], b: [0.36, y + (frand(s, i, 6) - 0.5) * 0.04, z], w: 0.05, t: 0.05, color: pick(PAL.wood, frand(s, i, 7)), seed: i, endCol: PAL.cutOld, up: [0, 1, 0], jit: 0.12 }));
   }
   B.label = 'deck';
+  const iTop = B.parts.length;
   // deck boards along X with gaps; ladder hole at the front
   const joist = (x, id) => { if (D.gone(id, 0.4)) return; B.add(beam({ a: [x, PLAT - 0.16, -1.65], b: [x + 0.02, PLAT - 0.16, 1.65], w: 0.14, t: 0.16, color: PAL.wood[2], seed: id, endCol: PAL.cutOld, up: [0, 1, 0] })); };
   joist(-1.0, 770); joist(0.0, 771); joist(1.0, 772);
@@ -204,12 +207,14 @@ export function watchtower(B) {
   }
   B.label = 'roof';
   // small gable roof of ragged thatch over the platform
-  const yE = 6.12, yR = 6.85, zf = 1.85, ex = 1.95;
+  const yE = 6.12, yR = 6.85, zf = 1.85, ex = 1.8;
   if (!D.gone(900, 0.2)) B.add(beam({ a: [-ex - 0.1, yR - 0.14, 0], b: [ex + 0.1, yR - 0.14, 0.02], w: 0.14, t: 0.16, color: PAL.wood[0], seed: 5, endCol: PAL.cutOld, up: [0, 1, 0] }));
   for (const [front, id] of [[true, 1000], [false, 2000]]) {
     const O = V3(-ex, yE, front ? zf : -zf), V = V3(0, yR - yE, front ? -zf : zf);
     B.add(roofSlope({ O, U: V3(ex * 2, 0, 0), V, out: V3(0, 1, front ? 1 : -1), nu: 2, nv: 2, rows: 3, tw: 0.4, drop: 0.5, thick: 0.1, seed: s * 5 + (front ? 1 : 2), D, idBase: id, holeBias: 0.9, colors: PAL.thatch, baseColor: 0x6a5a34, ragged: 0.5 }));
   }
+  // the platform sags / tilts off one corner as the structure fails
+  if (L >= 2) rotAbout(B.parts.slice(iTop), [1.3, 4.7, -1.3], [D.lean(300, 1, 1.0) * 1.4 * (L - 1), 0, D.lean(301, 2, 1.0) * 1.4 * (L - 1) - 0.05 * (L - 1)]);
   if (L >= 1) rubble(B.parts, { cx: 0, cz: 0, n: L * 3, spread: 2.6, seed: 91 + s, kind: 'plank', size: 0.6 });
   if (L >= 2) rubble(B.parts, { cx: 0, cz: 0, n: L * 2, spread: 2.4, seed: 95 + s, kind: 'log', size: 0.8 });
   if (L > 0) shear(B.parts, D.lean(1, 9, 1.0) * 0.6, D.lean(2, 9, 1.0) * 0.6);

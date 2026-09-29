@@ -14,10 +14,10 @@ export function bed(B) {
 }
 
 // ---- leanto: teepee of leaning poles covered with layered leaves, open front ------------------------------------------
-function teepeeCover(B, { R0, apexY, apexZ, openHalf, rings = 5, around = 12 }) {
+function teepeeCover(B, { R0, apexY, apexZ, openHalf, rings = 5, around = 12, ex = 1, ez = 1, dryP = 0.22 }) {
   const D = B.D, tri = [], colr = [];
   const rad = (y) => R0 * (1 - y / apexY) + 0.1;
-  const P = (th, y, sag = 0) => { const rr = rad(y) + sag; return V3(Math.sin(th) * rr, y, Math.cos(th) * rr + apexZ * (y / apexY)); };
+  const P = (th, y, sag = 0) => { const rr = rad(y) + sag; return V3(Math.sin(th) * rr * ex, y, Math.cos(th) * rr * ez + apexZ * (y / apexY)); };
   const th0 = openHalf + 0.02, th1 = TAU - openHalf - 0.02, dth = (th1 - th0) / around;
   const push = (a, b, c, N, ca, cb, cc) => {
     const nn = b.clone().sub(a).cross(c.clone().sub(a));
@@ -48,7 +48,7 @@ function teepeeCover(B, { R0, apexY, apexZ, openHalf, rings = 5, around = 12 }) 
           const lift = 0.05 + 0.02 * rw;
           const tl = P(tc - wa, yt).addScaledVector(N, lift), tr = P(tc + wa, yt).addScaledVector(N, lift);
           const bl = P(tc - wa * 0.8, yt - dl).addScaledVector(N, lift + 0.16), br = P(tc + wa * 0.8, yt - dr).addScaledVector(N, lift + 0.16);
-          const c0 = new THREE.Color(pick(frand(B.seed, key, 8) < 0.22 ? PAL.dryLeaf : PAL.leaf, frand(B.seed, key, 9))), top = c0.clone().multiplyScalar(0.65), tip = c0.clone().multiplyScalar(1.08);
+          const c0 = new THREE.Color(pick(frand(B.seed, key, 8) < dryP ? PAL.dryLeaf : PAL.leaf, frand(B.seed, key, 9))), top = c0.clone().multiplyScalar(0.65), tip = c0.clone().multiplyScalar(1.08);
           push(tl, tr, br, N, top, top, tip); push(tl, br, bl, N, top, tip, tip);
         }
       }
@@ -60,59 +60,64 @@ function teepeeCover(B, { R0, apexY, apexZ, openHalf, rings = 5, around = 12 }) 
 }
 
 export function leanto(B) {
-  const r = B.r, D = B.D, R0 = 1.5, apex = V3(0.05, 2.1, -0.15), openHalf = 0.98, nP = 13;
+  const r = B.r, D = B.D, s = B.seed;
+  // seed variants: slightly oval footprint, apex offset, pole count, door width, height, leaf age, small extras in front
+  const R0 = 1.42 + 0.06 * (s % 4), ex = 1 + ((s % 3) - 1) * 0.1, ez = 1 - ((s % 3) - 1) * 0.07;
+  const apex = V3((frand(s, 1, 500) - 0.5) * 0.3, 1.95 + 0.07 * (s % 4), (frand(s, 2, 500) - 0.5) * 0.25 - 0.1);
+  const openHalf = 0.9 + 0.045 * (s % 3), nP = 11 + (s % 3) * 2, dryP = [0.15, 0.35, 0.55, 0.2, 0.45, 0.3][s];
   B.add(anchor({ hw: 1.3, hd: 1.3, top: 0.0, bottom: -1, seed: 4, color: 0x3a2e22 }));
   // poles: leaning from a ring on the ground (sunk in) up to the apex, crossing there
   for (let i = 0; i < nP; i++) {
     if (i > 0 && i < nP - 1 && D.gone(100 + i, 0.55)) continue;
     const th = openHalf + (i / (nP - 1)) * (TAU - 2 * openHalf) + (r() - 0.5) * 0.12 + D.lean(i, 0, 0.6);
-    const rb = R0 * (0.95 + 0.12 * r()), base = V3(Math.sin(th) * rb, 0, Math.cos(th) * rb);
+    const rb = R0 * (0.95 + 0.12 * r()), base = V3(Math.sin(th) * rb * ex, 0, Math.cos(th) * rb * ez);
     const top = apex.clone().add(V3((r() - 0.5) * 0.16, (r() - 0.5) * 0.1, (r() - 0.5) * 0.16));
-    const dir = base.clone().sub(top), ext = 1.42;
+    const dir = base.clone().sub(top), ext = 1.25;
     const lo = top.clone().addScaledVector(dir, ext), hi = top.clone().addScaledVector(dir, -0.18);
     const door = i === 0 || i === nP - 1;
     let brk = D.broken(i, 0.5) && !door; const mid = brk ? 0.55 : 1;
     B.add(log({ a: lo, b: brk ? top.clone().addScaledVector(dir, 0.45) : hi, r: door ? 0.075 : 0.05 + r() * 0.02, rt: door ? 0.05 : 0.035, segs: 5, rows: 2, seed: i + 10 * B.seed, bark: pick(PAL.wood, r()), bark2: pick(PAL.bark, r()), caps: brk ? 3 : 2, wobble: 0.03, bend: (r() - 0.5) * 0.08 }));
   }
-  teepeeCover(B, { R0, apexY: apex.y - 0.1, apexZ: apex.z, openHalf, rings: 5, around: 12 });
+  teepeeCover(B, { R0, apexY: apex.y - 0.1, apexZ: apex.z, openHalf, rings: 5, around: 12, ex, ez, dryP });
   // door poles lashed with rope; a couple of horizontal binding withies
   for (const s of [-1, 1]) for (const h of [0.55, 1.15, 1.7]) {
     const th = s > 0 ? openHalf : TAU - openHalf, y = h, rr = R0 * (1 - y / apex.y) + 0.1;
-    B.add(band({ c: [Math.sin(th) * rr, y, Math.cos(th) * rr + apex.z * (y / apex.y)], d: [Math.cos(th) * 0.3, 1, -Math.sin(th) * 0.3], r: 0.085 - h * 0.012, h: 0.06, color: PAL.rope, seed: h * 9 + s }));
+    B.add(band({ c: [Math.sin(th) * rr * ex, y, Math.cos(th) * rr * ez + apex.z * (y / apex.y)], d: [Math.cos(th) * 0.3, 1, -Math.sin(th) * 0.3], r: 0.085 - h * 0.012, h: 0.06, color: PAL.rope, seed: h * 9 + s }));
   }
-  // hide flap tied back at one door pole
-  const sgn = B.seed % 2 ? 1 : -1;
-  B.add(slab({ p: [V3(sgn * 0.75, 1.75, 1.2), V3(sgn * 1.15, 1.7, 0.75), V3(sgn * 1.25, 0.65, 0.85), V3(sgn * 0.9, 0.7, 1.28)], thick: 0.04, N: V3(sgn * 0.5, 0.2, 1), color: 0x8a6a4a, color2: 0x6f5238, seed: 4 }));
   // weight stones on the leaf skirt
   for (let i = 0; i < 7; i++) {
     const th = openHalf + 0.25 + (i / 6) * (TAU - 2 * openHalf - 0.5) + (r() - 0.5) * 0.2, rr = R0 * 1.02 + 0.12, sz = 0.16 + r() * 0.16;
-    B.add(stone({ p: [Math.sin(th) * rr, sz * 0.25, Math.cos(th) * rr], s: [sz * 1.3, sz, sz * 1.1], rot: [0, th, 0], seed: 40 + i, color: pick(PAL.stone, r()), round: r() < 0.5, moss: 0.4 }));
+    B.add(stone({ p: [Math.sin(th) * rr * ex, sz * 0.25, Math.cos(th) * rr * ez], s: [sz * 1.3, sz, sz * 1.1], rot: [0, th, 0], seed: 40 + i, color: pick(PAL.stone, r()), round: r() < 0.5, moss: 0.4 }));
   }
   // bedroll along the back-right, small fire-stones at the door
   B.add(bedGeoms({ seed: B.seed + 2, roll: true, sc: 0.85 }).map((g) => xf(g, { pos: [0.05, 0, -0.62], rot: [0, Math.PI / 2 + 0.05, 0] })));
+  // little extras by seed: a stone fire ring + seat log, a stacked bundle of firewood, or a hide stretched on a frame
+  if (s % 3 === 0) { for (let i = 0; i < 6; i++) { const a = i / 6 * TAU + r() * 0.3; B.add(stone({ p: [Math.cos(a) * 0.32 + 0.9, 0.06, 2.1 + Math.sin(a) * 0.32], s: [0.2, 0.14, 0.16], seed: 60 + i, color: pick(PAL.stone, r()), round: true, rot: [0, a, 0], moss: 0.3 })); } B.add(log({ a: [-0.2, 0.13, 2.25], b: [0.5, 0.13, 2.3], r: 0.12, segs: 5, rows: 1, seed: 7, bark: pick(PAL.log, 0.3), caps: 3 })); }
+  else if (s % 3 === 1) { for (let i = 0; i < 6; i++) B.add(log({ a: [-1.5 + (i % 3) * 0.2 + (i > 2 ? 0.1 : 0), 0.08 + (i > 2 ? 0.14 : 0), 1.7 + (i % 2) * 0.05], b: [-1.5 + (i % 3) * 0.2 + (i > 2 ? 0.1 : 0) - 0.4, 0.08 + (i > 2 ? 0.14 : 0), 2.6], r: 0.07, segs: 5, rows: 1, seed: 70 + i, bark: pick(PAL.bark, r()), caps: 3 })); }
+  else { for (let i = 0; i < 5; i++) { const a = i / 5 * TAU + r() * 0.3; B.add(stone({ p: [-0.9 + Math.cos(a) * 0.3, 0.06, 2.15 + Math.sin(a) * 0.3], s: [0.22, 0.15, 0.17], seed: 90 + i, color: pick(PAL.stone, r()), round: true, rot: [0, a, 0], moss: 0.3 })); } B.add(log({ a: [0.3, 0.12, 2.3], b: [1.0, 0.12, 2.15], r: 0.11, segs: 5, rows: 1, seed: 8, bark: pick(PAL.log, 0.6), caps: 3 })); }
   if (B.level >= 2) rubble(B.parts, { cx: 0, cz: 1.9, n: B.level * 2, spread: 1.4, seed: 31, kind: 'log', size: 0.6 });
   if (B.level > 0) shear(B.parts, D.lean(1, 5, 0.9), D.lean(2, 6, 0.5));
   // colliders: back arc as chord boxes; the front sector (approx 1.9*R wide at the base) stays open
   const segs = 6, th0 = openHalf + 0.05, span = TAU - 2 * openHalf - 0.1;
   for (let i = 0; i < segs; i++) {
     const ta = th0 + (i / segs) * span, tb = th0 + ((i + 1) / segs) * span, tm = (ta + tb) / 2, Rr = 1.42, chord = 2 * Rr * Math.sin((tb - ta) / 2);
-    B.box(Math.sin(tm) * Rr, Math.cos(tm) * Rr - 0.1, chord / 2 + 0.12, 0.2, tm);
+    B.box(Math.sin(tm) * Rr * ex, Math.cos(tm) * Rr * ez - 0.1, chord / 2 + 0.12, 0.2, tm);
   }
   B.interact.door = { x: 0, z: 1.6 }; B.interact.bed = { x: 0.05, z: -0.62 };
 }
 
 // ---- wooden hut ---------------------------------------------------------------------------------------------------------
-const barkOf = (r) => { const c = pick(PAL.bark, r); return c; };
-function logWallFront(B, o) { /* placeholder replaced below */ }
-
 export function wooden_hut(B) {
   const r = B.r, D = B.D, s = B.seed, L = B.level;
-  const HW = 2.2, yE = 2.1, yR = 3.2, xr = 0.2 + (s % 3 - 1) * 0.08, xL = -2.78, xR = 2.7, y0 = 0.14;
+  // seed variants: door position, window wall, roof pitch/ridge offset, chimney position, thatch age, firewood side
+  const dx = [0, 0.75, -0.75, 0.4, -0.4, 0][s], win = [{ wall: 3, a: -0.55, b: 0.45 }, { wall: 2, a: 0.25, b: 1.1 }, { wall: 1, a: -0.45, b: 0.45 }, { wall: 3, a: 0.3, b: 1.3 }, { wall: 2, a: -1.2, b: -0.3 }, { wall: 1, a: -0.6, b: 0.3 }][s];
+  const HW = 2.2, yE = 2.1, yR = 3.2 + ((s % 3) - 1) * 0.07, xr = [0.2, -0.15, 0.4, 0.05, 0.3, -0.3][s], xL = -2.78, xR = 2.7, y0 = 0.14;
+  const thatchCols = s < 3 ? PAL.thatch : [0x9a8f68, 0x8a7f5a, 0xa89e78, 0x7a704e, 0x9a9070, 0xb0a67c];
   const roofY = (x) => (x < xr ? yE + (yR - yE) * (x - xL) / (xr - xL) : yR - (yR - yE - 0.05) * (x - xr) / (xR - xr));
   const woodPal = (i) => pick(PAL.log, frand(s, i, 30));
   // ---- courses (shared radii for the 4 walls so corners interlock at half-offsets)
   const courses = []; let y = y0;
-  for (let k = 0; k < 14; k++) { const rho = 0.15 + frand(s, k, 31) * 0.07, yc = y + rho; courses.push({ y: yc, rho }); y = yc + rho * 0.9; if (y > 3.05) break; }
+  for (let k = 0; k < 14; k++) { const rho = 0.18 + frand(s, k, 31) * 0.1, yc = y + rho; courses.push({ y: yc, rho }); y = yc + rho * 0.9; if (y > 3.05) break; }
   const fallen = [];
   // openings per wall (wall-local coords along wall: x for front/back, z for sides)
   const wear = (w, len) => wearOpenings({ seed: s * 7 + w, level: L, len, H: yE + 0.2, holes: 1, holeW: 0.7, holeH: 0.7, crown: 1, steps: 5 });
@@ -139,7 +144,8 @@ export function wooden_hut(B) {
         segs = [[Math.max(xl, -2.48), Math.min(xrr, 2.48)]];
       }
       const holes = [];
-      if (wall === 0 && c.y - c.rho < 1.98) holes.push([-0.68, 0.68]);
+      if (wall === 0 && c.y - c.rho < 1.98) holes.push([dx - 0.68, dx + 0.68]);
+      if (wall === 1 && win.wall === 1 && c.y > 1.02 && c.y < 1.62) holes.push([win.a, win.b]);
       for (const o of wearOf[wall]) if (o[2] < c.y + c.rho && o[3] > c.y - c.rho) holes.push([o[0], o[1]]);
       subtract(segs, holes, 0.25).forEach(([a, b], si) => wallLog(k * 8 + wall * 2 + si + 200, wall, a, b, c.y, c.rho, k));
     }
@@ -148,8 +154,7 @@ export function wooden_hut(B) {
     if (yz + c.rho > yE + 0.02) return;
     for (const wall of [2, 3]) {
       const holes = [];
-      if (wall === 3 && yz > 1.02 && yz < 1.62) holes.push([-0.55, 0.45]);
-      if (wall === 2 && yz > 1.05 && yz < 1.55 && s % 2) holes.push([0.3, 1.0]);
+      if (win.wall === wall && yz > 1.02 && yz < 1.62) holes.push([win.a, win.b]);
       for (const o of wearOf[wall]) if (o[2] < yz + c.rho && o[3] > yz - c.rho) holes.push([o[0], o[1]]);
       subtract([[-2.48, 2.48]], holes, 0.25).forEach(([a, b], si) => wallLog(k * 8 + wall * 2 + si + 400, wall, a, b, yz, c.rho, k));
     }
@@ -164,16 +169,20 @@ export function wooden_hut(B) {
   for (let i = 0; i < 3; i++) B.add(beam({ a: [-1.95, 0.07, -1.5 + i * 0.36], b: [1.95, 0.07, -1.5 + i * 0.36 + (frand(s, i, 55) - 0.5) * 0.06], w: 0.3, t: 0.03, color: pick(PAL.grey, frand(s, i, 56)), seed: i, endCol: PAL.cutOld, up: [0, 1, 0] }));
   B.label = 'door/window';
   // door frame: crooked jamb planks + heavy header + threshold stone
-  for (const sx of [-1, 1]) if (!D.gone(60 + (sx > 0), 0.3)) B.add(beam({ a: [sx * 0.74, -0.05, HW + 0.02], b: [sx * (0.72 + D.lean(70, sx, 0.3)), 2.0, HW], w: 0.17, t: 0.14, color: pick(PAL.wood, frand(s, sx, 57)), seed: 3 + sx, endCol: PAL.cutOld, up: [0, 0, 1] }));
-  if (!D.gone(62, 0.25)) B.add(beam({ a: [-1.05, 2.06, HW + 0.2], b: [1.05, 2.09 + D.lean(63, 0, 0.1), HW + 0.2], w: 0.18, t: 0.14, color: pick(PAL.wood, 0.3), seed: 9, endCol: PAL.cutOld, up: [0, 0, 1] }));
-  B.add(stone({ p: [0.05, 0.02, HW + 0.62], s: [1.2, 0.14, 0.62], seed: 33, color: 0x8a857a, jit: 0.1, bevel: 0.1, rot: [0, 0.06, 0] }));
-  // window: sill, jambs and a loose shutter (right wall)
-  B.add(beam({ a: [HW + 0.22, 0.98, -0.62], b: [HW + 0.22, 0.98 + 0.02, 0.55], w: 0.16, t: 0.06, color: 0x7a5d40, seed: 13, endCol: PAL.cutOld, up: [0, 1, 0] }));
-  for (const z of [-0.6, 0.5]) B.add(beam({ a: [HW + 0.05, 0.9, z], b: [HW + 0.05, 1.8, z + (z > 0 ? 0.02 : -0.01)], w: 0.08, t: 0.1, color: pick(PAL.wood, 0.6), seed: 14 + z, endCol: PAL.cutOld, up: [1, 0, 0] }));
-  if (!D.gone(64, 0.5)) B.add(beam({ a: [HW + 0.3, 1.72, 0.52], b: [HW + 0.62, 1.05, 0.9 + D.lean(65, 0, 1)], w: 0.44, t: 0.035, color: pick(PAL.grey, 0.4), seed: 21, endCol: PAL.cutOld, up: [1, 0, 0.3] }));
+  for (const sx of [-1, 1]) if (!D.gone(60 + (sx > 0), 0.3)) B.add(beam({ a: [dx + sx * 0.74, -0.05, HW + 0.02], b: [dx + sx * (0.72 + D.lean(70, sx, 0.3)), 2.0, HW], w: 0.17, t: 0.14, color: pick(PAL.wood, frand(s, sx, 57)), seed: 3 + sx, endCol: PAL.cutOld, up: [0, 0, 1] }));
+  if (!D.gone(62, 0.25)) B.add(beam({ a: [dx - 1.05, 2.06, HW + 0.2], b: [dx + 1.05, 2.09 + D.lean(63, 0, 0.1), HW + 0.2], w: 0.18, t: 0.14, color: pick(PAL.wood, 0.3), seed: 9, endCol: PAL.cutOld, up: [0, 0, 1] }));
+  B.add(stone({ p: [dx + 0.05, 0.02, HW + 0.62], s: [1.2, 0.14, 0.62], seed: 33, color: 0x8a857a, jit: 0.1, bevel: 0.1, rot: [0, 0.06, 0] }));
+  // window: sill, jambs and a loose shutter on the chosen wall
+  {
+    const wl = win.wall, pt = (u, y, off) => (wl === 3 ? [HW + off, y, u] : wl === 2 ? [-HW - off, y, u] : [u, y, -HW - off]);
+    const nrm = wl === 3 ? [1, 0, 0] : wl === 2 ? [-1, 0, 0] : [0, 0, -1];
+    B.add(beam({ a: pt(win.a - 0.08, 0.98, 0.22), b: pt(win.b + 0.08, 1.0, 0.22), w: 0.16, t: 0.06, color: 0x7a5d40, seed: 13, endCol: PAL.cutOld, up: [0, 1, 0] }));
+    for (const u of [win.a - 0.02, win.b + 0.03]) B.add(beam({ a: pt(u, 0.9, 0.05), b: pt(u + 0.015, 1.8, 0.05), w: 0.08, t: 0.1, color: pick(PAL.wood, 0.6), seed: 14 + u, endCol: PAL.cutOld, up: nrm }));
+    if (!D.gone(64, 0.5)) B.add(beam({ a: pt(win.b + 0.02, 1.72, 0.3), b: pt(win.b + 0.4 + D.lean(65, 0, 1), 1.05, 0.62), w: 0.44, t: 0.035, color: pick(PAL.grey, 0.4), seed: 21, endCol: PAL.cutOld, up: [nrm[0] * 0.8, 0.2, nrm[2] * 0.8] }));
+  }
   B.label = 'roof';
   // ---- roof: rafters, ridge roll, two slopes of ragged thatch (asymmetric, sagging), verge poles
-  const zb = -2.98, zf = 3.0, Lz = zf - zb;
+  const zb = -2.85, zf = 2.85, Lz = zf - zb;
   const slopes = [
     { O: V3(xL - 0.05, yE - 0.06, zb), V: V3(xr - xL + 0.05, yR - yE + 0.06, 0), out: V3(-1, 1, 0), id: 1000, left: true },
     { O: V3(xR + 0.1, yE - 0.14, zb), V: V3(xr - xR - 0.1, yR - yE + 0.14, 0), out: V3(1, 1, 0), id: 2000, left: false },
@@ -186,8 +195,8 @@ export function wooden_hut(B) {
       const a = sl.O.clone().add(V3(0, 0, z - zb)).addScaledVector(nrm, -0.12), b = a.clone().add(sl.V.clone().multiplyScalar(0.985));
       B.add(beam({ a, b, w: 0.11, t: 0.13, color: pick(PAL.wood, frand(s, i + sl.id, 61)), seed: i + sl.id, up: nrm, endCol: PAL.cutOld, jit: 0.1 }));
     }
-    B.add(roofSlope({ O: sl.O.clone(), U: V3(0, 0, Lz), V: sl.V, out: sl.out, nu: 3, nv: 2, rows: 5, tw: 0.36, drop: 0.5, thick: 0.2, seed: s * 5 + (sl.left ? 1 : 2), D, idBase: sl.id, holeBias: 0.85, style: 'thatch', ragged: 0.5,
-      colors: PAL.thatch, baseColor: 0x6a5a34, warp: (u, v) => -0.1 * Math.sin(u * Math.PI) * (0.4 + v * 0.6) + 0.06 * Math.sin(u * 9 + v * 5 + s) * Math.sin(v * 3 + u) }));
+    B.add(roofSlope({ O: sl.O.clone(), U: V3(0, 0, Lz), V: sl.V, out: sl.out, nu: 3, nv: 2, rows: 4, tw: 0.44, drop: 0.55, thick: 0.2, seed: s * 5 + (sl.left ? 1 : 2), D, idBase: sl.id, holeBias: 0.85, style: 'thatch', ragged: 0.5,
+      colors: thatchCols, baseColor: 0x8a7444, warp: (u, v) => -0.1 * Math.sin(u * Math.PI) * (0.4 + v * 0.6) + 0.06 * Math.sin(u * 9 + v * 5 + s) * Math.sin(v * 3 + u) }));
   }
   if (!D.gone(3000, 0.3)) {
     for (let i = 0; i < 2; i++) B.add(log({ a: [xr + (i - 0.5) * 0.2, yR + 0.02 + i * 0.03, zb - 0.15], b: [xr + (i - 0.5) * 0.2 + 0.04, yR + 0.02 + i * 0.03, zf + 0.15], r: 0.17, rt: 0.15, segs: 6, rows: 3, seed: 7 + i, bark: 0xa8914a, bark2: 0x8f7a3c, cap: 0xc9b062, wobble: 0.05, bend: 0.06, faceVar: 0.14 }));
@@ -196,14 +205,14 @@ export function wooden_hut(B) {
   B.add(log({ a: [xr - 0.02, yR - 0.08, zb - 0.55], b: [xr, yR - 0.1, zf + 0.55], r: 0.1, rt: 0.085, segs: 5, rows: 2, seed: 4, bark: 0x5a4432, caps: 3, wobble: 0.03 }));
   B.label = 'chimney';
   // ---- stone & clay chimney stub on the back wall (outside), leaning slightly with damage
-  const chx = -1.15 + (s % 2) * 0.1;
-  B.add(chimney({ x: chx, z: -2.82, w: 0.95, d: 0.85, h: 3.05, seed: s + 3, D, idBase: 5000, taper: 0.72, rowH: 0.55 }));
+  const chx = [-1.15, -1.3, 1.3, 1.2, -1.4, 1.25][s];
+  B.add(chimney({ x: chx, z: -2.72, w: 0.95, d: 0.85, h: 3.05, seed: s + 3, D, idBase: 5000, taper: 0.72, rowH: 0.7 }));
   B.label = 'interior';
   // ---- bed inside (left/back), a stool, hanging herbs
-  B.add(bedGeoms({ seed: s + 1, light: true }).map((g) => xf(g, { pos: [-1.5, 0, -1.02] })));
-  B.add(log({ a: [1.2, 0.0, -1.5], b: [1.2, 0.36, -1.5], r: 0.2, rt: 0.19, segs: 6, rows: 1, seed: 8, bark: 0x7a5a3c, cap: PAL.cut, caps: 2 }));
+  B.add(bedGeoms({ seed: s + 1, light: 2 }).map((g) => xf(g, { pos: [-1.5, 0, -1.02] })));
   // stacked firewood by the front wall
-  for (let i = 0; i < 6; i++) { const x = -2.0 - 0.32 * (i % 3) + (i > 2 ? 0.16 : 0), yy = 0.11 + (i > 2 ? 0.19 : 0); B.add(log({ a: [x, yy, 2.62 - (i % 2) * 0.05], b: [x + 0.02, yy, 3.5], r: 0.085, segs: 5, rows: 1, seed: 90 + i, bark: pick(PAL.bark, frand(s, i, 80)), cap: PAL.cut, caps: 3 })); }
+  const fs = dx > 0.2 || (dx === 0 && s === 0) ? -1 : 1;
+  for (let i = 0; i < 5; i++) { const x = fs * (2.0 + 0.32 * (i % 3) - (i > 2 ? 0.16 : 0)), yy = 0.11 + (i > 2 ? 0.19 : 0); B.add(log({ a: [x, yy, 2.62 - (i % 2) * 0.05], b: [x + 0.02, yy, 3.5], r: 0.085, segs: 5, rows: 1, seed: 90 + i, bark: pick(PAL.bark, frand(s, i, 80)), cap: PAL.cut, caps: 3 })); }
   // ---- rubble / fallen logs
   for (const [wall, u, rho] of fallen) {
     const ox = wall === 3 ? 2.9 : wall === 2 ? -2.9 : u, oz = wall === 0 ? 3.0 : wall === 1 ? -3.0 : u;
@@ -213,10 +222,10 @@ export function wooden_hut(B) {
   if (L >= 2) rubble(B.parts, { cx: 0, cz: 0, n: L * 2, spread: 2.0, seed: 33, kind: 'plank', size: 0.5 });
   if (L > 0) shear(B.parts, D.lean(1, 7, 1), D.lean(2, 8, 0.8));
   // colliders (walls), door gap 1.36 m, window not walkable; chimney box
-  B.box(-1.59, HW, 0.91 + 0.28, 0.28, 0); B.box(1.59, HW, 0.91 + 0.28, 0.28, 0);
+  B.box((-2.78 + dx - 0.68) / 2, HW, (dx - 0.68 + 2.78) / 2, 0.28, 0); B.box((dx + 0.68 + 2.78) / 2, HW, (2.78 - dx - 0.68) / 2, 0.28, 0);
   B.box(0, -HW, 2.78, 0.28, 0); B.box(-HW, 0, 0.28, 2.5, 0); B.box(HW, 0, 0.28, 2.5, 0);
-  B.box(chx, -2.82, 0.5, 0.45, 0);
-  B.interact.door = { x: 0, z: 2.5 }; B.interact.bed = { x: -1.5, z: -1.02 };
+  B.box(chx, -2.72, 0.5, 0.45, 0);
+  B.interact.door = { x: dx, z: 2.5 }; B.interact.bed = { x: -1.5, z: -1.02 };
   B.size = { w: 5, d: 5, h: 3.2 };
 }
 
@@ -259,7 +268,7 @@ export function stone_house(B) {
     if (name === 'front') open.push([-0.7, 0.7, 0.02, 2.1]);
     if (name === 'left' || name === 'right') open.push(...gable());
     open.push(...wearOpenings({ seed: s * 11 + wi, level: L, len: 5, H: cfg.H, holes: 2, holeW: 0.8, holeH: 0.85, crown: name === 'left' || name === 'right' ? 0.8 : 1.15, steps: 5 }));
-    const parts = masonry({ len: cfg.len, H: cfg.H, d: 0.52, seed: s * 31 + wi * 5 + 1, openings: open, minW: 0.8, maxW: 1.9, minH: 0.62, maxH: 0.9, D, idBase: 1000 * (wi + 1), colors: PAL.stone, moss: 0.4, firstTop: 0.36, stagger: 0.45 });
+    const parts = masonry({ len: cfg.len, H: cfg.H, d: 0.52, seed: s * 31 + wi * 5 + 1, openings: open, minW: 0.9, maxW: 2.1, minH: 0.66, maxH: 0.95, splitP: 0.2, D, idBase: 1000 * (wi + 1), colors: PAL.stone, moss: 0.4, firstTop: 0.36, stagger: 0.45 });
     B.add(place(parts, w.x, w.z, w.rot));
     wins[name].forEach((o) => windowFrame(B, { ...o, wall: w, s }));
     wi++;
@@ -268,7 +277,7 @@ export function stone_house(B) {
   for (const [cx, cz] of [[-HWL, -HWL], [HWL, -HWL], [-HWL, HWL], [HWL, HWL]]) {
     let y = -1, k = 0;
     while (y < 2.45) {
-      const h = k === 0 ? 1.4 : 0.5 + frand(s, cx * 7 + cz * 3 + k, 95) * 0.2, alt = k % 2;
+      const h = k === 0 ? 1.4 : 0.6 + frand(s, cx * 7 + cz * 3 + k, 95) * 0.25, alt = k % 2;
       const id = 800 + k + (cx > 0 ? 20 : 0) + (cz > 0 ? 40 : 0);
       if (!(D.gone(id, 0.35 + 0.65 * (y / 2.5)) && k > 0)) B.add(stone({ p: [cx, y + h / 2, cz], s: [alt ? 1.0 : 0.66, h * 0.97, alt ? 0.66 : 1.0], seed: id, color: shade(pick(PAL.stone, frand(s, id, 96)), 1.05), rot: [0, (frand(s, id, 97) - 0.5) * 0.08, 0], jit: 0.1, bevel: 0.12, moss: y < 0.7 ? 0.4 : 0 }));
       y += h; k++;
@@ -278,8 +287,8 @@ export function stone_house(B) {
   B.label = 'timber';
   for (const sx of [-1, 1]) if (!D.gone(60 + (sx > 0), 0.2)) B.add(beam({ a: [sx * 0.8, -0.6, HWL + 0.05], b: [sx * (0.78 + D.lean(70, sx, 0.2)), 2.12, HWL + 0.04], w: 0.24, t: 0.36, color: pick(PAL.wood, frand(s, sx, 57)), seed: 3 + sx, endCol: PAL.cutOld, up: [0, 0, 1] }));
   if (!D.gone(62, 0.2)) B.add(beam({ a: [-1.12, 2.18, HWL + 0.02], b: [1.12, 2.2, HWL + 0.02], w: 0.3, t: 0.42, color: pick(PAL.wood, 0.25), seed: 9, endCol: PAL.cutOld, up: [0, 0, 1] }));
-  B.add(stone({ p: [0.05, 0.02, HWL + 0.7], s: [1.5, 0.16, 0.8], seed: 33, color: 0x8a857a, jit: 0.1, bevel: 0.1, rot: [0, 0.05, 0] }));
-  B.add(stone({ p: [-0.1, 0.0, HWL + 1.35], s: [0.9, 0.12, 0.6], seed: 34, color: 0x7f7a70, jit: 0.1, bevel: 0.1, rot: [0, -0.2, 0], round: true }));
+  B.add(stone({ p: [0.05, 0.02, HWL + 0.62], s: [1.5, 0.16, 0.72], seed: 33, color: 0x8a857a, jit: 0.1, bevel: 0.1, rot: [0, 0.05, 0] }));
+  B.add(stone({ p: [-0.1, 0.0, HWL + 1.15], s: [0.7, 0.12, 0.5], seed: 34, color: 0x7f7a70, jit: 0.1, bevel: 0.1, rot: [0, -0.2, 0], round: true }));
   // ---- roof frame: wall plates, ridge beam, tie beams, rafters (tails stick out past the eaves)
   const zf = 3.45, zbk = -3.4, zr = -0.1, x0 = -3.35, x1 = 3.35, Lx = x1 - x0;
   B.label = 'roof';
@@ -298,17 +307,17 @@ export function stone_house(B) {
       const a = sl.O.clone().add(V3(x - x0, 0, 0)).addScaledVector(nrm, -0.16), b = a.clone().add(sl.V.clone().multiplyScalar(0.99));
       B.add(beam({ a, b, w: 0.16, t: 0.2, color: pick(PAL.wood, frand(s, i + sl.id, 61)), seed: i + sl.id, up: nrm, endCol: PAL.cutOld, jit: 0.1 }));
     }
-    B.add(roofSlope({ O: sl.O.clone(), U: V3(Lx, 0, 0), V: sl.V, out: sl.out, nu: 3, nv: 2, rows: 3, tw: 0.55, drop: 0.7, thick: 0.1, seed: s * 5 + (sl.front ? 1 : 2), D, idBase: sl.id, holeBias: 0.85, style: 'tile', colors: SLATE, baseColor: 0x4a3f34, droop: 0.06,
+    B.add(roofSlope({ O: sl.O.clone(), U: V3(Lx, 0, 0), V: sl.V, out: sl.out, nu: 2, nv: 2, rows: 4, tw: 0.7, drop: 0.85, thick: 0.1, seed: s * 5 + (sl.front ? 1 : 2), D, idBase: sl.id, holeBias: 0.85, style: 'tile', colors: SLATE, baseColor: 0x4a3f34, droop: 0.06,
       warp: (u, v) => -0.05 * Math.sin(u * Math.PI) * (0.3 + v) + 0.03 * Math.sin(u * 11 + v * 5 + s) }));
   }
   // ---- chimney at the right gable, outside
   B.label = 'chimney';
-  B.add(chimney({ x: 3.5, z: -0.35, w: 0.95, d: 1.2, h: 3.95, seed: s + 5, D, idBase: 5000, taper: 0.7, rowH: 0.75 }));
-  for (const sx of [-1, 1]) B.add(beam({ a: [sx * 3.4, yE - 0.14, zf + 0.05], b: [sx * 3.4, yR + 0.04, zr], w: 0.26, t: 0.16, color: PAL.wood[3], seed: 30 + sx, endCol: PAL.cutOld, up: [1, 0, 0] })), B.add(beam({ a: [sx * 3.4, yE - 0.1, zbk - 0.05], b: [sx * 3.4, yR + 0.04, zr], w: 0.26, t: 0.16, color: PAL.wood[3], seed: 34 + sx, endCol: PAL.cutOld, up: [1, 0, 0] }));
+  B.add(chimney({ x: 3.5, z: -0.35, w: 0.95, d: 1.2, h: 3.95, seed: s + 5, D, idBase: 5000, taper: 0.7, rowH: 1.05 }));
+  for (const sx of [-1, 1]) B.add(beam({ a: [sx * 3.4, yE - 0.14, zf + 0.05], b: [sx * 3.4, yR + 0.04, zr], w: 0.26, t: 0.16, color: PAL.grey[2], seed: 30 + sx, endCol: PAL.cutOld, up: [1, 0, 0] })), B.add(beam({ a: [sx * 3.4, yE - 0.1, zbk - 0.05], b: [sx * 3.4, yR + 0.04, zr], w: 0.26, t: 0.16, color: PAL.grey[2], seed: 34 + sx, endCol: PAL.cutOld, up: [1, 0, 0] }));
   // ---- interior
   B.label = 'interior';
   B.add(stone({ p: [0, -0.02, 0], s: [5.0, 0.12, 5.0], color: 0x6a6358, jit: 0.03, bevel: 0.02, seed: 5 }));
-  B.add(bedGeoms({ seed: s + 1, light: true }).map((g) => xf(g, { pos: [-1.85, 0, -1.4] })));
+  B.add(bedGeoms({ seed: s + 1, light: 2 }).map((g) => xf(g, { pos: [-1.85, 0, -1.4] })));
   // ---- foundation piers reaching deep (under door jambs + wall middles)
   B.label = 'foundation';
   for (const [x, z] of [[-1.4, 2.9], [1.4, 2.9], [0, -2.9], [-2.9, 0], [2.9, 1.2]]) B.add(anchor({ x, z, hw: 0.45, hd: 0.45, top: 0.05, bottom: -1, seed: Math.abs(x * 3 + z * 5) | 0, color: 0x4a4238 }));

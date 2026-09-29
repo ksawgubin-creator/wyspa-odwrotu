@@ -2,13 +2,13 @@
 // (damage, felling, respawn, hand-harvest depletion). Nodes always sit on the terrain (y from the heightmap).
 import * as THREE from 'three';
 import * as M from '../gfx/models.js';
-import { foliage, mats } from '../gfx/materials.js';
+import { foliage, mats, occlusionFade } from '../gfx/materials.js';
 import { RESOURCES } from '../../data/resources.js';
 import { easeOutCubic, clamp } from '../engine/util.js';
 
 const CELL = 64;
 const MAT = {
-  glow: new THREE.MeshBasicMaterial({ vertexColors: true }), tall: foliage(0.62, 10), mid: foliage(0.4, 6), low: foliage(0.09, 1.2), reed: foliage(0.32, 2, 0.02), palm: foliage(0.75, 7), prop: mats.prop,
+  glow: new THREE.MeshBasicMaterial({ vertexColors: true }), tall: foliage(0.62, 10), mid: foliage(0.4, 6), low: foliage(0.09, 1.2), reed: foliage(0.32, 2, 0.02), palm: foliage(0.75, 7), prop: occlusionFade(new THREE.MeshLambertMaterial({ vertexColors: true }), 'propfade'),
 };
 // type -> {build(variant, pal), mat, shadow, sink}
 const DEFS = {

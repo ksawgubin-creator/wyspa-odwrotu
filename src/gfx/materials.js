@@ -26,7 +26,7 @@ function addFade(shader) {
     .replace('void main() {', `void main() {
       {
         float dc = distance(vFadeWP, uCamPos);
-        float keep = smoothstep(0.5, 1.9, dc);
+        float keep = smoothstep(0.3, 1.4, dc);
         vec3 pa = uPlayerPos + vec3(0.0, 1.1, 0.0);
         vec3 ab = pa - uCamPos; float ab2 = max(dot(ab, ab), 0.01);
         float tt = dot(vFadeWP - uCamPos, ab) / ab2;

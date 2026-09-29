@@ -491,7 +491,7 @@ export class Player {
   }
   updateTorch(dt) {
     const g = this.game, lit = this.heldId === 'torch' && !this.dead;
-    if (lit && !this.torchSrc) this.torchSrc = g.lights.add({ x: 0, y: 0, z: 0, color: 0xffa347, intensity: 3.2, radius: 15, flicker: 1, scare: 0.85, scareRadius: 8 });
+    if (lit && !this.torchSrc) this.torchSrc = g.lights.add({ x: 0, y: 0, z: 0, color: 0xffa347, intensity: 5.0, radius: 18, flicker: 1, scare: 0.85, scareRadius: 8 });
     if (!lit && this.torchSrc) { g.lights.remove(this.torchSrc); this.torchSrc = null; }
     if (!lit || !this.flame) return;
     const v = this._tv || (this._tv = new THREE.Vector3());

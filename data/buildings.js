@@ -11,7 +11,7 @@ const b = (id, name, cat, level, cost, hp, o = {}) => ({ id, name, cat, level, c
 
 export const BUILDINGS = {
   // ---- fire ----
-  campfire: b('campfire', 'Ognisko', 'fire', 0, { wood: 4, stone: 4, stick: 3 }, 60, { station: 'campfire', fuel: { max: 900, per: 200 }, upgradeTo: 'hearth', desc: 'Światło, ciepło i gotowanie. Dorzucaj drewna.', light: { r: 14, i: 3.4, color: 0xff9a3a, scare: 1.0, scareR: 9, warm: 9, flame: 1.0 } }),
+  campfire: b('campfire', 'Ognisko', 'fire', 0, { wood: 4, stone: 4, stick: 3 }, 60, { station: 'campfire', fuel: { max: 900, per: 200 }, upgradeTo: 'hearth', desc: 'Światło, ciepło i gotowanie. Dorzucaj drewna.', light: { r: 18, i: 6.0, color: 0xff9a3a, scare: 1.0, scareR: 9, warm: 9, flame: 1.0 } }),
   hearth: b('hearth', 'Palenisko', 'fire', 1, { stone: 14, wood: 8 }, 120, { station: 'campfire', fuel: { max: 1500, per: 300 }, upgradeTo: 'great_fire', upgradeCost: { stone: 12, wood: 8 }, upgradeOnly: true, desc: 'Większy i trwalszy ogień. Wolniej się wypala.', light: { r: 19, i: 4.2, color: 0xff9440, scare: 1.0, scareR: 13, warm: 12, flame: 1.5 } }),
   great_fire: b('great_fire', 'Wielkie ognisko', 'fire', 2, { wood: 20, stone: 16 }, 200, { station: 'campfire', fuel: { max: 2400, per: 420 }, upgradeOnly: true, upgradeCost: { wood: 20, stone: 20 }, desc: 'Widać go z daleka. Cienie boją się tego światła.', light: { r: 28, i: 5.4, color: 0xff8a38, scare: 1.0, scareR: 20, warm: 16, flame: 2.3 } }),
   lantern_post: b('lantern_post', 'Latarnia', 'fire', 1, { wood: 6, iron_scrap: 1, cloth: 2 }, 60, { fuelItem: 'fat', light: { r: 12, i: 2.6, color: 0xffc060, scare: 0.75, scareR: 7, warm: 0, flame: 0.3 }, desc: 'Świeci, dopóki ma tłuszcz lub olej.', fuel: { max: 900, per: 300 } }),

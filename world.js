@@ -7,13 +7,35 @@ let S = null;
 let PALL = [];                 // wszyscy zawodnicy (klubowi + wolni + wirtualni)
 let NATIDX = new Map();        // narodowość -> zawodnicy
 const NAT = {}; for (const n of NATIONS) NAT[n.code] = n;
+const isoFlag = iso => iso.toUpperCase().replace(/./g, ch => String.fromCodePoint(127397 + ch.charCodeAt(0)));
+const NAT_EXTRA = [
+  ['CAN', 'Kanada', 'CA', 'EN', 64, 'CONCACAF'], ['CHI', 'Chile', 'CL', 'LATAM', 58, 'CONMEBOL'], ['PER', 'Peru', 'PE', 'LATAM', 55, 'CONMEBOL'], ['PAR', 'Paragwaj', 'PY', 'LATAM', 62, 'CONMEBOL'],
+  ['VEN', 'Wenezuela', 'VE', 'LATAM', 56, 'CONMEBOL'], ['BOL', 'Boliwia', 'BO', 'LATAM', 45, 'CONMEBOL'], ['CRC', 'Kostaryka', 'CR', 'LATAM', 52, 'CONCACAF'], ['JAM', 'Jamajka', 'JM', 'EN', 50, 'CONCACAF'],
+  ['HON', 'Honduras', 'HN', 'LATAM', 46, 'CONCACAF'], ['PAN', 'Panama', 'PA', 'LATAM', 52, 'CONCACAF'], ['HAI', 'Haiti', 'HT', 'FRAF', 42, 'CONCACAF'], ['SUR', 'Surinam', 'SR', 'NL', 44, 'CONCACAF'],
+  ['CUW', 'Curaçao', 'CW', 'NL', 46, 'CONCACAF'], ['MLI', 'Mali', 'ML', 'FRAF', 60, 'CAF'], ['GUI', 'Gwinea', 'GN', 'FRAF', 52, 'CAF'], ['BFA', 'Burkina Faso', 'BF', 'FRAF', 55, 'CAF'],
+  ['COD', 'DR Konga', 'CD', 'FRAF', 58, 'CAF'], ['ANG', 'Angola', 'AO', 'PT', 48, 'CAF'], ['GAB', 'Gabon', 'GA', 'FRAF', 48, 'CAF'], ['ZAM', 'Zambia', 'ZM', 'WAF', 46, 'CAF'],
+  ['ZIM', 'Zimbabwe', 'ZW', 'WAF', 42, 'CAF'], ['RSA', 'RPA', 'ZA', 'WAF', 55, 'CAF'], ['TUN', 'Tunezja', 'TN', 'ARAB', 57, 'CAF'], ['CPV', 'Republika Zielonego Przylądka', 'CV', 'PT', 50, 'CAF'],
+  ['GNB', 'Gwinea Bissau', 'GW', 'PT', 42, 'CAF'], ['GAM', 'Gambia', 'GM', 'WAF', 42, 'CAF'], ['TOG', 'Togo', 'TG', 'FRAF', 42, 'CAF'], ['BEN', 'Benin', 'BJ', 'FRAF', 44, 'CAF'],
+  ['KEN', 'Kenia', 'KE', 'WAF', 40, 'CAF'], ['EQG', 'Gwinea Równikowa', 'GQ', 'ES', 42, 'CAF'], ['SLE', 'Sierra Leone', 'SL', 'WAF', 38, 'CAF'], ['LBR', 'Liberia', 'LR', 'WAF', 36, 'CAF'],
+  ['CGO', 'Kongo', 'CG', 'FRAF', 40, 'CAF'], ['UZB', 'Uzbekistan', 'UZ', 'UA', 52, 'AFC'], ['IRN', 'Iran', 'IR', 'ARAB', 60, 'AFC'], ['KSA', 'Arabia Saudyjska', 'SA', 'ARAB', 52, 'AFC'],
+  ['QAT', 'Katar', 'QA', 'ARAB', 48, 'AFC'], ['CHN', 'Chiny', 'CN', 'JP', 42, 'AFC'], ['NZL', 'Nowa Zelandia', 'NZ', 'EN', 44, 'OFC'], ['CYP', 'Cypr', 'CY', 'GR', 42, 'UEFA'],
+  ['LUX', 'Luksemburg', 'LU', 'FR', 44, 'UEFA'], ['EST', 'Estonia', 'EE', 'UA', 38, 'UEFA'], ['LVA', 'Łotwa', 'LV', 'UA', 38, 'UEFA'], ['LTU', 'Litwa', 'LT', 'UA', 38, 'UEFA'],
+  ['BLR', 'Białoruś', 'BY', 'UA', 42, 'UEFA'], ['MDA', 'Mołdawia', 'MD', 'RO', 34, 'UEFA'], ['ARM', 'Armenia', 'AM', 'UA', 40, 'UEFA'], ['AZE', 'Azerbejdżan', 'AZ', 'UA', 38, 'UEFA'],
+  ['KOS', 'Kosowo', 'XK', 'AL', 48, 'UEFA'], ['MLT', 'Malta', 'MT', 'IT', 30, 'UEFA'], ['FRO', 'Wyspy Owcze', 'FO', 'NORD', 34, 'UEFA'],
+];
+for (const [code, name, iso, pool, str, conf] of NAT_EXTRA) if (!NAT[code]) { const n = { code, name, flag: code === 'KOS' ? '🇽🇰' : isoFlag(iso), pool: NAME_POOLS[pool] ? pool : 'EN', str, conf }; NATIONS.push(n); NAT[code] = n; }
+const COEF0 = {"ENG":[21.428,23,17.375,29.464,25],"ESP":[18.428,16.571,16.062,19,18.5],"ITA":[15.714,22.357,21,21.875,18],"GER":[16.214,17.125,19.357,18,18],"FRA":[18.416,12.916,13.5,17.125,16],"POL":[4.625,7.5,4,13.875,10],"POR":[10.5,12,10.833,13.05,12.5],"NED":[19.2,11,13,15.25,12],"BEL":[10,13.4,12.6,13,11.5],"TUR":[6.4,10,12,10.8,10.5],"SCO":[8.375,8.25,4.9,7.15,6],"AUT":[10.5,7.1,7,6.55,7.5],"SUI":[5.875,7.775,3.7,8.975,7],"CZE":[9,9,11.7,9,9.5],"GRE":[6.5,4.7,15.25,8.625,9],"DEN":[9.375,6.375,7.375,8.7,8],"UKR":[3.3,6.4,6.5,4.925,5.5],"CRO":[6.375,4.9,7.125,6.625,6.5],"SRB":[9.125,4,5.75,5.75,6],"NOR":[11,7.375,9,11.687,9],"SWE":[4.875,6.25,6,8.75,6.5]};
+const CTRY = (COUNTRY_DATA.length >= 21 || typeof COUNTRIES === 'undefined' ? COUNTRY_DATA : COUNTRIES)
+  .map(c => Object.assign({}, c, { coef: (COEF0[c.code] || [3, 3, 3, 3, 3]).slice(), leagues: c.leagues.slice().sort((a, b) => a.tier - b.tier) }))
+  .sort((a, b) => sum(b.coef) - sum(a.coef));
 const club = id => S.clubs[id];
 const userClub = () => S.clubs[S.user];
 const LS = 46;                 // liczba „slotów” ligowych w sezonie
 const SEASON_LABEL = s => `${s}/${String(s + 1).slice(2)}`;
 const COMP_NAME = { CL: 'Liga Mistrzów', EL: 'Liga Europy', ECL: 'Liga Konferencji', L: 'Liga', N: 'Reprezentacja', T: 'Turniej', F: 'Towarzyski' };
 const STAGE_NAME = { LP: 'Faza ligowa', PO: 'Baraże', R16: '1/8 finału', QF: 'Ćwierćfinał', SF: 'Półfinał', F: 'Finał', G: 'Faza grupowa' };
-const PROMO = { ENG: 3, ESP: 3, ITA: 3, GER: 2, FRA: 2, POL: 3 };
+const PROMO = { ENG: [3, 3, 4], ESP: [3, 4, 3], ITA: [3, 3, 3], GER: [2, 2, 3], FRA: [2, 2, 3], POL: [3, 3] };
+const promoN = (cc, tier) => (PROMO[cc] || [])[tier - 1] || 2; // ilu spada z poziomu `tier` / awansuje z tier+1
 const DOM = { ENG: .4, ESP: .6, ITA: .45, GER: .5, FRA: .55, POR: .45, NED: .55, BEL: .45, TUR: .55, SCO: .5, AUT: .6, SUI: .55, CZE: .75, GRE: .45, DEN: .65, POL: .65, UKR: .8, CRO: .7, SRB: .75, NOR: .75, SWE: .7 };
 const TVW = { ENG: [6.5e5, 8e4], ESP: [4.2e5, 5e4], ITA: [4e5, 4e4], GER: [4e5, 6e4], FRA: [2.8e5, 4e4], POR: [8e4], NED: [8e4], BEL: [6e4], TUR: [1e5], SCO: [4e4], AUT: [3e4], SUI: [3.5e4], CZE: [2.5e4], GRE: [3e4], DEN: [3e4], POL: [5e4, 1.5e4], UKR: [2e4], CRO: [2e4], SRB: [1.5e4], NOR: [2.5e4], SWE: [2.5e4] };
 const NCOL = {
@@ -61,6 +83,49 @@ function genPlayer(pos, target, nat, o = {}) {
 const newStats = () => ({ apps: 0, g: 0, a: 0, rs: 0, mins: 0, y: 0, r: 0 });
 const SHAPE = [['GK', 0], ['GK', 1], ['GK', 2], ['CB', 0], ['CB', 0], ['CB', 1], ['CB', 2], ['LB', 0], ['LB', 2], ['RB', 0], ['RB', 1], ['CDM', 0], ['CDM', 1], ['CM', 0], ['CM', 0], ['CM', 2], ['CAM', 0], ['CAM', 1], ['LW', 0], ['LM', 1], ['RW', 0], ['RM', 2], ['ST', 0], ['ST', 1], ['ST', 2]];
 const clubLevel = rep => 40 + rep * 0.47;
+const POSMAP = { LWB: 'LB', RWB: 'RB', CF: 'ST', LF: 'LW', RF: 'RW' };
+function natCode(code) { if (!NAT[code]) { const n = { code, name: code, flag: '🏳️', pool: 'EN', str: 40, conf: 'OTHER' }; NATIONS.push(n); NAT[code] = n; } return code; }
+function realPlayer(t, c) {
+  const [n, pos0, age, ovr, pot, nat, fs] = t, pos = POSMAP[pos0] || pos0;
+  let a;
+  if (fs && fs.length === 6) {
+    a = fs.map(Number);
+    for (let k = 0; k < 4; k++) { const d = ovr - W[pos].reduce((s, w, i) => s + w * a[i], 0); a = a.map((x, i) => W[pos][i] > 0 ? clamp(x + d, 12, 99) : x); }
+    a = a.map(x => Math.round(x));
+  } else a = genAttrs(pos, ovr);
+  const p = genPlayer(pos, ovr, natCode(nat), { age, adjAge: false, pot: Math.max(pot || ovr, ovr) });
+  p.n = n; p.a = a; p.ovr = calcOvr(pos, a); p.pot = Math.max(p.pot, p.ovr); p.alt = bestAlt(pos, a); p.real = 1;
+  p.val = calcValue(p); p.wage = calcWage(p, c.rep); p.tid = c.id;
+  return p;
+}
+function realSquad(c, list) {
+  const seen = new Set(), ps = [];
+  for (const t of list) { if (!t || seen.has(t[0]) || !W[POSMAP[t[1]] || t[1]]) continue; seen.add(t[0]); ps.push(realPlayer(t, c)); }
+  const real = ps.length, top = ps.map(p => p.ovr).sort((a, b) => b - a).slice(0, 11);
+  const realLvl = top.length >= 11 ? avg(top) : null;
+  const need = { GK: 3, DEF: 8, MID: 8, ATT: 5 }, have = { GK: 0, DEF: 0, MID: 0, ATT: 0 };
+  ps.forEach(p => have[LINE[p.pos]]++);
+  const posFor = { GK: ['GK'], DEF: ['CB', 'LB', 'CB', 'RB'], MID: ['CM', 'CDM', 'CAM', 'LM', 'RM'], ATT: ['ST', 'LW', 'RW'] };
+  for (const line of ['GK', 'DEF', 'MID', 'ATT']) {
+    let i = 0;
+    while (have[line] < need[line] && ps.length < 30) {
+      const role = realLvl ? 2 : (have[line] < need[line] / 2 ? 0 : 1);
+      const p = squadPlayer(c, posFor[line][i++ % posFor[line].length], role);
+      if (realLvl && p.ovr > realLvl - 4) { develop(p, realLvl - 4 - p.ovr); p.pot = Math.max(p.pot, p.ovr); p.val = calcValue(p); p.wage = calcWage(p, c.rep); }
+      ps.push(p); have[line]++;
+    }
+  }
+  while (ps.length < 22) ps.push(squadPlayer(c, pick(['CB', 'CM', 'ST', 'RB', 'LW']), realLvl ? 2 : 1));
+  c.realCount = real;
+  return ps;
+}
+const COACH_NAT = ['POL', 'ENG', 'ESP', 'ITA', 'GER', 'FRA', 'POR', 'NED', 'ARG', 'BRA', 'CRO', 'SRB', 'DEN', 'NOR', 'AUT', 'CZE', 'TUR', 'GRE', 'BEL', 'SCO'];
+function genCoach(rep) { return { n: genName(pick(COACH_NAT)), ovr: clamp(Math.round(28 + rep * 0.62 + gauss() * 4), 30, 94), age: ri(36, 66) }; }
+function coachOvr(t) {
+  if (!t || !S) return 60;
+  if (t.nation) return t.nation === S.nt ? S.mgr.ovr : clamp(Math.round(NAT[t.nation].str * 0.9), 30, 92);
+  return t.id === S.user ? S.mgr.ovr : (t.coach ? t.coach.ovr : 60);
+}
 function squadPlayer(c, pos, role) {
   const lvl = clubLevel(c.rep);
   let age, target;
@@ -86,20 +151,21 @@ function rebuildIndex() {
   for (const c of S.clubs) for (const p of c.players) add(p, c.id);
   for (const p of S.free) add(p, -1);
   for (const p of S.virt) add(p, -2);
+  if (S.acad) for (const p of S.acad.youth) add(p, -3);
 }
 const teamLevel = c => { const o = c.players.map(p => p.ovr).sort((a, b) => b - a).slice(0, 14); return avg(o); };
 function clubOf(p) { return p.tid >= 0 ? club(p.tid) : null; }
-function clubName(p) { return p.tid >= 0 ? club(p.tid).name : p.tid === -1 ? 'Wolny agent' : 'Liga zagraniczna'; }
+function clubName(p) { return p.tid >= 0 ? club(p.tid).name : p.tid === -1 ? 'Wolny agent' : p.tid === -3 ? 'Akademia ' + userClub().short : 'Liga zagraniczna'; }
 
 /* ---------- świat ---------- */
 function createWorld() {
   S = {
-    v: 2, manager: '', season: 2026, day: 0, user: -1, nt: null, clubs: [], leagues: {}, countries: {}, free: [], virt: [],
+    v: 3, manager: '', season: 2026, day: 0, user: -1, nt: null, mgr: { ovr: 50, best: 50 }, jobs: [], acad: { fac: 2, coach: 2, rec: 2, region: '', youth: [] }, clubs: [], leagues: {}, countries: {}, free: [], virt: [],
     inbox: [], offers: [], news: [], history: [], ntHist: [], champs: {}, awards: [], nextPid: 1, nextId: 1,
-    board: { conf: 60, target: 8, text: '', euro: '' }, mrep: 50, settings: { speed: 2 }, scouts: [], scoutMarket: [], know: {}, reports: [], short: [],
-    ccoef: {}, cpts: {}, euro: {}, euroHist: [], lastTables: {}, lastWinners: {}, cal: [], ntTeams: {}, ntc: null, fac: { youth: 2, train: 2 }, summary: null, sacked: false,
+    board: { conf: 60, target: 8, text: '', euro: '' }, settings: { speed: 2 }, scouts: [], scoutMarket: [], know: {}, reports: [], short: [],
+    ccoef: {}, cpts: {}, euro: {}, euroHist: [], lastTables: {}, lastWinners: {}, cal: [], ntTeams: {}, ntc: null, fac: { train: 2 }, summary: null, sacked: false,
   };
-  for (const c of COUNTRIES) {
+  for (const c of CTRY) {
     S.countries[c.code] = { code: c.code, name: c.name, flag: c.flag, nat: c.nat, coef: c.coef.slice(), leagues: c.leagues.map(l => l.id) };
     for (const l of c.leagues) {
       const lg = S.leagues[l.id] = { id: l.id, name: l.name, cc: c.code, tier: l.tier, clubs: [], fix: [], lsMap: [] };
@@ -108,7 +174,8 @@ function createWorld() {
           id: S.clubs.length, name: t[0], short: t[1], col: [t[2], t[3]], cc: c.code, lg: l.id, rep: t[4], cap: t[5],
           players: [], formation: pick(['4-3-3', '4-2-3-1', '4-4-2', '4-3-3', '3-5-2', '4-1-2-1-2']), ment: 'bal', lineup: [], bench: [], training: 'bal',
         };
-        cl.players = genSquad(cl);
+        cl.players = t[6] && t[6].length ? realSquad(cl, t[6]) : genSquad(cl);
+        cl.coach = genCoach(cl.rep);
         S.clubs.push(cl); lg.clubs.push(cl.id);
       }
     }
@@ -125,8 +192,7 @@ function createWorld() {
 }
 function setupEconomy(c) {
   const bill = sum(c.players.map(p => p.wage));
-  const tvTable = TVW[c.cc] || [5e4, 1e4];
-  c.tv = S.leagues[c.lg].tier === 1 ? tvTable[0] : (tvTable[1] || tvTable[0] * 0.15);
+  c.tv = tvFor(c);
   c.price = 5 + c.rep * 0.3;
   const gateAvg = 0.5 * c.cap * 0.75 * c.price;
   c.spons = Math.max(2000, Math.round((bill * (0.98 + c.rep / 700 + rnd() * 0.08) - c.tv - gateAvg) / 1000) * 1000);
@@ -338,7 +404,7 @@ function ntTeam(code) {
 }
 function syncNT(t) { if (t && t._st) { t._st.lineup = t.lineup; t._st.bench = t.bench; t._st.formation = t.formation; t._st.ment = t.ment; } }
 function autoCallup(code) {
-  const pool = (NATIDX.get(code) || []).filter(p => isAvail(p)).sort((a, b) => b.ovr - a.ovr);
+  const pool = (NATIDX.get(code) || []).filter(p => isAvail(p) && p.tid !== -3).sort((a, b) => b.ovr - a.ovr);
   const need = { GK: 3, DEF: 8, MID: 7, ATT: 5 }, out = [];
   for (const [line, n] of Object.entries(need)) out.push(...pool.filter(p => LINE[p.pos] === line).slice(0, n));
   for (const p of pool) { if (out.length >= 23) break; if (!out.includes(p)) out.push(p); }
@@ -460,7 +526,7 @@ function processDay(live) {
   for (const x of list) {
     let m;
     if (live && x.user) m = live;
-    else { m = simulate(x.h, x.a, x.opts); }
+    else { m = fastSim(x.h, x.a, x.opts); }
     if (x.nt) { syncNT(m.home.t); syncNT(m.away.t); }
     x.done(m);
     if (x.user) userRes = { m, x };
@@ -500,6 +566,7 @@ function afterUserClubMatch(m, x) {
   d += clamp((opp.t.rep - mine.t.rep) / 25, -1, 1) * (gd > 0 ? 1 : gd < 0 ? -0.6 : 0.5);
   if (m.comp !== 'L') d *= 0.6;
   S.board.conf = clamp(S.board.conf + d, 0, 100);
+  mgrGain(gd > 0 ? (opp.t.rep > mine.t.rep ? 0.12 : 0.05) : gd < 0 ? -0.04 : 0.01);
   for (const e of m.ev) if (e.type === 'injury' && e.side === x.user) msg('Kontuzja', e.text.replace('🚑 ', ''));
 }
 
@@ -507,7 +574,7 @@ function afterUserClubMatch(m, x) {
 function weekly(d) {
   const ut = userClub();
   for (const c of S.clubs) {
-    const wages = sum(c.players.map(p => p.wage)) + (c.id === S.user ? sum(S.scouts.map(s => s.cost)) : 0);
+    const wages = sum(c.players.map(p => p.wage)) + (c.id === S.user ? sum(S.scouts.map(s => s.cost)) + acadCost() : 0);
     const inc = c.tv + c.spons;
     c.bal += inc - wages; c.fin.inc += inc; c.fin.exp += wages;
     if (c.id === S.user) { c.lastFin = { gate: c._gate || 0, tv: c.tv, spons: c.spons, wages, net: inc + (c._gate || 0) - wages }; c.tb += Math.round((inc + (c._gate || 0) - wages) * 0.25); }
@@ -528,6 +595,8 @@ function weekly(d) {
     });
   }
   for (const p of S.virt) { p.shp = 70; p.mor = 65; }
+  academyWeek(d);
+  coachMarket(d);
   scoutingWeek();
   if (windowOpen()) { genOffers(); aiTransfers(); }
   if (d.ls === 30) { const exp = ut.players.filter(p => p.con <= 1 && !p.loan); if (exp.length) msg('Kontrakty wygasają', `Z końcem sezonu wygasają kontrakty: ${exp.map(shortName).join(', ')}. Przedłuż je w karcie zawodnika.`); }
@@ -543,6 +612,7 @@ const hashN = id => ((id * 2654435761) >>> 0) % 1000 / 1000;
 function baseKnow(p) {
   const ut = userClub();
   if (p.tid === S.user) return 100;
+  if (p.tid === -3) return 92;
   let k = 15;
   const c = clubOf(p);
   if (c) { if (c.lg === ut.lg) k = 75; else if (c.cc === ut.cc) k = 50; if (c.rep >= 85) k = Math.max(k, 60); }
@@ -794,24 +864,73 @@ function msg(title, body) { S.inbox.unshift({ id: S.nextId++, season: S.season, 
 
 /* ---------- obiekty ---------- */
 const FAC_COST = lvl => Math.round(1.5e6 * Math.pow(2.2, lvl - 1));
+const facGet = k => k === 'train' ? S.fac.train : S.acad[k];
 function upgradeFacility(kind) {
-  const lvl = S.fac[kind], ut = userClub();
+  const lvl = facGet(kind), ut = userClub();
   if (lvl >= 5) return { ok: false, msg: 'Maksymalny poziom.' };
   const cost = FAC_COST(lvl);
   if (ut.bal < cost) return { ok: false, msg: `Za mało środków (${money(cost)}).` };
-  ut.bal -= cost; S.fac[kind]++; saveSoon();
-  return { ok: true, msg: `Rozbudowano: poziom ${S.fac[kind]}.` };
+  ut.bal -= cost; if (kind === 'train') S.fac.train++; else S.acad[kind]++; saveSoon();
+  return { ok: true, msg: `Rozbudowano: poziom ${facGet(kind)}.` };
+}
+
+
+/* ---------- akademia ---------- */
+const acadCost = () => (S.acad.fac + S.acad.coach + S.acad.rec) * 2500;
+const ACAD_NAMES = { fac: 'Infrastruktura akademii', coach: 'Trenerzy młodzieży', rec: 'Rekrutacja (sieć skautów młodzieży)' };
+function genYouth() {
+  const A = S.acad, ut = userClub();
+  const nat = A.region && rnd() < 0.7 ? A.region : rnd() < 0.85 ? S.countries[ut.cc].nat : foreignNat(false);
+  const pos = pick(POSITIONS);
+  let pot = Math.round(47 + A.fac * 5 + A.rec * 1.5 + gauss() * 8);
+  if (rnd() < 0.03 + A.rec * 0.006) pot += ri(8, 14);   // talent pokolenia
+  pot = clamp(pot, 50, 95);
+  const y = genPlayer(pos, 0, nat, { age: ri(15, 16), adjAge: false, pot, con: 3 });
+  const a = genAttrs(pos, clamp(pot - ri(24, 34), 35, 58)); y.a = a; y.ovr = calcOvr(pos, a); y.alt = bestAlt(pos, a);
+  y.pot = Math.max(y.pot, y.ovr + 4); y.wage = 0; y.val = calcValue(y); y.tid = -3; y.acad = { est: clamp(y.pot + Math.round(gauss() * (6 - A.coach) * 1.6), 45, 99) };
+  return y;
+}
+function academyWeek(d) {
+  const A = S.acad;
+  for (const y of A.youth) {
+    if (y.ovr < y.pot && rnd() < 0.06 * (0.7 + 0.15 * A.coach + 0.05 * A.fac)) { develop(y, 1); y.val = calcValue(y); }
+    y.acad.est = clamp(Math.round(y.acad.est * 0.9 + (y.pot + gauss() * (6 - A.coach)) * 0.1), 45, 99);
+  }
+  if (d.ls === 32) {
+    const n = 2 + A.rec + ri(0, 2), list = [];
+    for (let i = 0; i < n; i++) { const y = genYouth(); A.youth.push(y); list.push(y); PM.set(y.id, y); PALL.push(y); }
+    const best = list.slice().sort((a, b) => b.acad.est - a.acad.est)[0];
+    msg('🎓 Dzień naboru do akademii', `Do akademii dołączyło ${n} juniorów. Największy talent: ${best.n} (${POS_PL[best.pos]}, ${best.age} l.) – szacowany potencjał ok. ${best.acad.est}. Zobacz: Klub → Akademia.`);
+  }
+}
+function promoteYouth(pid) {
+  const y = S.acad.youth.find(p => p.id === pid), ut = userClub();
+  if (!y) return { ok: false, msg: 'Brak zawodnika.' };
+  if (ut.players.length >= 32) return { ok: false, msg: 'Kadra pierwszego zespołu pełna (32).' };
+  S.acad.youth = S.acad.youth.filter(p => p !== y);
+  y.acad = null; y.con = 3; y.wage = Math.round(calcWage(y, ut.rep) * 0.5 / 100) * 100; attach(y, ut); y.mor = 75;
+  S.know[y.id] = 100; rebuildIndex(); fillBench(ut); saveSoon();
+  return { ok: true, msg: `${y.n} awansował do pierwszego zespołu!` };
+}
+function releaseYouth(pid) { S.acad.youth = S.acad.youth.filter(p => p.id !== pid); PM.delete(pid); rebuildIndex(); saveSoon(); }
+function academySeasonEnd() {
+  const out = [];
+  for (const y of S.acad.youth.slice()) {
+    y.age++;
+    if (y.age >= 19) { S.acad.youth = S.acad.youth.filter(p => p !== y); y.acad = null; y.tid = -1; y.wage = calcWage(y, 40); S.free.push(y); out.push(y.n); }
+  }
+  return out;
 }
 
 /* ---------- zarząd ---------- */
 function setBoardObjective() {
-  const ut = userClub(), lg = S.leagues[ut.lg];
+  const ut = userClub(), lg = S.leagues[ut.lg], ls = S.countries[lg.cc].leagues;
   const lv = lg.clubs.map(id => ({ id, l: teamLevel(club(id)) })).sort((a, b) => b.l - a.l);
   const rank = lv.findIndex(x => x.id === ut.id) + 1, n = lg.clubs.length;
-  const down = lg.tier === 1 && PROMO[lg.cc] ? PROMO[lg.cc] : 0;
+  const down = lg.tier < ls.length ? promoN(lg.cc, lg.tier) : 0, up = lg.tier > 1 ? promoN(lg.cc, lg.tier - 1) : 0;
   let target = clamp(rank + 2, 1, n - down - 1), text;
-  if (lg.tier === 2) { target = clamp(rank + 1, 2, n - 3); text = target <= PROMO[lg.cc] ? `Celem zarządu jest awans do ${S.leagues[S.countries[lg.cc].leagues[0]].name}.` : `Celem zarządu jest miejsce w pierwszej ${target} ${lg.name}.`; }
-  else text = target <= 1 ? `Zarząd oczekuje mistrzostwa ${lg.name}.` : target <= 4 ? `Celem zarządu jest miejsce w czołowej ${target} ${lg.name}.` : target >= n - down - 2 ? `Celem zarządu jest utrzymanie w ${lg.name}.` : `Celem zarządu jest miejsce w pierwszej ${target} ${lg.name}.`;
+  if (lg.tier > 1) { target = clamp(rank + 1, 1, n - down - 1); const upName = S.leagues[ls[lg.tier - 2]].name; text = target <= up ? `Celem zarządu jest awans do ${upName}.` : target >= n - down - 2 && down ? `Celem zarządu jest utrzymanie w ${lg.name}.` : `Celem zarządu jest miejsce w pierwszej ${target} ${lg.name}.`; }
+  else text = target <= 1 ? `Zarząd oczekuje mistrzostwa ${lg.name}.` : target <= 4 ? `Celem zarządu jest miejsce w czołowej ${target} ${lg.name}.` : target >= n - down - 2 && down ? `Celem zarządu jest utrzymanie w ${lg.name}.` : `Celem zarządu jest miejsce w pierwszej ${target} ${lg.name}.`;
   S.board.target = target; S.board.text = text;
   const ec = Object.values(S.euro).find(c => c.teams.includes(ut.id));
   S.board.euro = ec ? (ec.id === 'CL' ? (ut.rep >= 88 ? 'ćwierćfinał Ligi Mistrzów' : ut.rep >= 78 ? 'awans z fazy ligowej Ligi Mistrzów' : 'godny występ w Lidze Mistrzów') : ut.rep >= 75 ? `ćwierćfinał: ${ec.name}` : `awans z fazy ligowej: ${ec.name}`) : '';
@@ -830,9 +949,9 @@ function newSeason(first) {
   for (const c of S.clubs) { if (c.id !== S.user) autoPick(c); c.fin = { inc: 0, exp: 0, tr: 0 }; }
   if (!first && S.user >= 0) setBoardObjective();
 }
-function startCareer(name, clubId, nt) {
+function startCareer(name, clubId, nt, mgrOvr) {
   S.manager = name; S.user = clubId; S.nt = nt || null;
-  const ut = userClub(); S.mrep = clamp(ut.rep - 5, 20, 90);
+  const ut = userClub(); S.mgr = { ovr: mgrOvr || 50, best: mgrOvr || 50 };
   setBoardObjective(); autoPick(ut);
   msg('Witaj w klubie!', `Zarząd ${ut.name} powierzył Ci stery drużyny. ${S.board.text}${S.board.euro ? ' W Europie: ' + S.board.euro + '.' : ''} Okno transferowe jest otwarte – sprawdź skład, wyślij skautów i wzmocnij zespół.`);
   if (S.nt) msg('Reprezentacja', `Zostałeś także selekcjonerem reprezentacji: ${NAT[S.nt].name}. Powołania znajdziesz w zakładce Klub → Reprezentacja.`);
@@ -870,21 +989,28 @@ function endSeason() {
   // reprezentacje
   if (S.ntc && S.ntc.tourn && S.ntc.tourn.champion) { S.ntHist.push({ season: S.season, name: S.ntc.tourn.name, champ: S.ntc.tourn.champion }); lines.push(`🌍 ${S.ntc.tourn.name}: zwycięża ${NAT[S.ntc.tourn.champion].flag} ${NAT[S.ntc.tourn.champion].name}.`); }
   // awanse/spadki
-  for (const cc in PROMO) {
-    const [l1, l2] = S.countries[cc].leagues; if (!l2) continue;
-    const n = PROMO[cc], down = finals[l1].slice(-n).map(r => r.id), up = finals[l2].slice(0, n).map(r => r.id);
-    const L1 = S.leagues[l1], L2 = S.leagues[l2];
-    L1.clubs = L1.clubs.filter(id => !down.includes(id)).concat(up); L2.clubs = L2.clubs.filter(id => !up.includes(id)).concat(down);
-    down.forEach(id => { const c = club(id); c.lg = l2; c.rep = clamp(c.rep - 3, 1, 99); setupTV(c); });
-    up.forEach(id => { const c = club(id); c.lg = l1; c.rep = clamp(c.rep + 3, 1, 99); setupTV(c); });
-    if (up.includes(ut.id)) { lines.push(`⬆️ AWANS do ${L1.name}!`); S.board.conf = clamp(S.board.conf + 15, 0, 100); S.mrep += 5; }
-    if (down.includes(ut.id)) { lines.push(`⬇️ Spadek do ${L2.name}…`); S.board.conf = clamp(S.board.conf - 25, 0, 100); }
+  for (const cc in S.countries) {
+    const ls = S.countries[cc].leagues;
+    for (let k = 0; k + 1 < ls.length; k++) {
+      const l1 = ls[k], l2 = ls[k + 1], n = promoN(cc, k + 1);
+      const down = finals[l1].slice(-n).map(r => r.id), up = finals[l2].slice(0, n).map(r => r.id);
+      const L1 = S.leagues[l1], L2 = S.leagues[l2];
+      L1.clubs = L1.clubs.filter(id => !down.includes(id)).concat(up); L2.clubs = L2.clubs.filter(id => !up.includes(id)).concat(down);
+      down.forEach(id => { const c = club(id); c.lg = l2; c.rep = clamp(c.rep - 3, 1, 99); setupTV(c); });
+      up.forEach(id => { const c = club(id); c.lg = l1; c.rep = clamp(c.rep + 3, 1, 99); setupTV(c); });
+      if (up.includes(ut.id)) { lines.push(`⬆️ AWANS do ${L1.name}!`); S.board.conf = clamp(S.board.conf + 15, 0, 100); mgrGain(4, 'awans'); }
+      if (down.includes(ut.id)) { lines.push(`⬇️ Spadek do ${L2.name}…`); S.board.conf = clamp(S.board.conf - 25, 0, 100); mgrGain(-4); }
+    }
   }
   for (const id in finals) S.lastTables[id] = finals[id].map(r => r.id);
   const achieved = ut.lg !== wasLg ? S.leagues[ut.lg].tier < wasTier : upos.pos <= S.board.target;
   lines.push(achieved ? '✅ Cel ligowy zrealizowany!' : '❌ Cel ligowy niezrealizowany.');
   S.board.conf = clamp(S.board.conf + (achieved ? 10 : -14), 0, 100);
-  S.mrep = clamp(S.mrep + (achieved ? 3 : -3) + (upos.pos === 1 ? 5 : 0) + (myEuro && myEuro.champion === ut.id ? 10 : 0), 1, 99);
+  const before = S.mgr.ovr;
+  mgrGain(clamp((S.board.target - upos.pos) * 1.0, -3, 6) + (achieved ? 2 : -1.5) + (upos.pos === 1 && wasLg === ut.lg ? (wasTier === 1 ? 5 : 3) : 0));
+  if (myEuro) { const st = myEuro.champion === ut.id ? 8 : myEuro.ko.F && (myEuro.ko.F[0].a === ut.id || myEuro.ko.F[0].b === ut.id) ? 5 : myEuro.ko.SF && myEuro.ko.SF.some(t => t.a === ut.id || t.b === ut.id) ? 3 : myEuro.ko.QF && myEuro.ko.QF.some(t => t.a === ut.id || t.b === ut.id) ? 2 : myEuro.ko.R16 && myEuro.ko.R16.some(t => t.a === ut.id || t.b === ut.id) ? 1 : 0; mgrGain(st * (myEuro.id === 'CL' ? 1 : 0.6)); }
+  if (S.nt && S.ntc.tourn && S.ntc.tourn.champion === S.nt) mgrGain(6);
+  lines.push(`🧑‍💼 OVR trenera: ${Math.round(before)} → ${Math.round(S.mgr.ovr)}.`);
   // reputacja klubów
   for (const id in finals) { const n = finals[id].length; finals[id].forEach(r => { const c = club(r.id); if (c.id !== ut.id) c.rep = clamp(c.rep + (r.pos <= 2 ? 1 : r.pos >= n - 1 ? -1 : 0), 5, 97); }); }
   if (upos.pos <= 2) ut.rep = clamp(ut.rep + 2, 1, 97);
@@ -929,18 +1055,19 @@ function endSeason() {
   if (left.length) lines.push(`Wygasły kontrakty (odeszli): ${left.join(', ')}.`);
   // młodzież
   for (const c of S.clubs) {
-    const n = c === ut ? 2 + S.fac.youth : ri(1, 3);
+    if (c === ut) { refillAI(c); continue; }
+    const n = ri(1, 3);
     const youth = [];
     for (let i = 0; i < n; i++) {
       const pos = pick(POSITIONS);
-      const potBase = c === ut ? 58 + S.fac.youth * 5 : 52 + c.rep * 0.25;
+      const potBase = 52 + c.rep * 0.25;
       const y = genPlayer(pos, 0, rnd() < 0.8 ? S.countries[c.cc].nat : foreignNat(false), { age: ri(16, 18), adjAge: false, pot: clamp(Math.round(potBase + gauss() * 7), 55, 94) });
       const a = genAttrs(pos, ri(42, 56)); y.a = a; y.ovr = calcOvr(pos, a); y.alt = bestAlt(pos, a); y.pot = Math.max(y.pot, y.ovr + 5);
       y.con = 3; y.val = calcValue(y); y.wage = Math.round(calcWage(y, c.rep) * 0.6 / 100) * 100; attach(y, c); youth.push(y);
     }
-    if (c === ut) lines.push(`🎓 Akademia: ${youth.map(y => `${y.n} (${POS_PL[y.pos]}, ${y.ovr}/${y.pot})`).join('; ')}.`);
     refillAI(c);
   }
+  const out = academySeasonEnd(); if (out.length) lines.push(`🎓 Z akademii odeszli (19 lat, bez kontraktu): ${out.join(', ')}.`);
   S.free = S.free.sort((a, b) => b.ovr - a.ovr).slice(0, 150);
   rebuildIndex();
   for (const c of S.clubs) { c.level = teamLevel(c); c.price = 5 + c.rep * 0.3; }
@@ -955,22 +1082,64 @@ function endSeason() {
   lines.push(`Nowy sezon ${SEASON_LABEL(S.season)}. ${S.board.text}${S.board.euro ? ' W Europie: ' + S.board.euro + '.' : ''}`);
   const ec = Object.values(S.euro).find(c => c.teams.includes(ut.id));
   if (ec) lines.push(`🇪🇺 Zagramy w rozgrywkach: ${ec.name}!`);
+  seasonJobOffers(lines);
   const title = `Podsumowanie sezonu ${SEASON_LABEL(S.season - 1)}`;
   msg(title, lines.join('\n'));
   S.summary = { title, lines };
   return S.summary;
 }
-function setupTV(c) { const t = TVW[c.cc] || [5e4, 1e4]; c.tv = S.leagues[c.lg].tier === 1 ? t[0] : (t[1] || t[0] * 0.15); }
+function tvFor(c) { const t = TVW[c.cc] || [5e4, 1e4], tier = S.leagues[c.lg].tier, t2 = t[1] || t[0] * 0.15; return Math.round(tier === 1 ? t[0] : tier === 2 ? t2 : tier === 3 ? t2 * 0.3 : t2 * 0.12); }
+function setupTV(c) { c.tv = tvFor(c); }
 
 /* ---------- praca ---------- */
+function mgrGain(d) { S.mgr.ovr = clamp(Math.round((S.mgr.ovr + d) * 10) / 10, 20, 99); S.mgr.best = Math.max(S.mgr.best || 0, S.mgr.ovr); }
+const mgrLabel = o => o >= 85 ? 'Legenda' : o >= 76 ? 'Światowa klasa' : o >= 67 ? 'Uznany w Europie' : o >= 58 ? 'Solidny trener krajowy' : o >= 48 ? 'Trener niższych lig' : 'Debiutant';
+const maxRepFor = ovr => ovr + 8;           // najwyższa reputacja klubu, który może zaoferować pracę
+function fitsMgr(c) { return c.rep <= maxRepFor(S.mgr.ovr) && c.rep >= S.mgr.ovr - 30; }
 function jobOffers() {
-  return S.clubs.filter(c => c.id !== S.user && c.rep <= S.mrep + 8 && c.rep >= S.mrep - 25).sort(() => rnd() - 0.5).slice(0, 6).sort((a, b) => b.rep - a.rep);
+  return S.clubs.filter(c => c.id !== S.user && fitsMgr(c)).sort(() => rnd() - 0.5).slice(0, 6).sort((a, b) => b.rep - a.rep);
+}
+function offerJob(c, why) {
+  if (S.jobs.some(j => j.club === c.id) || c.id === S.user) return;
+  S.jobs.push({ id: S.nextId++, club: c.id, exp: S.day + 12, why });
+  msg('Oferta pracy', `${c.name} (${S.countries[c.cc].flag} ${S.leagues[c.lg].name}) ${why}. Szczegóły: Pulpit → Oferty pracy.`);
+}
+function coachMarket(d) {
+  S.jobs = S.jobs.filter(j => j.exp >= S.day && j.club !== S.user);
+  if (![12, 22, 32].includes(d.ls)) return;
+  for (const lg of Object.values(S.leagues)) {
+    const tb = table(lg.id), lv = lg.clubs.map(id => ({ id, l: teamLevel(club(id)) })).sort((a, b) => b.l - a.l);
+    for (const r of tb) {
+      const c = club(r.id); if (c.id === S.user) continue;
+      const exp = lv.findIndex(x => x.id === c.id) + 1;
+      if (r.pos - exp >= 5 && rnd() < 0.3) {
+        const old = c.coach; c.coach = genCoach(c.rep);
+        news(`${c.name} zwalnia trenera ${old.n}. Nowym szkoleniowcem został ${c.coach.n} (OVR ${c.coach.ovr}).`);
+        if (fitsMgr(c) && rnd() < 0.45) offerJob(c, 'zwolnił trenera i chce Cię zatrudnić');
+      }
+    }
+  }
+}
+function seasonJobOffers(lines) {
+  const grown = S.mgr.ovr >= (S.mgr.prev || 0);
+  S.mgr.prev = S.mgr.ovr;
+  const pool = S.clubs.filter(c => c.id !== S.user && fitsMgr(c) && c.rep > userClub().rep - 5);
+  const n = grown ? ri(1, 3) : ri(0, 1);
+  for (let i = 0; i < n && pool.length; i++) { const c = pool.splice(ri(0, pool.length - 1), 1)[0]; offerJob(c, 'jest zainteresowany Twoimi usługami'); }
+  if (S.jobs.length) lines.push(`📨 Oferty pracy: ${S.jobs.map(j => club(j.club).name).join(', ')}.`);
+}
+function acceptJob(id) {
+  const j = S.jobs.find(x => x.id === id); if (!j) return;
+  S.jobs = S.jobs.filter(x => x !== j);
+  const old = userClub(); old.coach = genCoach(old.rep);
+  takeOver(j.club);
 }
 function takeOver(id) {
-  S.user = id; S.sacked = false; S.board.conf = 60; S.offers = [];
+  S.user = id; S.sacked = false; S.board.conf = 60; S.offers = []; S.jobs = S.jobs.filter(j => j.club !== id);
   setBoardObjective(); autoPick(userClub());
   msg('Nowa praca', `Zostałeś trenerem ${userClub().name}. ${S.board.text}`); saveNow();
 }
+const ntAllowed = n => n.str <= S.mgr.ovr + 10;
 function setNT(code) { S.nt = code || null; if (code) S.ntTeams[code].sq = autoCallup(code); saveSoon(); }
 
 /* ---------- zapis (IndexedDB) ---------- */

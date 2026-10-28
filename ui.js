@@ -80,6 +80,7 @@ function vHome() {
     <div class="card stat"><small>${esc(S.leagues[ut.lg].name)}</small><b>${row.pos}. miejsce</b><small>${row.Pts} pkt • ${row.W}-${row.D}-${row.L}</small><div class="chips">${row.form.slice(-5).map(c => `<span class="chip ${c}">${c === 'W' ? 'Z' : c === 'D' ? 'R' : 'P'}</span>`).join('')}</div></div>
     <div class="card stat"><small>Drużyna</small><b>${moraleLabel(mAvg)[0]} ${moraleLabel(mAvg)[1]}</b><small>Morale ${mAvg} • kondycja ${fAvg}%</small>${bar(fAvg)}</div>
   </div>
+  ${S.jobs.length ? `<div class="card hl" data-act="jobs"><div class="row"><span style="font-size:22px">📨</span><b class="sp">Oferty pracy (${S.jobs.length})</b><small>Zobacz ›</small></div></div>` : ''}
   ${ec ? `<div class="card" data-act="goeuro" data-arg="${ec.id}"><div class="row"><span class="eu ${ec.id}">${ec.id === 'CL' ? '⭐' : ec.id === 'EL' ? '🟠' : '🟢'}</span><b class="sp">${ec.name}</b><small>${euroStatus(ec)}</small></div></div>` : ''}
   <div class="card"><div class="row"><b>Zarząd</b><span class="sp"></span><span class="${conf > 55 ? 'good' : conf > 30 ? 'warn' : 'bad'}">${conf > 70 ? 'Bardzo zadowolony' : conf > 50 ? 'Zadowolony' : conf > 30 ? 'Niezadowolony' : 'Na krawędzi zwolnienia!'}</span></div>
     ${bar(conf)}<small>${esc(S.board.text)}${S.board.euro ? ' Europa: ' + esc(S.board.euro) + '.' : ''}</small></div>
@@ -93,6 +94,15 @@ function euroStatus(c) {
   for (const st of ['F', 'SF', 'QF', 'R16', 'PO']) if (c.ko[st]) { const t = c.ko[st].find(t => t.a === S.user || t.b === S.user); if (t) return t.w == null ? STAGE_NAME[st] : t.w === S.user ? `awans (${STAGE_NAME[st]})` : `odpadli: ${STAGE_NAME[st]}`; }
   const r = lpTable(c).find(r => r.id === S.user); return r ? `faza ligowa: ${r.pos}. m. (${r.Pts} pkt)` : '';
 }
+ACT.jobs = () => {
+  modal(`<h2>📨 Oferty pracy</h2><small class="mut">Twój OVR trenera: ${Math.round(S.mgr.ovr)} (${mgrLabel(S.mgr.ovr)}). Przyjęcie oferty oznacza odejście z ${esc(userClub().name)}.</small>
+    ${S.jobs.map(j => { const c = club(j.club), r = table(c.lg).find(x => x.id === c.id); return `<div class="card"><div class="row">${badge(c)}<div class="sp"><b>${esc(c.name)}</b><br><small>${S.countries[c.cc].flag} ${esc(S.leagues[c.lg].name)} • ${r.pos}. miejsce • rep. ${c.rep}</small></div><span class="stars">${stars(c)}</span></div>
+      <small class="mut">Budżet transferowy ${money(c.tb)} • średnia kadry ${Math.round(teamLevel(c))} • ważna do ${fmtDate(S.cal[Math.min(j.exp, S.cal.length - 1)].date)}</small>
+      <div class="btns"><button class="btn pri sp" data-act="takejob" data-arg="${j.id}">Przyjmij</button><button class="btn" data-act="dropjob" data-arg="${j.id}">Odrzuć</button></div></div>`; }).join('')}
+    <div class="btns"><button class="btn full" data-act="close">Zamknij</button></div>`);
+};
+ACT.takejob = id => { if (!confirm('Przyjąć ofertę i zmienić klub?')) return; closeModal(); acceptJob(+id); UI.tab = 'home'; UI.lg = null; UI.nt = false; render(); toast(`Witamy w ${userClub().name}!`); };
+ACT.dropjob = id => { S.jobs = S.jobs.filter(j => j.id !== +id); saveSoon(); closeModal(); render(); };
 ACT.goeuro = a => { UI.tab = 'comps'; UI.compTab = 'euro'; UI.euro = a; render(); };
 ACT.gont = () => { UI.tab = 'club'; UI.clubTab = 'nt'; render(); };
 ACT.inbox = () => { S.inbox.forEach(m => m.read = true); saveSoon(); modal(`<h2>Wiadomości</h2>${S.inbox.map(m => `<div class="msg"><b>${esc(m.title)}</b><small>${m.date ? fmtDate(m.date) : ''}</small><p>${esc(m.body)}</p></div>`).join('')}<div class="btns"><button class="btn full" data-act="close">Zamknij</button></div>`); render(); };
@@ -204,6 +214,8 @@ ACT.info = id => {
       ${p.loan ? `<p class="mut">Wypożyczony z ${esc(club(p.loan.from).name)} do końca sezonu.</p><div class="btns"><button class="btn sm red" data-act="release" data-arg="${p.id}">Zakończ wypożyczenie</button></div>` : `
       <h3>Kontrakt (${p.con} ${p.con === 1 ? 'rok' : 'lata'})</h3><div class="btns">${[1, 2, 3, 4, 5].map(y => `<button class="btn sm" data-act="renew" data-arg="${p.id}:${y}">${y} l. • ${money(renewDemand(p, y))}/t</button>`).join('')}</div>
       <div class="btns"><button class="btn sm ${p.listed ? 'pri' : ''}" data-act="list" data-arg="${p.id}">${p.listed ? '✔ Na liście transferowej' : 'Wystaw na sprzedaż'}</button><button class="btn sm" data-act="loanout" data-arg="${p.id}">Wypożycz</button><button class="btn sm red" data-act="release" data-arg="${p.id}">Rozwiąż (${money(p.wage * 20 * p.con)})</button></div>`}`;
+  } else if (p.tid === -3) {
+    act = `<div class="btns"><button class="btn pri sp" data-act="promote" data-arg="${p.id}">⬆ Awans do pierwszego zespołu</button><button class="btn red" data-act="relyouth" data-arg="${p.id}">Zwolnij</button></div>`;
   } else if (p.tid !== -2) {
     act = `<div class="btns">
       ${p.tid === -1 ? `<button class="btn pri sp" data-act="nego" data-arg="${p.id}">✍️ Podpisz (wolny)</button>` : `<button class="btn pri sp" data-act="nego" data-arg="${p.id}">💰 Złóż ofertę</button><button class="btn" data-act="loanin" data-arg="${p.id}">Wypożycz</button>`}
@@ -339,7 +351,7 @@ ACT.rnd = d => { UI.rnd = clamp(UI.rnd + +d, 0, S.leagues[UI.lg].fix.length - 1)
 ACT.clubv = id => {
   const c = club(+id); const tb = table(c.lg).find(r => r.id === c.id);
   modal(`<h2>${badge(c)} ${esc(c.name)}</h2><small class="mut">${S.countries[c.cc].flag} ${esc(S.leagues[c.lg].name)} • ${tb.pos}. miejsce • <span class="stars">${stars(c)}</span> • stadion ${c.cap.toLocaleString('pl-PL')}</small>
-    <div class="kv"><div><span>Średnia kadry</span><b>${Math.round(teamLevel(c))}</b></div><div><span>Współczynnik UEFA</span><b>${clubCoef(c.id).toFixed(1)}</b></div></div>
+    <div class="kv"><div><span>Średnia kadry</span><b>${Math.round(teamLevel(c))}</b></div><div><span>Współczynnik UEFA</span><b>${clubCoef(c.id).toFixed(1)}</b></div><div><span>Trener</span><b>${c.id === S.user ? esc(S.manager) : esc(c.coach.n)}</b></div><div><span>OVR trenera</span>${ovrTag(Math.round(c.id === S.user ? S.mgr.ovr : c.coach.ovr))}</div></div>
     <div class="list">${c.players.slice().sort((a, b) => POSITIONS.indexOf(a.pos) - POSITIONS.indexOf(b.pos) || b.ovr - a.ovr).map(p => `<div class="prow" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${flag(p.nat)} ${esc(p.n)}<small>${p.age} l.</small></div>${ovrShow(p)}</div>`).join('')}</div>
     <div class="btns"><button class="btn full" data-act="close">Zamknij</button></div>`);
 };
@@ -425,7 +437,7 @@ function mkRow(p) {
 }
 function vSearch() {
   const f = UI.f;
-  let list = PALL.filter(p => p.tid !== S.user && p.tid !== -2);
+  let list = PALL.filter(p => p.tid !== S.user && p.tid > -2);
   if (f.cc === 'FREE') list = list.filter(p => p.tid === -1); else if (f.cc) list = list.filter(p => p.tid >= 0 && club(p.tid).cc === f.cc);
   if (f.pos) list = list.filter(p => p.pos === f.pos);
   if (f.age) list = list.filter(p => p.age <= f.age);
@@ -500,8 +512,8 @@ function vNews() { return `<div class="card">${S.news.map(n => `<div class="msg"
 
 /* ---------- KLUB ---------- */
 function vClub() {
-  const head = tabs([['fin', 'Finanse'], ['fac', 'Obiekty'], ['nt', 'Reprezentacja'], ['game', 'Gra']], UI.clubTab, 'cltab');
-  return head + ({ fin: vFin, fac: vFac, nt: vNTManage, game: vGame })[UI.clubTab]();
+  const head = tabs([['mgr', 'Trener'], ['acad', 'Akademia'], ['fin', 'Finanse'], ['fac', 'Obiekty'], ['nt', 'Reprezentacja'], ['game', 'Gra']], UI.clubTab, 'cltab');
+  return head + ({ mgr: vMgr, acad: vAcad, fin: vFin, fac: vFac, nt: vNTManage, game: vGame })[UI.clubTab]();
 }
 ACT.cltab = a => { UI.clubTab = a; render(); };
 function vFin() {
@@ -515,19 +527,44 @@ function vFin() {
     <div><span>Bilans transferów</span><b class="${ut.fin.tr < 0 ? 'bad' : 'good'}">${money(ut.fin.tr)}</b></div><div><span>Reputacja</span><b>${ut.rep}</b></div></div>
     ${lf ? `<small class="mut">Ostatni tydzień: bilety ${money(lf.gate)}, TV ${money(lf.tv)}, sponsorzy ${money(lf.spons)}, pensje ${money(lf.wages)} → <b class="${lf.net >= 0 ? 'good' : 'bad'}">${money(lf.net)}</b></small>` : ''}</div>
     <div class="card"><h2>Zarząd</h2>${bar(S.board.conf)}<small>Zaufanie ${Math.round(S.board.conf)}%. ${esc(S.board.text)}${S.board.euro ? ' Europa: ' + esc(S.board.euro) + '.' : ''}</small>
-    <div class="kv"><div><span>Menedżer</span><b>${esc(S.manager)}</b></div><div><span>Reputacja menedżera</span><b>${Math.round(S.mrep)}</b></div></div></div>`;
+    <div class="kv"><div><span>Menedżer</span><b>${esc(S.manager)}</b></div><div><span>OVR trenera</span><b>${Math.round(S.mgr.ovr)}</b></div></div></div>`;
 }
+function vMgr() {
+  const o = S.mgr.ovr, maxR = maxRepFor(o);
+  const cnt = tier => S.clubs.filter(c => S.leagues[c.lg].tier === tier && c.rep <= maxR).length;
+  const coaches = S.clubs.filter(c => c.id !== S.user).map(c => ({ c, o: c.coach.ovr })).sort((a, b) => b.o - a.o).slice(0, 15);
+  return `<div class="card hl"><div class="row"><span class="ovr ${ovrCls(Math.round(o))}" style="font-size:22px;height:40px;min-width:48px">${Math.round(o)}</span><div class="sp"><b>${esc(S.manager)}</b><br><small class="mut">${mgrLabel(o)} • najwyższy OVR: ${Math.round(S.mgr.best || o)}</small></div></div>
+    ${bar(o)}<small class="mut">OVR trenera rośnie za wygrane (zwłaszcza z silniejszymi), realizację celów, awanse, trofea i sukcesy w pucharach. Wpływa też lekko na grę Twojej drużyny.</small></div>
+    <div class="card"><h2>Rynek pracy</h2><small class="mut">Oferty mogą składać kluby o reputacji do <b>${maxR}</b>. Dostępne kluby: poziom 1: ${cnt(1)} • poziom 2: ${cnt(2)} • poziom 3: ${cnt(3)} • poziom 4: ${cnt(4)}.</small>
+    <div class="btns"><button class="btn sm" data-act="jobs" ${S.jobs.length ? '' : 'disabled'}>Oferty pracy (${S.jobs.length})</button></div></div>
+    <div class="card list"><h2>Najlepsi trenerzy</h2>${coaches.map(x => `<div class="prow" data-act="clubv" data-arg="${x.c.id}">${badge(x.c, 'sm')}<div class="pn">${esc(x.c.coach.n)}<small>${esc(x.c.name)}</small></div>${ovrTag(x.o)}</div>`).join('')}</div>`;
+}
+function vAcad() {
+  const A = S.acad, ys = A.youth.slice().sort((a, b) => b.acad.est - a.acad.est);
+  const f = (k, d) => `<div class="row" style="margin:8px 0"><div class="sp"><b>${ACAD_NAMES[k]}</b><br><small class="mut">${d}</small></div><span class="stars">${'★'.repeat(A[k])}${'☆'.repeat(5 - A[k])}</span>${A[k] < 5 ? `<button class="btn sm" data-act="upfac" data-arg="${k}">${money(FAC_COST(A[k]))}</button>` : ''}</div>`;
+  const potStars = v => { const n = clamp(Math.round((v - 50) / 9), 1, 5); return '★'.repeat(n) + '☆'.repeat(5 - n); };
+  return `<div class="card"><h2>🎓 Akademia</h2>
+    ${f('fac', 'Wyższy potencjał wychowanków')}${f('coach', 'Szybszy rozwój i trafniejsza ocena potencjału')}${f('rec', 'Więcej juniorów co sezon, większa szansa na talent pokolenia')}
+    <small class="mut">Koszt utrzymania: ${money(acadCost())}/tydz. • nabór: w marcu każdego sezonu.</small>
+    <h3>Region rekrutacji</h3><select data-change="acreg" style="width:100%"><option value="">Kraj klubu (${S.countries[userClub().cc].name})</option>${NATIONS.slice().sort((a, b) => a.name.localeCompare(b.name, 'pl')).map(n => `<option value="${n.code}" ${A.region === n.code ? 'selected' : ''}>${n.flag} ${n.name}</option>`).join('')}</select></div>
+    <h3>Juniorzy (${ys.length})</h3>
+    <div class="card list">${ys.map(y => `<div class="prow" data-act="info" data-arg="${y.id}">${posTag(y.pos)}<div class="pn">${flag(y.nat)} ${esc(y.n)}<small>${y.age} l. • potencjał <span class="stars">${potStars(y.acad.est)}</span> (~${y.acad.est})</small></div>${ovrTag(y.ovr)}<button class="btn sm" data-act="promote" data-arg="${y.id}">⬆</button><button class="info" data-act="relyouth" data-arg="${y.id}">✕</button></div>`).join('') || '<small class="mut">Brak juniorów – pierwszy nabór w marcu.</small>'}</div>
+    <small class="mut">⬆ – awans do pierwszego zespołu. Juniorzy, którzy skończą 19 lat bez awansu, odchodzą z klubu.</small>`;
+}
+CHG.acreg = v => { S.acad.region = v; saveSoon(); };
+ACT.promote = id => { const r = promoteYouth(+id); toast(r.msg); closeModal(); render(); };
+ACT.relyouth = id => { if (confirm('Zwolnić juniora z akademii?')) { releaseYouth(+id); closeModal(); render(); } };
 function vFac() {
   const ut = userClub();
-  const f = (k, n, d) => `<div class="card"><div class="row"><b class="sp">${n}</b><span class="stars">${'★'.repeat(S.fac[k])}${'☆'.repeat(5 - S.fac[k])}</span></div><small class="mut">${d}</small>
-    <div class="btns">${S.fac[k] < 5 ? `<button class="btn sm pri" data-act="upfac" data-arg="${k}">Rozbuduj • ${money(FAC_COST(S.fac[k]))}</button>` : '<span class="pill g">Maksymalny poziom</span>'}</div></div>`;
-  return f('train', 'Ośrodek treningowy', 'Przyspiesza rozwój zawodników.') + f('youth', 'Akademia młodzieżowa', 'Więcej i zdolniejszych wychowanków co sezon.') +
+  const f = (k, n, d) => `<div class="card"><div class="row"><b class="sp">${n}</b><span class="stars">${'★'.repeat(facGet(k))}${'☆'.repeat(5 - facGet(k))}</span></div><small class="mut">${d}</small>
+    <div class="btns">${facGet(k) < 5 ? `<button class="btn sm pri" data-act="upfac" data-arg="${k}">Rozbuduj • ${money(FAC_COST(facGet(k)))}</button>` : '<span class="pill g">Maksymalny poziom</span>'}</div></div>`;
+  return f('train', 'Ośrodek treningowy', 'Przyspiesza rozwój zawodników.') + `<div class="card"><small class="mut">Obiekty akademii rozbudujesz w zakładce Akademia.</small></div>` +
     `<div class="card"><h2>Stadion</h2><small class="mut">${ut.cap.toLocaleString('pl-PL')} miejsc • średnia cena biletu ${Math.round(ut.price)} €</small></div>`;
 }
 ACT.upfac = k => { const r = upgradeFacility(k); toast(r.msg); render(); };
 function vNTManage() {
   if (!S.nt) return `<div class="card"><h2>Reprezentacja</h2><small class="mut">Możesz jednocześnie prowadzić klub i reprezentację. Wybierz kadrę narodową:</small></div>
-    <div class="card list">${NATIONS.slice().sort((a, b) => b.str - a.str).map(n => `<div class="prow"><span style="font-size:20px">${n.flag}</span><div class="pn">${esc(n.name)}<small>${n.conf} • siła ${n.str}</small></div><button class="btn sm" data-act="takent" data-arg="${n.code}">Obejmij</button></div>`).join('')}</div>`;
+    <div class="card list">${NATIONS.slice().sort((a, b) => b.str - a.str).map(n => `<div class="prow"><span style="font-size:20px">${n.flag}</span><div class="pn">${esc(n.name)}<small>${n.conf} • siła ${n.str}</small></div>${ntAllowed(n) ? `<button class="btn sm" data-act="takent" data-arg="${n.code}">Obejmij</button>` : `<span class="mut">🔒 OVR ${n.str - 10}</span>`}</div>`).join('')}</div>`;
   const st = S.ntTeams[S.nt], n = NAT[S.nt];
   const sq = st.sq.map(pget).filter(Boolean).sort((a, b) => POSITIONS.indexOf(a.pos) - POSITIONS.indexOf(b.pos) || b.ovr - a.ovr);
   const pool = (NATIDX.get(S.nt) || []).filter(p => !st.sq.includes(p.id)).sort((a, b) => b.ovr - a.ovr).slice(0, 40);
@@ -539,7 +576,7 @@ function vNTManage() {
     <h3>Do powołania</h3><div class="card list">${pool.map(p => `<div class="prow" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${esc(p.n)}<small>${esc(clubName(p))} • ${p.age} l. ${stTag(p)}</small></div>${ovrTag(p.ovr)}<button class="info" data-act="call" data-arg="${p.id}">+</button></div>`).join('')}</div>
     <small class="mut">Skład i taktykę reprezentacji ustawisz w zakładce Skład → Reprezentacja.</small>`;
 }
-ACT.takent = c => { setNT(c); toast(`Zostałeś selekcjonerem: ${NAT[c].name}!`); msg('Reprezentacja', `Objąłeś reprezentację: ${NAT[c].name}.`); render(); };
+ACT.takent = c => { if (!ntAllowed(NAT[c])) return toast('Za niski OVR trenera.'); setNT(c); toast(`Zostałeś selekcjonerem: ${NAT[c].name}!`); msg('Reprezentacja', `Objąłeś reprezentację: ${NAT[c].name}.`); render(); };
 ACT.leavent = () => { if (confirm('Zrezygnować z prowadzenia reprezentacji?')) { setNT(null); UI.nt = false; render(); } };
 ACT.autocall = () => { S.ntTeams[S.nt].sq = autoCallup(S.nt); saveSoon(); render(); };
 ACT.call = id => { const st = S.ntTeams[S.nt]; if (st.sq.length >= 26) return toast('Maksymalnie 26 powołanych.'); st.sq.push(+id); saveSoon(); render(); };
@@ -560,7 +597,7 @@ ACT.export = () => {
 };
 CHG.import = (v, el) => {
   const f = el.files[0]; if (!f) return;
-  const r = new FileReader(); r.onload = async () => { try { const s = JSON.parse(r.result); if (s.v !== 2) throw 0; useSave(s); await saveNow(); toast('Wczytano zapis.'); render(); } catch (e) { toast('Nieprawidłowy plik zapisu.'); } };
+  const r = new FileReader(); r.onload = async () => { try { const s = JSON.parse(r.result); if (s.v !== 3) throw 0; useSave(s); await saveNow(); toast('Wczytano zapis.'); render(); } catch (e) { toast('Nieprawidłowy plik zapisu.'); } };
   r.readAsText(f);
 };
 
@@ -575,7 +612,7 @@ ACT.prematch = () => {
   const sl = mine.lineup.map(pget), tired = sl.filter(p => p.fit < 65);
   modal(`<h2>Przed meczem</h2><small class="mut">${esc(MX.opts.label)}</small>
     <div class="fixture"><div class="tm">${badge(MX.h, 'lg')}<span>${esc(MX.h.name)}</span></div><div class="vs">vs</div><div class="tm">${badge(MX.a, 'lg')}<span>${esc(MX.a.name)}</span></div></div>
-    <div class="kv"><div><span>Formacja</span><b>${mine.formation}</b></div><div><span>Średnia XI</span><b>${lineupAvg(mine)}</b></div><div><span>Rywal (śr.)</span><b>${Math.round(avg(opp.players.map(p => p.ovr).sort((a, b) => b - a).slice(0, 11)))}</b></div><div><span>Rywal – forma</span><b>${opp.nation ? '–' : table(opp.lg).find(r => r.id === opp.id).form.slice(-5).join('') || '–'}</b></div></div>
+    <div class="kv"><div><span>Formacja</span><b>${mine.formation}</b></div><div><span>Średnia XI</span><b>${lineupAvg(mine)}</b></div><div><span>Rywal (śr.)</span><b>${Math.round(avg(opp.players.map(p => p.ovr).sort((a, b) => b - a).slice(0, 11)))}</b></div><div><span>Rywal – forma</span><b>${opp.nation ? '–' : table(opp.lg).find(r => r.id === opp.id).form.slice(-5).join('') || '–'}</b></div><div><span>Twój OVR trenera</span><b>${Math.round(S.mgr.ovr)}</b></div><div><span>Trener rywala</span><b>${Math.round(coachOvr(opp))}</b></div></div>
     <h3>Mentalność</h3><div class="seg">${Object.entries(MENT).map(([k, v]) => `<button class="btn sm ${(mine.ment || 'bal') === k ? 'on' : ''}" data-act="prement" data-arg="${k}">${v}</button>`).join('')}</div>
     ${msgs.length ? `<p class="warn">${msgs.map(esc).join('<br>')}</p>` : ''}
     ${tired.length ? `<p class="warn">😮‍💨 Zmęczeni: ${tired.map(p => esc(lastName(p)) + ' ' + Math.round(p.fit) + '%').join(', ')}</p>` : ''}
@@ -680,31 +717,41 @@ function showSacked() {
 ACT.takeover = id => { closeModal(); takeOver(+id); UI.tab = 'home'; UI.lg = null; render(); };
 
 /* ---------- EKRAN STARTOWY ---------- */
-const ST = { cc: 'POL', lg: 'POL1', club: null, nt: '' };
+const PROFILES = [[45, 'Debiutant', 'OVR 45 – kluby niższych lig'], [55, 'Licencja UEFA Pro', 'OVR 55 – mocniejsze kluby niższych lig i małe kluby ekstraklas'], [0, 'Tryb swobodny', 'OVR 75 – dowolny klub, bez ograniczeń']];
+const ST = { cc: 'POL', lg: 'POL2', club: null, nt: '', prof: 45 };
+const stOvr = () => ST.prof || 75;
+const stAllowed = c => !ST.prof || c.rep <= maxRepFor(ST.prof);
 function showStart(hasSaveGame) {
   $('#app').classList.add('hidden'); $('#start').classList.remove('hidden');
+  if (!S.leagues[ST.lg]) ST.lg = S.countries[ST.cc].leagues[0];
   const lg = S.leagues[ST.lg];
   const clubs = lg.clubs.map(club).sort((a, b) => b.rep - a.rep);
-  $('#start').innerHTML = `<div class="in"><div class="logo">⚽</div><h1>Kariera Menedżera</h1><p class="mut">27 lig • 456 klubów • Liga Mistrzów, Liga Europy, Liga Konferencji • reprezentacje • skauting</p>
+  const nClubs = S.clubs.length, nLg = Object.keys(S.leagues).length, nReal = sum(S.clubs.map(c => c.realCount || 0));
+  $('#start').innerHTML = `<div class="in"><div class="logo">⚽</div><h1>Kariera Menedżera</h1><p class="mut">${nLg} lig • ${nClubs} klubów • ${nReal} prawdziwych zawodników • Liga Mistrzów, Liga Europy, Liga Konferencji • reprezentacje • akademia</p>
     ${hasSaveGame ? `<button class="btn pri full" data-act="continue" style="margin-bottom:14px">▶ Kontynuuj karierę</button>` : ''}
     <h3>Nowa kariera</h3>
     <input id="mname" placeholder="Imię i nazwisko menedżera" maxlength="28" style="width:100%;margin-bottom:10px" value="${esc(S.manager || '')}">
+    <h3>Profil trenera</h3>
+    ${PROFILES.map(([o, n, d]) => `<button class="club ${ST.prof === o ? 'on' : ''}" data-act="stprof" data-arg="${o}"><span class="ovr ${ovrCls(o || 75)}">${o || 75}</span><div class="sp"><b>${n}</b><br><small>${d}</small></div></button>`).join('')}
+    <h3>Wybierz klub</h3>
     <div class="flt"><select data-change="stcc">${Object.values(S.countries).map(c => `<option value="${c.code}" ${ST.cc === c.code ? 'selected' : ''}>${c.flag} ${c.name}</option>`).join('')}</select>
     <select data-change="stlg">${S.countries[ST.cc].leagues.map(id => `<option value="${id}" ${ST.lg === id ? 'selected' : ''}>${S.leagues[id].name}</option>`).join('')}</select></div>
-    ${clubs.map(c => `<button class="club ${ST.club === c.id ? 'on' : ''}" data-act="stclub" data-arg="${c.id}">${badge(c)}<div class="sp"><b>${esc(c.name)}</b><br><small>Budżet: ${money(c.tb)} • średnia ${Math.round(teamLevel(c))}</small></div><span class="stars">${stars(c)}</span></button>`).join('')}
+    ${ST.prof ? `<small class="mut">Z OVR ${ST.prof} możesz objąć kluby o reputacji do ${maxRepFor(ST.prof)}. Lepsze wyniki = wyższy OVR = oferty większych klubów.</small>` : ''}
+    ${clubs.map(c => { const ok = stAllowed(c); return `<button class="club ${ST.club === c.id ? 'on' : ''} ${ok ? '' : 'locked'}" data-act="stclub" data-arg="${c.id}" ${ok ? '' : 'disabled'}>${badge(c)}<div class="sp"><b>${ok ? '' : '🔒 '}${esc(c.name)}</b><br><small>Budżet: ${money(c.tb)} • średnia ${Math.round(teamLevel(c))} • rep. ${c.rep}</small></div><span class="stars">${stars(c)}</span></button>`; }).join('')}
     <h3>Reprezentacja (opcjonalnie)</h3>
-    <select data-change="stnt" style="width:100%"><option value="">Bez reprezentacji</option>${NATIONS.slice().sort((a, b) => a.name.localeCompare(b.name, 'pl')).map(n => `<option value="${n.code}" ${ST.nt === n.code ? 'selected' : ''}>${n.flag} ${n.name}</option>`).join('')}</select>
+    <select data-change="stnt" style="width:100%"><option value="">Bez reprezentacji</option>${NATIONS.filter(n => !ST.prof || n.str <= stOvr() + 10).sort((a, b) => a.name.localeCompare(b.name, 'pl')).map(n => `<option value="${n.code}" ${ST.nt === n.code ? 'selected' : ''}>${n.flag} ${n.name}</option>`).join('')}</select>
     <button class="btn pri full" data-act="begin" style="position:sticky;bottom:10px;margin-top:14px" ${ST.club == null ? 'disabled' : ''}>Rozpocznij karierę</button></div>`;
 }
 const keepName = () => { const el = $('#mname'); if (el) S.manager = el.value; };
-CHG.stcc = v => { keepName(); ST.cc = v; ST.lg = S.countries[v].leagues[0]; ST.club = null; showStart(START_SAVE); };
+CHG.stcc = v => { keepName(); ST.cc = v; ST.lg = S.countries[v].leagues[Math.min(1, S.countries[v].leagues.length - 1)]; ST.club = null; showStart(START_SAVE); };
 CHG.stlg = v => { keepName(); ST.lg = v; ST.club = null; showStart(START_SAVE); };
 CHG.stnt = v => { ST.nt = v; };
+ACT.stprof = o => { keepName(); ST.prof = +o; if (ST.club != null && !stAllowed(club(ST.club))) ST.club = null; ST.nt = ''; const y = window.scrollY; showStart(START_SAVE); window.scrollTo(0, y); };
 ACT.stclub = id => { keepName(); ST.club = +id; const y = window.scrollY; showStart(START_SAVE); window.scrollTo(0, y); };
 ACT.begin = () => {
   if (ST.club == null) return;
   const n = ($('#mname').value || '').trim() || 'Menedżer';
-  startCareer(n, ST.club, ST.nt || null); enterApp();
+  startCareer(n, ST.club, ST.nt || null, stOvr()); enterApp();
 };
 let START_SAVE = null;
 ACT.continue = () => { useSave(START_SAVE); enterApp(); if (S.sacked) showSacked(); };
@@ -717,7 +764,7 @@ document.addEventListener('change', e => { const el = e.target.closest('[data-ch
   busy(true, 'Tworzenie świata…');
   await new Promise(r => setTimeout(r, 30));
   START_SAVE = await loadSave();
-  if (START_SAVE && START_SAVE.v !== 2) START_SAVE = null;
+  if (START_SAVE && START_SAVE.v !== 3) START_SAVE = null;
   createWorld();
   busy(false);
   showStart(!!START_SAVE);

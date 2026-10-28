@@ -53,12 +53,15 @@ function develop(p, d) {
   p.ovr = calcOvr(p.pos, p.a);
 }
 const attrs = p => p.a.map(x => Math.round(x));
+const OVC = new WeakMap();   // pamięć podręczna ocen na pozycjach
 function ovrAt(p, pos) {
   if ((p.pos === 'GK') !== (pos === 'GK')) return 25;
   if (pos === p.pos) return p.ovr;
+  let c = OVC.get(p);
+  if (!c || c._o !== p.ovr) { c = { _o: p.ovr }; OVC.set(p, c); }
+  if (c[pos] !== undefined) return c[pos];
   const v = calcOvr(pos, p.a);
-  if (p.alt && p.alt.includes(pos)) return Math.min(v, p.ovr);
-  return Math.round(Math.min(v, p.ovr) - (REL[p.pos].includes(pos) ? 2 : 7));
+  return c[pos] = (p.alt && p.alt.includes(pos)) ? Math.min(v, p.ovr) : Math.round(Math.min(v, p.ovr) - (REL[p.pos].includes(pos) ? 2 : 7));
 }
 function bestAlt(pos, a) {
   return REL[pos].filter(q => calcOvr(q, a) >= calcOvr(pos, a) - 3).slice(0, 2);
@@ -171,7 +174,7 @@ function makeSide(t, isUser, quick, emergency) {
     t, ment: isUser ? (t.ment || 'bal') : 'bal', ai: !isUser || quick, user: isUser,
     pitch: t.lineup.map((id, i) => { const p = pget(id); return p ? { p, pos: slots[i].pos, ov: ovrAt(p, slots[i].pos) } : null; }).filter(Boolean),
     bench: t.bench.map(pget).filter(Boolean), subs: 0, goals: 0, shots: 0, sot: 0, poss: 0, fouls: 0, yel: 0, corners: 0,
-    rec: {}, str: null, scorers: [],
+    rec: {}, str: null, scorers: [], cf: 1 + ((typeof coachOvr === 'function' ? coachOvr(t) : 60) - 60) * 0.0009,
   };
   for (const s of side.pitch) side.rec[s.p.id] = { p: s.p, on: 0, off: null, g: 0, a: 0, y: 0, r: 0, sv: 0, pos: s.pos };
   return side;
@@ -197,7 +200,8 @@ function calcStr(side, minute) {
   const miss = 1 - 0.07 * (11 - side.pitch.length);
   const am = side.ment === 'att' ? 1.04 : side.ment === 'def' ? 0.96 : 1;
   const dm = side.ment === 'att' ? 0.97 : side.ment === 'def' ? 1.04 : 1;
-  side.str = { gk: av(g.GK) * miss, def: av(g.DEF) * miss * dm, mid: av(g.MID) * miss, att: av(g.ATT.length ? g.ATT : g.MID) * miss * am };
+  const cf = side.cf || 1;
+  side.str = { gk: av(g.GK) * miss * cf, def: av(g.DEF) * miss * dm * cf, mid: av(g.MID) * miss * cf, att: av(g.ATT.length ? g.ATT : g.MID) * miss * am * cf };
 }
 function ev(m, type, side, text, extra) { const e = { min: m.minute, type, side: side ? (side === m.home ? 'h' : 'a') : null, text, ...extra }; m.ev.push(e); return e; }
 const GOAL_TXT = ['{s} pakuje piłkę do siatki!', '{s} uderza przy słupku – nie do obrony!', '{s} wykańcza akcję zespołu!', '{s} pewnie wykorzystuje sytuację sam na sam!', '{s} główkuje do siatki!', '{s} uderza z dystansu – bramkarz bez szans!', '{s} dobija odbitą piłkę!', '{s} mija bramkarza i trafia do pustej bramki!'];
@@ -356,6 +360,57 @@ function finishMatch(m) {
   const all = [...Object.values(m.home.rec), ...Object.values(m.away.rec)];
   m.motm = all.slice().sort((a, b) => b.rating - a.rating)[0];
   m.winner = winnerSide(m);
+}
+
+/* szybka symulacja (mecze AI): ten sam model siły, wynik losowany z rozkładu Poissona */
+const FAST_K = 1.36;
+function poisson(l) { let L = Math.exp(-l), k = 0, p = 1; do { k++; p *= rnd(); } while (p > L); return k - 1; }
+function fastSim(h, a, opts = {}) {
+  const m = createMatch(h, a, { ...opts, quick: true });
+  const H = m.home, A = m.away;
+  // zmiany: 3 najbardziej zmęczonych w 65. minucie
+  for (const side of [H, A]) for (let k = 0; k < 3; k++) { m.minute = 62 + k * 6; aiSubs(m, side); }
+  m.minute = 45; calcStr(H, 45); calcStr(A, 45);
+  const hm = Math.pow(H.str.mid, 2) * (m.neutral ? 1 : 1.06), am = Math.pow(A.str.mid, 2), ph = hm / (hm + am);
+  const xg = (S1, S2, poss) => {
+    const aS = 0.7 * S1.str.att + 0.3 * S1.str.mid, dS = 0.65 * S2.str.def + 0.35 * S2.str.mid;
+    const mA = S1.ment === 'att' ? 1.18 : S1.ment === 'def' ? 0.82 : 1, mO = S2.ment === 'att' ? 1.12 : S2.ment === 'def' ? 0.88 : 1;
+    const shots = 90 * poss * clamp(0.25 * Math.pow(aS / dS, 1.7) * mA * mO, 0.03, 0.7);
+    const q = S1.str.att * 0.97 / (0.5 * S2.str.gk + 0.5 * S2.str.def);
+    return { shots, g: shots * clamp(0.083 * Math.pow(q, 2.6), 0.02, 0.4) * FAST_K };
+  };
+  const xh = xg(H, A, ph), xa = xg(A, H, 1 - ph);
+  const addGoals = (side, n, from, to) => {
+    for (let i = 0; i < n; i++) {
+      const c = side.pitch.filter(s => s.pos !== 'GK'); if (!c.length) return;
+      const sh = wpick(c, s => SHOT_W[s.pos] * Math.pow((s.p.pos === 'GK' ? 20 : s.p.a[1]) / 60, 3));
+      m.minute = ri(from, to);
+      side.goals++; side.rec[sh.p.id].g++;
+      if (rnd() < 0.72) { const cc = side.pitch.filter(s => s !== sh && s.pos !== 'GK'); if (cc.length) side.rec[wpick(cc, s => (LINE[s.pos] === 'DEF' ? 1 : 3) * (s.p.a[2] / 60)).p.id].a++; }
+      side.scorers.push({ min: m.minute, name: shortName(sh.p), pid: sh.p.id });
+    }
+  };
+  addGoals(H, poisson(xh.g), 1, 90); addGoals(A, poisson(xa.g), 1, 90);
+  H.shots = Math.round(xh.shots); A.shots = Math.round(xa.shots); H.sot = Math.max(H.goals, Math.round(H.shots * 0.38)); A.sot = Math.max(A.goals, Math.round(A.shots * 0.38));
+  H.poss = Math.round(ph * 90); A.poss = 90 - H.poss;
+  const club = m.comp !== 'N' && m.comp !== 'T' && m.comp !== 'F';
+  for (const side of [H, A]) {
+    const ps = side.pitch.filter(s => s.pos !== 'GK');
+    for (let i = poisson(1.6); i > 0 && ps.length; i--) side.rec[pick(ps).p.id].y = 1;
+    if (rnd() < 0.05 && ps.length) { const s = pick(ps); side.rec[s.p.id].r = 1; if (club) { s.p.susp = ri(1, 2); s.p._fresh = true; } }
+    if (rnd() < 0.1) { const s = pick(side.pitch); s.p.inj = rnd() < 0.7 ? ri(5, 21) : rnd() < 0.83 ? ri(25, 56) : ri(60, 160); }
+    const gk = side.pitch.find(s => s.pos === 'GK'); const opp = side === H ? A : H;
+    if (gk) side.rec[gk.p.id].sv = Math.max(0, opp.sot - opp.goals);
+  }
+  m.minute = 90;
+  if (m.ko && tied(m)) {
+    m.et = true; m.minute = 120;
+    addGoals(H, poisson(xh.g / 3), 91, 120); addGoals(A, poisson(xa.g / 3), 91, 120);
+    if (tied(m)) shootout(m);
+  }
+  m.scorersSorted = true;
+  finishMatch(m);
+  return m;
 }
 function simulate(h, a, opts = {}) { const m = createMatch(h, a, { ...opts, quick: true }); while (!m.over) step(m); return m; }
 

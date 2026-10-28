@@ -1,3 +1,5 @@
+// Kraje, ligi i kluby z prawdziwymi składami ładowane są z plików data/*.js (COUNTRY_DATA.push(...)).
+const COUNTRY_DATA = [];
 // Dane gry: kraje, ligi, kluby, reprezentacje i pule nazwisk.
 // Krotka klubu: [nazwa, skrót, kolor główny, kolor drugi, reputacja 1-100, pojemność stadionu]
 

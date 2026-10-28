@@ -353,6 +353,7 @@ function allocateEurope() {
     const teams = list.slice().sort((a, b) => (b === W[id] ? 1 : 0) - (a === W[id] ? 1 : 0) || clubCoef(b) - clubCoef(a));
     for (const t of teams) S.cpts[club(t).cc].n++;
     S.euro[id] = { id, name: COMP_NAME[id], teams, lp: genLeaguePhase(teams, pots), ko: {}, champion: null };
+    for (const t of teams) reachStage(id, t, 'part');
   }
 }
 function genLeaguePhase(teams, nPots) {
@@ -551,7 +552,7 @@ function finishTie(comp, st, t, m, single) {
   else { t.m2 = { hg: m.home.goals, ag: m.away.goals, pens: m.pens, et: m.et }; t.w = m.winner === 'h' ? t.b : t.a; euroResult(comp.id, t.b, t.a, m.home.goals, m.away.goals); }
   const next = { PO: 'R16', R16: 'QF', QF: 'SF', SF: 'F' }[st];
   if (next) reachStage(comp.id, t.w, next);
-  if (st === 'F') { comp.champion = t.w; reachStage(comp.id, t.w, 'champ'); euroMoney(t.w, PRIZE[comp.id].champ); }
+  if (st === 'F') { comp.champion = t.w; reachStage(comp.id, t.w, 'champ'); }
 }
 function userMatchToday() {
   if (S.day >= S.cal.length) return null;

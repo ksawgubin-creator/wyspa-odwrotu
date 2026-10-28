@@ -296,7 +296,7 @@ function aiSubs(m, side) {
 }
 const tied = m => (m.home.goals + (m.ko ? m.ko.aggH : 0)) === (m.away.goals + (m.ko ? m.ko.aggA : 0));
 function shootout(m) {
-  const takers = side => side.pitch.filter(s => s.pos !== 'GK').sort((a, b) => b.p.a[1] - a.p.a[1]).map(s => s.p).concat(side.pitch.filter(s => s.pos === 'GK').map(s => s.p));
+  const takers = side => { const sp = side.t.sp && side.t.sp.pen; return side.pitch.filter(s => s.pos !== 'GK').sort((a, b) => (b.p.id === sp) - (a.p.id === sp) || b.p.a[1] - a.p.a[1]).map(s => s.p).concat(side.pitch.filter(s => s.pos === 'GK').map(s => s.p)); };
   const H = takers(m.home), A = takers(m.away);
   const gk = side => { const g = side.pitch.find(s => s.pos === 'GK'); return g ? g.p.ovr : 40; };
   const shot = (p, k) => rnd() < clamp(0.76 + (p.a[1] - 70) * 0.004 - (k - 70) * 0.004, 0.55, 0.92);

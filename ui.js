@@ -544,7 +544,7 @@ ACT.wage = d => { NEG.wage = Math.max(500, NEG.wage + +d * (NEG.wage >= 50000 ? 
 ACT.years = y => { NEG.years = +y; renderNego(); };
 CHG.negfee = v => { NEG.fee = +v; NEG.counter = null; renderNego(); };
 CHG.negfeenum = v => { const n = Math.max(0, Math.round(+v || 0)); NEG.fee = n; NEG.counter = null; renderNego(); };
-CHG.negwagenum = v => { NEG.wage = Math.max(0, Math.round(+v || 0)); renderNego(); };
+CHG.negwagenum = v => { const dem = wageDemand(pget(NEG.pid)); let w = Math.max(0, Math.round(+v || 0)); if (w > dem * 5) { w = dem * 5; toast('Maksymalnie 5× żądania zawodnika.', 'bad'); } NEG.wage = w; renderNego(); };
 CHG.setrole = (v, el) => { toast(setRole(+el.dataset.pid, v)); ACT.info(el.dataset.pid); render(); };
 let REN = null;
 ACT.rennego = id => { const p = pget(+id); const role = roleOf(p); REN = { pid: p.id, role, years: p.age >= 31 ? 1 : 3, wage: contractDemand(p, p.age >= 31 ? 1 : 3, role), counter: null }; renderRen(); };
@@ -565,8 +565,8 @@ function renderRen(note) {
 ACT.renrole = r => { REN.role = r; REN.counter = null; renderRen(); };
 ACT.renyears = y => { REN.years = +y; REN.counter = null; renderRen(); };
 ACT.renwage = d => { REN.wage = Math.max(500, REN.wage + +d * (REN.wage >= 50000 ? 5000 : REN.wage >= 10000 ? 1000 : 250)); renderRen(); };
-CHG.renwagenum = v => { REN.wage = Math.max(0, Math.round(+v || 0)); renderRen(); };
-ACT.rensend = () => { const r = negotiateRenewal(REN.pid, REN.wage, REN.years, REN.role); if (r.res === 'accept') { toast(r.msg, 'ok'); ACT.info(REN.pid); render(); return; } if (r.res === 'counter') REN.counter = r.counter; else REN.counter = null; renderRen({ cls: r.res === 'counter' ? 'warn' : 'bad', t: r.msg }); };
+CHG.renwagenum = v => { const dem = contractDemand(pget(REN.pid), REN.years, REN.role); let w = Math.max(0, Math.round(+v || 0)); if (w > dem * 5) { w = dem * 5; toast('Maksymalnie 5× żądania zawodnika.', 'bad'); } REN.wage = w; renderRen(); };
+ACT.rensend = () => { if (REN.wage > contractDemand(pget(REN.pid), REN.years, REN.role) * 1.5 && !confirm(`Pensja ${money(REN.wage)}/tydz. to dużo więcej, niż żąda zawodnik. Na pewno?`)) return; const r = negotiateRenewal(REN.pid, REN.wage, REN.years, REN.role); if (r.res === 'accept') { toast(r.msg, 'ok'); ACT.info(REN.pid); render(); return; } if (r.res === 'counter') REN.counter = r.counter; else REN.counter = null; renderRen({ cls: r.res === 'counter' ? 'warn' : 'bad', t: r.msg }); };
 ACT.renacc = () => { REN.wage = REN.counter; ACT.rensend(); };
 ACT.neginst = () => { NEG.inst = !NEG.inst; NEG.counter = null; renderNego(); };
 ACT.negsellon = () => { NEG.sellOn = !NEG.sellOn; NEG.counter = null; renderNego(); };
@@ -577,12 +577,13 @@ ACT.sendbid = () => {
   else if (r.res === 'counter') { NEG.counter = r.counter; renderNego({ cls: 'warn', t: r.msg }); }
   else renderNego({ cls: 'bad', t: r.msg });
 };
-ACT.acccounter = () => { NEG.fee = NEG.counter; NEG.counter = null; pget(NEG.pid)._bids = 0; const r = clubResponse(pget(NEG.pid), NEG.fee, NEG); if (r.res === 'accept') { NEG.stage = 2; renderNego({ cls: 'good', t: r.msg }); } else renderNego({ cls: 'bad', t: r.msg }); };
+ACT.acccounter = () => { NEG.fee = NEG.counter; NEG.counter = null; const r = clubResponse(pget(NEG.pid), NEG.fee, NEG); if (r.res === 'accept') { NEG.stage = 2; renderNego({ cls: 'good', t: r.msg }); } else renderNego({ cls: 'bad', t: r.msg }); };
 ACT.sendterms = () => {
   const p = pget(NEG.pid);
   if (p.tid === -1) { const r = signFree(p.id, NEG.wage, NEG.years); if (r.ok) { closeModal(); toast(r.msg); render(); } else renderNego({ cls: 'bad', t: r.msg }); return; }
+  if (NEG.wage > wageDemand(p) * 1.5 && !confirm(`Pensja ${money(NEG.wage)}/tydz. to dużo więcej, niż żąda zawodnik. Na pewno?`)) return;
   const t = personalTerms(p, NEG.wage, NEG.years);
-  if (!t.ok) return renderNego({ cls: 'bad', t: t.msg });
+  if (!t.ok) { NEG.tries = (NEG.tries || 0) + 1; if (NEG.tries >= 4) { p._noTalk = absDay() + 14; closeModal(); return toast(`${p.n} kończy rozmowy – „nie traktujecie mnie poważnie”.`, 'bad'); } return renderNego({ cls: 'bad', t: t.msg + ` (cierpliwość: jeszcze ${4 - NEG.tries})` }); }
   const ut = userClub(); if (ut.players.length >= 32) return renderNego({ cls: 'bad', t: 'Kadra pełna (maks. 32).' });
   completeTransfer(p.id, NEG.fee, NEG.wage, NEG.years, NEG); closeModal(); toast(`${p.n} dołącza do klubu!`); render();
 };
@@ -1026,7 +1027,7 @@ function stadiumCard(ut) {
     <div class="kv"><div><span>Pojemność</span><b>${ut.cap.toLocaleString('pl-PL')}</b></div><div><span>Średnia cena biletu</span><b>${Math.round(ut.price)} €</b></div>
     <div><span>Szacowana frekwencja</span><b>${Math.round(fill * 100)}%</b></div><div><span>Wpływy z meczu</span><b>${money(gate)}</b></div></div>
     <small class="mut">Frekwencja zależy od renomy klubu, poziomu ligi i nastrojów kibiców. Popyt na bilety rośnie maksymalnie o ok. 25% ponad pierwotną pojemność – zbyt duży stadion będzie świecił pustkami.${ut.stadBuild ? ` Trwa rozbudowa: +${ut.stadBuild.add.toLocaleString('pl-PL')} miejsc od ${SEASON_LABEL(ut.stadBuild.season)}.` : ''}</small>
-    <div class="btns">${ut.stadBuild ? '<span class="pill">🏗️ Budowa w toku</span>' : `<button class="btn sm pri" data-act="stadexp">Rozbuduj (+${e.add.toLocaleString('pl-PL')} miejsc) • ${money(e.cost)}</button>`}</div></div>`;
+    <div class="btns">${ut.cap0 && ut.cap >= ut.cap0 * 1.25 ? '<span class="pill">Popyt na bilety nie uzasadnia dalszej rozbudowy</span>' : ut.stadBuild ? '<span class="pill">🏗️ Budowa w toku</span>' : `<button class="btn sm pri" data-act="stadexp">Rozbuduj (+${e.add.toLocaleString('pl-PL')} miejsc) • ${money(e.cost)}</button>`}</div></div>`;
 }
 ACT.stadexp = () => {
   const ut = userClub(), e = stadExp(ut);

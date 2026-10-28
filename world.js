@@ -715,7 +715,7 @@ function preSimOthers(ux) {
     const same = x.opts.comp === ux.opts.comp && (x.opts.comp !== 'L' || x.h.lg === ux.h.lg || x.h.lg === ux.a.lg) && (x.opts.comp !== 'C' || x.h.cc === (ux.h.cc || ux.a.cc)) && x.opts.label.split(' • ')[0].replace(/ – .*/, '') === key;
     if (!same) continue;
     const m = fastSim(x.h, x.a, x.opts); PRESIM[x.h.id + '-' + x.a.id] = m;
-    out.push({ h: x.h, a: x.a, hs: m.home.scorers.map(g => g.min), as: m.away.scorers.map(g => g.min) });
+    out.push({ h: x.h, a: x.a, hs: m.home.scorers.map(g => g.min), as: m.away.scorers.map(g => g.min), fin: `${m.home.goals}:${m.away.goals}${m.pens ? ` (k. ${m.pens.h}:${m.pens.a})` : m.et ? ' (pd.)' : ''}` });
   }
   return out;
 }
@@ -1193,7 +1193,7 @@ function detach(p) {
   else if (p.tid === -1) S.free = S.free.filter(x => x !== p);
   S.offers = S.offers.filter(o => o.pid !== p.id);
 }
-function attach(p, c) { c.players.push(p); p.tid = c.id; p.listed = false; }
+function attach(p, c) { c.players.push(p); p.tid = c.id; p.listed = false; p.preTo = null; }
 function completeTransfer(pid, fee, wage, years, o = {}) {
   const p = pget(pid), ut = userClub(), seller = clubOf(p), now = upfront(fee, o);
   detach(p);
@@ -1398,7 +1398,7 @@ function deadlineDays(ut) {
     const b = pick(buyers), amt = Math.round(p.val * (1.15 + rnd() * 0.3) / 50000) * 50000;
     S.offers.push({ id: S.nextId++, pid: p.id, from: b.id, amount: amt, exp: S.day + 12, last: true }); got.push(`${p.n} – ${b.name} (${money(amt)})`);
   }
-  const lvl = PALL.filter(p => p.tid >= 0 && p.tid !== ut.id && !p.loan && Math.abs(p.ovr - lv) <= 4 && p.age <= 30 && club(p.tid).players.length > 22);
+  const lvl = PALL.filter(p => p.tid >= 0 && p.tid !== ut.id && !p.loan && Math.abs(p.ovr - lv) <= 4 && p.age <= 30 && club(p.tid).players.length > 22 && !notForSale(p) && playerInterest(p).ok);
   const deals = shuffle(lvl).slice(0, 5); for (const p of deals) p._disc = { k: 0.8, until: absDay() + 10 };
   S.dl = { day: absDay(), deals: deals.map(p => p.id) };
   msg('⏰ Ostatnie dni okna transferowego', `Okno zamyka się za kilka dni!${got.length ? '\nOferty last minute za Twoich zawodników: ' + got.join('; ') + '.' : ''}\nKluby chcą szybko pozbyć się nadmiaru zawodników – okazje −20%: ${deals.map(p => `${p.n} (${POS_PL[p.pos]}, ${club(p.tid).short})`).join(', ')}.`);
@@ -1408,6 +1408,7 @@ const canPre = p => p.tid >= 0 && p.tid !== S.user && !p.loan && p.con <= 1 && !
 function preContract(pid, wage, years, x = {}) {
   const p = pget(pid), ut = userClub();
   if (!canPre(p)) return { ok: false, msg: 'Prekontrakt możliwy tylko od stycznia z zawodnikiem, któremu kończy się umowa.' };
+  if (PALL.filter(q => q.preTo && q.preTo.club === ut.id).length >= 2) return { ok: false, msg: 'Zarząd pozwala na maks. 2 prekontrakty na sezon.' };
   const i = playerInterest(p); if (!i.ok) return i;
   if ((x.bonus || 0) + (x.agent || 0) > Math.max(0, ut.tb)) return { ok: false, msg: 'Premia i prowizja przekraczają budżet transferowy.' };
   const t = personalTerms(p, wage, years, x.role, { ...x, pre: true }); if (!t.ok) return t;
@@ -1521,7 +1522,7 @@ function ylInit() {
 function ylWeek() {
   const ut = userClub(), A = S.acad;
   if (!S.yl || S.yl.season !== S.season || S.yl.club !== ut.id) ylInit();
-  const Y = S.yl; if (Y.md >= Y.fix.length || !A.youth.length) return;
+  const Y = S.yl; if (Y.md >= Y.fix.length) return;
   const sq = A.youth.filter(y => !y.inj).sort((a, b) => b.ovr - a.ovr), xi = sq.slice(0, 11), subs = sq.slice(11, 14);
   const fill = 36 + A.fac * 1.5 + A.coach;   // braki w składzie uzupełniają chłopcy z rocznika U17
   const myS = (xi.reduce((a, y) => a + y.ovr, 0) + (11 - xi.length) * fill) / 11;
@@ -1741,7 +1742,7 @@ function finishPre() {
 function startCareer(name, clubId, nt, mgrOvr) {
   S.manager = name; S.user = clubId; S.nt = nt || null;
   const ut = userClub(); S.mgr = { ovr: mgrOvr || 50, best: mgrOvr || 50 }; clubFacilities(ut);
-  S.board.since = S.season; S.board.ult = null; S.startClub = ut.id; S.startTier = S.leagues[ut.lg].tier; if (typeof metaInit === 'function') metaInit();
+  S.board.since = S.season; S.board.ult = null; S.board.hired = absDay(); S.startClub = ut.id; S.startTier = S.leagues[ut.lg].tier; if (typeof metaInit === 'function') metaInit();
   if (!S.acad.youth.length) for (let i = 0, n = 3 + S.acad.rec; i < n; i++) { const y = genYouth(); y.age = ri(15, 17); S.acad.youth.push(y); PM.set(y.id, y); PALL.push(y); }
   for (const p of ut.players) p.ovrS = p.ovr;
   setBoardObjective(); autoPick(ut); preOffers(); initStaff(true); rebalanceSpons(ut); ut.spons += staffCost() + acadCost(); setWageBudget();
@@ -1888,6 +1889,7 @@ function endSeason() {
       } else if (c !== ut) p.wage = calcWage(p, c.rep);
     }
   }
+  for (const p of S.free) if (p.preTo && p.preTo.club === S.user) preMoves.push(p); else p.preTo = null;
   for (const p of preMoves) { const pt = p.preTo; p.preTo = null; if (ut.players.length >= 32) { detach(p); p.tid = -1; S.free.push(p); lines.push(`📝 ${p.n} nie mógł dołączyć (kadra pełna) – jest wolnym zawodnikiem.`); continue; } detach(p); attach(p, ut); p.wage = pt.wage; p.con = pt.years; p.role = pt.role; p.joined = absDay(); p.ovrS = p.ovr; S.know[p.id] = 100; lines.push(`📝 Z prekontraktu dołącza: ${p.n} (${POS_PL[p.pos]}, ${p.ovr}).`); }
   for (const p of S.virt) { p.age++; if (p.age > 33) { Object.assign(p, genPlayer(p.pos, natLevel(NAT[p.nat]) - 3, p.nat, { age: ri(21, 25) }), { id: p.id, wage: 0 }); } }
   for (const p of S.free) { p.age++; p.val = calcValue(p); }
@@ -1970,6 +1972,8 @@ function legendBuf() { const T = (S.trophies || []).filter(t => t.club === S.use
 /* kryzys zaufania: najpierw wotum zaufania (ultimatum), dopiero przy kolejnym – zwolnienie; pierwszy sezon w klubie chroniony (chyba że spadek) */
 function boardCrisis(lines, end, relegated) {
   const warned = S.board.ult === S.season, firstYear = S.board.since === S.season;
+  // pierwszy sezon: w trakcie rozgrywek zwolnienie tylko przy grożącym spadku
+  if (!end && warned && firstYear) { const lg = S.leagues[userClub().lg]; if (leaguePos(userClub()) <= lg.clubs.length - 3) return; }
   if (!warned || (end && firstYear && !relegated)) {
     S.board.ult = end ? S.season + 1 : S.season; S.board.conf = 26;
     const t = end ? 'Zarząd jest rozczarowany sezonem, ale daje Ci jeszcze szansę. Kolejny kryzys w nowym sezonie oznacza zwolnienie.' : 'Wotum zaufania: zarząd traci cierpliwość. Masz kilka tygodni na poprawę wyników – kolejny kryzys oznacza zwolnienie.';
@@ -2065,6 +2069,7 @@ const idbDel = (db, k) => new Promise(res => { const tx = db.transaction('s', 'r
 function slotMeta() { const ut = S && S.user >= 0 ? userClub() : null; return ut ? { name: S.manager, club: ut.name, short: ut.short, col: ut.col, lg: S.leagues[ut.lg].name, season: S.season, date: curDay() ? curDay().date : 0, ovr: Math.round(S.mgr.ovr), ts: Date.now() } : null; }
 async function saveNow() {
   if (typeof indexedDB === 'undefined' || !S) return;
+  if (globalThis.MATCH_LIVE) return;   // w trakcie meczu na żywo (wyniki innych meczów już policzone) – zapis po zakończeniu dnia
   try { const db = await idb(); await idbPut(db, slotKey(SLOT), S); const meta = (await idbGet(db, 'meta')) || {}; meta[SLOT] = slotMeta(); await idbPut(db, 'meta', meta); } catch (e) { console.warn('save', e); }
 }
 let saveT = null;

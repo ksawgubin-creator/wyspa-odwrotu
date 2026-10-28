@@ -892,7 +892,7 @@ function dealState(p) {
   if (!playerInterest(p).ok) return ['bad', 'nie chce'];
   if (notForSale(p)) return ['warn', 'nie na sprzedaż'];
   const a = askPrice(p);
-  if (p._disc && p._disc.until > absDay() && a <= Math.min(ut.tb, ut.bal)) return ['g', 'okazja −15%'];
+  if (p._disc && p._disc.until > absDay() && a <= Math.min(ut.tb, ut.bal)) return ['g', `okazja −${Math.round((1 - p._disc.k) * 100)}%`];
   return a <= Math.min(ut.tb, ut.bal) ? ['g', 'w budżecie'] : a * INST_K * INST_UP <= ut.tb && a >= 1e6 ? ['warn', 'na raty'] : ['bad', 'za drogi'];
 }
 function mkRow(p) {
@@ -1259,7 +1259,7 @@ ACT.quicksim = () => {
 };
 ACT.startmatch = () => {
   closeModal(); if (typeof toastClear === 'function') toastClear(); MX = userMatchToday(); if (!MX) return;
-  LIVEX = MX.nt ? [] : preSimOthers(MX);
+  globalThis.MATCH_LIVE = true; LIVEX = MX.nt ? [] : preSimOthers(MX);
   M = createMatch(MX.h, MX.a, { ...MX.opts, user: MX.user }); doTalk();
   MS = { speed: S.settings.speed || 2, paused: false, over: false };
   const el = $('#match'); el.classList.remove('hidden');
@@ -1283,8 +1283,8 @@ function tick() {
 }
 function upd() {
   $('#msc').textContent = `${M.home.goals} : ${M.away.goals}`;
-  if (LIVEX && LIVEX.length && $('#mtick')) { const mn = Math.min(M.minute, 90), cnt = a => a.filter(x => x <= mn).length, hot = a => a.some(x => x <= mn && x > mn - 4);
-    $('#mtick').innerHTML = '<small class="mut">Inne mecze:</small> ' + LIVEX.slice(0, 12).map(g => `<span class="${hot(g.hs) || hot(g.as) ? 'hot' : ''}">${esc(g.h.short)} ${cnt(g.hs)}:${cnt(g.as)} ${esc(g.a.short)}</span>`).join(''); }
+  if (LIVEX && LIVEX.length && $('#mtick')) { const mn = M.minute, cnt = a => a.filter(x => x <= mn).length, hot = a => a.some(x => x <= mn && x > mn - 4);
+    $('#mtick').innerHTML = '<small class="mut">Inne mecze:</small> ' + LIVEX.map(g => `<span class="${hot(g.hs) || hot(g.as) ? 'hot' : ''}">${esc(g.h.short)} ${M.over ? g.fin : cnt(g.hs) + ':' + cnt(g.as)} ${esc(g.a.short)}</span>`).join(''); }
   $('#mmin').textContent = M.over ? (M.pens ? `k. ${M.pens.h}:${M.pens.a}` : 'Koniec') : MS.paused && M.minute === 45 ? 'Przerwa' : `${M.minute}'`;
   $('#mscr').innerHTML = `<span>${M.home.scorers.map(s => `${esc(s.name)} ${s.min}'`).join(', ')}</span><span>${M.away.scorers.map(s => `${esc(s.name)} ${s.min}'`).join(', ')}</span>`;
   const H = M.home, A = M.away, tp = H.poss + A.poss || 1, hp = Math.round(H.poss / tp * 100);
@@ -1354,6 +1354,7 @@ function xgNote(H, A) {
 let PPC = null;
 ACT.ppans = i => { if (!PPC) return; const out = answerPress(PPC, +i), el = $('#ppc'); if (el) el.innerHTML = `<div class="evcat">🎤 Konferencja po meczu</div><small class="mut">${esc(PPC.a[+i][0])}</small><br><small>${esc(out.join(' • ') || 'Dziennikarze zanotowali odpowiedź.')}</small>`; PPC = null; };
 ACT.finishday = () => {
+  globalThis.MATCH_LIVE = false;
   const m = M, x = MX; M = null; closeModal();
   const day = curDay(), ut0 = userClub(), pos0 = day.t === 'L' ? leaguePos(ut0) : null;
   const r = processDay(m);

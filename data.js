@@ -25,6 +25,7 @@ const NATIONS = [
   { code:'CZE', name:'Czechy', flag:'🇨🇿', pool:'CZ', str:70, conf:'UEFA' },
   { code:'SCO', name:'Szkocja', flag:'🏴󠁧󠁢󠁳󠁣󠁴󠁿', pool:'EN', str:69, conf:'UEFA' },
   { code:'HUN', name:'Węgry', flag:'🇭🇺', pool:'HU', str:69, conf:'UEFA' },
+  { code:'CYP', name:'Cypr', flag:'🇨🇾', pool:'GR', str:52, conf:'UEFA' },
   { code:'GRE', name:'Grecja', flag:'🇬🇷', pool:'GR', str:68, conf:'UEFA' },
   { code:'WAL', name:'Walia', flag:'🏴󠁧󠁢󠁷󠁬󠁳󠁿', pool:'EN', str:67, conf:'UEFA' },
   { code:'SVK', name:'Słowacja', flag:'🇸🇰', pool:'CZ', str:66, conf:'UEFA' },

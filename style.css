@@ -302,3 +302,6 @@ tr.el td:first-child{box-shadow:inset 3px 0 #ff9f1a}
 tr.ecl td:first-child{box-shadow:inset 3px 0 #2ec4b6}
 tr.cl td,tr.el td,tr.ecl td,tr.up td,tr.dn td{background:rgba(255,255,255,.025)}
 .legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;margin:6px 2px}
+
+.pstars{position:relative;display:inline-block;color:#3a4766;font-size:15px;letter-spacing:1px;line-height:1;white-space:nowrap;vertical-align:middle}
+.pstars>span{position:absolute;left:0;top:0;overflow:hidden;color:#ffc93c}

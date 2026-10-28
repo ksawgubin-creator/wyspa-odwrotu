@@ -19,7 +19,7 @@ const ovrTag = o => `<span class="ovr ${ovrCls(o)}">${o}</span>`;
 function ovrShow(p, pot) { const r = ovrRange(p, pot); if (pot && know(p) < 30) return '<span class="ovr unk">?</span>'; return r[0] === r[1] ? ovrTag(r[0]) : `<span class="ovr unk">${r[0]}–${r[1]}</span>`; }
 const posTag = p => `<span class="pos ${LINE[p]}">${POS_PL[p]}</span>`;
 const flag = code => NAT[code] ? NAT[code].flag : '🏳️';
-const stars = c => { const n = clamp(Math.round((c.rep - 35) / 12), 1, 5); return '★'.repeat(n) + '☆'.repeat(5 - n); };
+const stars = c => presStars(c);
 function toast(t, kind) {
   const el = $('#toast'); el.textContent = t; el.className = 'on' + (kind ? ' ' + kind : '');
   if (kind && typeof uk_haptic === 'function') uk_haptic(kind === 'bad' ? 'bad' : 'ok');
@@ -197,6 +197,7 @@ function vHome() {
   </div>
   <div class="grid2">
     <div class="card stat"><small>${esc(S.leagues[ut.lg].name)}</small><b>${row.pos}. miejsce</b><small>${row.Pts} pkt • ${row.W}-${row.D}-${row.L}</small><div class="chips">${row.form.slice(-5).map(c => `<span class="chip ${c}">${c === 'W' ? 'Z' : c === 'D' ? 'R' : 'P'}</span>`).join('')}</div>${(() => { const h = (S.uhist || []).filter(x => x.s === S.season); return h.length >= 2 && typeof sparkSVG === 'function' ? sparkSVG(h.map(x => x.pos), { w: 130, h: 24, invert: true }) : ''; })()}</div>
+    <div class="card stat"><small>Prestiż klubu</small>${presStars(ut)}<small>${presOf(ut).toFixed(1)}/10 • ${presWord(presOf(ut))}</small></div>
     <div class="card stat"><small>Drużyna</small><b>${moraleLabel(mAvg)[0]} ${moraleLabel(mAvg)[1]}</b><small>Morale ${mAvg} • kondycja ${fAvg}%</small>${bar(fAvg)}</div>
   </div>
   ${S.jobs.length ? `<div class="card hl" data-act="jobs"><div class="row"><span style="font-size:22px">📨</span><b class="sp">Oferty pracy (${S.jobs.length})</b><small>Zobacz ›</small></div></div>` : ''}
@@ -551,9 +552,9 @@ function vLeague() {
     const ZN = { CL: '🔵 Liga Mistrzów', EL: '🟠 Liga Europy', ECL: '🟢 Liga Konferencji' };
     body = `<div class="card list"><table><tr><th>#</th><th>Klub</th><th>M</th><th>Z</th><th>R</th><th>P</th><th>+/-</th><th>Pkt</th></tr>
       ${tb.map(r => { const c = club(r.id); return `<tr class="${r.id === ut.id ? 'me' : ''} ${zoneOf(r.pos)}" data-act="clubv" data-arg="${r.id}"><td>${r.pos}</td><td><span class="tn">${badge(c, 'sm')}${esc(c.name)}</span></td><td>${r.P}</td><td>${r.W}</td><td>${r.D}</td><td>${r.L}</td><td>${r.GF - r.GA}</td><td><b>${r.Pts}</b></td></tr>`; }).join('')}</table></div>
-      <div class="legend">${ez ? ez.zones.map(z => `<span>${ZN[z.comp]}${z.qual ? ' (eliminacje)' : ''}: ${z.from === z.to ? z.from : z.from + '–' + z.to}.</span>`).join('') : ''}
+      <div class="legend">${ez ? ez.zones.map(z => `<span>${z.from}. ${ZN[z.comp]} – ${z.qual ? QNAME[z.rd].toLowerCase() : 'faza ligowa'}</span>`).join('') + (ez.cup ? `<span>🏆 zdobywca pucharu: ${ZN[ez.cup.comp]} – ${ez.cup.rd === 'LP' ? 'faza ligowa' : QNAME[ez.cup.rd].toLowerCase()}</span>` : '') : ''}
         ${up ? `<span>🟩 awans: 1–${up}.</span>` : ''}${down ? `<span>🟥 spadek: ${n - down + 1}–${n}.</span>` : ''}</div>
-      <small class="mut">${ez ? `Kraj ${ez.rank}. w rankingu UEFA${ez.eps ? ' (dodatkowe miejsce w LM za wyniki w ostatnim sezonie)' : ''}. Zdobywca krajowego pucharu dostaje miejsce w Lidze Europy – wtedy strefa przesuwa się o jedno miejsce. Obrońcy tytułów grają w LM poza kwotą.` : lg.tier === 1 && !isUEFA({ cc: lg.cc }) ? 'Liga spoza UEFA – kluby nie grają w europejskich pucharach.' : ''}</small>`;
+      <small class="mut">${ez ? `Kraj ${ez.rank}. w rankingu UEFA – ${ez.total} ${ez.total >= 5 ? 'klubów' : 'kluby'} w europejskich pucharach${ez.eps ? ' (+1 miejsce w LM za wyniki w ostatnim sezonie)' : ''}. Miejsca 1–4 w rankingu: 7 klubów, 5–6: 6, 7–15: 5, 16–33: 4, dalej 3. Jeśli zdobywca pucharu zajął miejsce premiowane, jego przepustka przechodzi na kolejny klub w tabeli. Przegrani w eliminacjach LM i LE spadają do niższego pucharu.` : lg.tier === 1 && !isUEFA({ cc: lg.cc }) ? 'Liga spoza UEFA – kluby nie grają w europejskich pucharach.' : ''}</small>`;
   } else if (UI.lgTab === 'fix') {
     const R = lg.fix.length;
     if (UI.rnd == null || UI.rnd >= R) { const ls = curLs(); UI.rnd = Math.max(0, lg.lsMap.slice(0, ls + 1).filter(x => x >= 0).length - 1); }
@@ -573,7 +574,8 @@ ACT.lgtab = a => { if (a !== UI.lgTab) navPush(); UI.lgTab = a; render(); };
 ACT.rnd = d => { UI.rnd = clamp(UI.rnd + +d, 0, S.leagues[UI.lg].fix.length - 1); render(); };
 ACT.clubv = id => {
   const c = club(+id); const tb = table(c.lg).find(r => r.id === c.id);
-  modal(`<h2>${badge(c)} ${esc(c.name)}</h2><small class="mut">${S.countries[c.cc].flag} ${esc(S.leagues[c.lg].name)} • ${tb.pos}. miejsce • <span class="stars">${stars(c)}</span> • stadion ${c.cap.toLocaleString('pl-PL')}</small>
+  modal(`<h2>${badge(c)} ${esc(c.name)}</h2><small class="mut">${S.countries[c.cc].flag} ${esc(S.leagues[c.lg].name)} • ${tb.pos}. miejsce • stadion ${c.cap.toLocaleString('pl-PL')}</small>
+    <div class="row" style="margin:6px 0"><span>Prestiż</span>${presStars(c)}<b>${presOf(c).toFixed(1)}/10</b><small class="mut sp" style="text-align:right">${presWord(presOf(c))}</small></div>
     <div class="kv"><div><span>Średnia kadry</span><b>${Math.round(teamLevel(c))}</b></div><div><span>Współczynnik UEFA</span><b>${clubCoef(c.id).toFixed(1)}</b></div><div><span>Trener</span><b>${c.id === S.user ? esc(S.manager) : esc(c.coach.n)}</b></div><div><span>OVR trenera</span>${ovrTag(Math.round(c.id === S.user ? S.mgr.ovr : c.coach.ovr))}</div></div>
     <div class="list">${c.players.slice().sort((a, b) => POSITIONS.indexOf(a.pos) - POSITIONS.indexOf(b.pos) || b.ovr - a.ovr).map(p => `<div class="prow" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${flag(p.nat)} ${esc(p.n)}<small>${p.age} l.</small></div>${ovrShow(p)}</div>`).join('')}</div>
     <div class="btns"><button class="btn full" data-act="close">Zamknij</button></div>`);
@@ -634,8 +636,8 @@ function vCal() {
 ACT.calall = () => { UI.calAll = !UI.calAll; render(); };
 function vRank() {
   UI.rkTab = UI.rkTab || 'elo';
-  const head = tabs([['elo', '🌍 Kluby (Elo)'], ['lgs', 'Ligi'], ['uefa', 'UEFA – kraje'], ['uclub', 'UEFA – kluby'], ['me', 'Mój klub']], UI.rkTab, 'rktab');
-  return head + ({ elo: vRankElo, lgs: vRankLg, uefa: vRankUefa, uclub: vRankUefa, me: vRankMe })[UI.rkTab]();
+  const head = tabs([['elo', '🌍 Kluby (Elo)'], ['pres', '⭐ Prestiż'], ['lgs', 'Ligi'], ['uefa', 'UEFA – kraje'], ['uclub', 'UEFA – kluby'], ['me', 'Mój klub']], UI.rkTab, 'rktab');
+  return head + ({ elo: vRankElo, pres: vRankPres, lgs: vRankLg, uefa: vRankUefa, uclub: vRankUefa, me: vRankMe })[UI.rkTab]();
 }
 ACT.rktab = a => { if (a !== UI.rkTab) navPush(); UI.rkTab = a; render(); };
 function vRankElo() {
@@ -648,6 +650,12 @@ function vRankElo() {
     <div class="card list">${list.slice(0, 60).map(c => `<div class="prow ${c.id === S.user ? 'me' : ''}" data-act="clubv" data-arg="${c.id}"><span class="mini">${all.indexOf(c) + 1}.</span>${badge(c, 'sm')}<div class="pn">${esc(c.name)}<small>${S.countries[c.cc].flag} ${esc(S.leagues[c.lg].name)}</small></div><b>${eloOf(c)}</b></div>`).join('')}</div>`;
 }
 CHG.rkf = v => { UI.rkf = v; render(); };
+function vRankPres() {
+  const all = S.clubs.slice().sort((a, b) => presOf(b) - presOf(a)), me = all.indexOf(userClub());
+  return `<div class="card"><div class="row"><b class="sp">Prestiż klubów</b><span class="pill">Twój klub: ${me + 1}. • ${presOf(userClub()).toFixed(1)}</span></div>
+    <small class="mut">Skala 1–10 (5 gwiazdek). Prestiż rośnie powoli dzięki długim latom w czołówce, trofeom i grze w Europie – i powoli spada, gdy klub przestaje wygrywać. Im wyższy prestiż, tym chętniej przychodzą lepsi piłkarze, mniejsze są ich żądania płacowe i lepsi juniorzy trafiają do akademii.</small></div>
+    <div class="card list">${all.slice(0, 60).map((c, i) => `<div class="prow ${c.id === S.user ? 'me' : ''}" data-act="clubv" data-arg="${c.id}"><span class="mini">${i + 1}.</span>${badge(c, 'sm')}<div class="pn">${esc(c.name)}<small>${S.countries[c.cc].flag} ${esc(S.leagues[c.lg].name)}</small></div>${presStars(c)}<b style="min-width:30px;text-align:right">${presOf(c).toFixed(1)}</b></div>`).join('')}</div>`;
+}
 function vRankLg() {
   const r = leagueRank(), ul = userClub().lg;
   return `<div class="card"><b>Ranking siły lig</b><br><small class="mut">Średnie Elo wszystkich klubów ligi oraz czołowej czwórki. Zmienia się z wynikami w pucharach i meczach międzynarodowych.</small></div>

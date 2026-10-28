@@ -24,7 +24,7 @@ const NAT_EXTRA = [
   ['KOS', 'Kosowo', 'XK', 'AL', 48, 'UEFA'], ['MLT', 'Malta', 'MT', 'IT', 30, 'UEFA'], ['FRO', 'Wyspy Owcze', 'FO', 'NORD', 34, 'UEFA'],
 ];
 for (const [code, name, iso, pool, str, conf] of NAT_EXTRA) if (!NAT[code]) { const n = { code, name, flag: code === 'KOS' ? '🇽🇰' : isoFlag(iso), pool: NAME_POOLS[pool] ? pool : 'EN', str, conf }; NATIONS.push(n); NAT[code] = n; }
-const COEF0 = {"ENG":[21.428,23,17.375,29.464,25],"ESP":[18.428,16.571,16.062,19,18.5],"ITA":[15.714,22.357,21,21.875,18],"GER":[16.214,17.125,19.357,18,18],"FRA":[18.416,12.916,13.5,17.125,16],"POL":[4.625,7.5,4,13.875,10],"POR":[10.5,12,10.833,13.05,12.5],"NED":[19.2,11,13,15.25,12],"BEL":[10,13.4,12.6,13,11.5],"TUR":[6.4,10,12,10.8,10.5],"SCO":[8.375,8.25,4.9,7.15,6],"AUT":[10.5,7.1,7,6.55,7.5],"SUI":[5.875,7.775,3.7,8.975,7],"CZE":[9,9,11.7,9,9.5],"GRE":[6.5,4.7,15.25,8.625,9],"DEN":[9.375,6.375,7.375,8.7,8],"UKR":[3.3,6.4,6.5,4.925,5.5],"CRO":[6.375,4.9,7.125,6.625,6.5],"SRB":[9.125,4,5.75,5.75,6],"NOR":[11,7.375,9,11.687,9],"SWE":[4.875,6.25,6,8.75,6.5]};
+const COEF0 = {"CYP":[5.375,6.125,6.75,7.125,6],"ISR":[5.375,4.875,6.25,5.875,5.5],"HUN":[3.25,3.375,5.5,6.625,6],"ROU":[3.5,4.125,3.875,6.5,6],"SVK":[4.125,4.25,4.625,4.25,5],"BUL":[3,4.875,3.625,6,4.5],"SVN":[2.625,4.875,3.875,4,5],"IRL":[2,3.25,5.875,3.4,4],"BIH":[2.25,3.5,3.375,3,3.5],"FIN":[3,3.5,3.75,3.125,3.5],"GEO":[1.25,3.375,3.5,5.25,3.5],"ALB":[1.75,2.875,3.375,4,3],"ISL":[1.5,2.875,4.25,3.5,3],"MKD":[2,2.5,1.75,2.5,2],"MNE":[1.375,2.125,2.5,2.25,2],"NIR":[2.5,1.5,2.25,2.5,2],"WAL":[1.5,1.5,1.875,1.375,1.5],"ENG":[21.428,23,17.375,29.464,25],"ESP":[18.428,16.571,16.062,19,18.5],"ITA":[15.714,22.357,21,21.875,18],"GER":[16.214,17.125,19.357,18,18],"FRA":[18.416,12.916,13.5,17.125,16],"POL":[4.625,7.5,4,13.875,10],"POR":[10.5,12,10.833,13.05,12.5],"NED":[19.2,11,13,15.25,12],"BEL":[10,13.4,12.6,13,11.5],"TUR":[6.4,10,12,10.8,10.5],"SCO":[8.375,8.25,4.9,7.15,6],"AUT":[10.5,7.1,7,6.55,7.5],"SUI":[5.875,7.775,3.7,8.975,7],"CZE":[9,9,11.7,9,9.5],"GRE":[6.5,4.7,15.25,8.625,9],"DEN":[9.375,6.375,7.375,8.7,8],"UKR":[3.3,6.4,6.5,4.925,5.5],"CRO":[6.375,4.9,7.125,6.625,6.5],"SRB":[9.125,4,5.75,5.75,6],"NOR":[11,7.375,9,11.687,9],"SWE":[4.875,6.25,6,8.75,6.5]};
 const CTRY = COUNTRY_DATA
   .map(c => Object.assign({}, c, { coef: (COEF0[c.code] || [3, 3, 3, 3, 3]).slice(), leagues: c.leagues.slice().sort((a, b) => a.tier - b.tier) }))
   .sort((a, b) => sum(b.coef) - sum(a.coef));
@@ -36,7 +36,7 @@ const COMP_NAME = { CL: 'Liga Mistrzów', EL: 'Liga Europy', ECL: 'Liga Konferen
 const STAGE_NAME = { LP: 'Faza ligowa', PO: 'Baraże', R16: '1/8 finału', QF: 'Ćwierćfinał', SF: 'Półfinał', F: 'Finał', G: 'Faza grupowa' };
 const PROMO = { TUR: [4], BRA: [4], ENG: [3, 3, 4], ESP: [3, 4, 3], ITA: [3, 3, 3], GER: [2, 2, 3], FRA: [2, 2, 3], POL: [3, 3] };
 const promoN = (cc, tier) => (PROMO[cc] || [])[tier - 1] || 2; // ilu spada z poziomu `tier` / awansuje z tier+1
-const DOM = { USA: .55, MEX: .6, BRA: .9, ARG: .9, KSA: .55, JPN: .85, ENG: .4, ESP: .6, ITA: .45, GER: .5, FRA: .55, POR: .45, NED: .55, BEL: .45, TUR: .55, SCO: .5, AUT: .6, SUI: .55, CZE: .75, GRE: .45, DEN: .65, POL: .65, UKR: .8, CRO: .7, SRB: .75, NOR: .75, SWE: .7 };
+const DOM = { HUN: .65, ROU: .75, CYP: .35, ISR: .7, SVK: .65, BUL: .6, SVN: .7, BIH: .8, IRL: .8, FIN: .8, GEO: .8, ALB: .75, MKD: .8, MNE: .8, ISL: .85, NIR: .8, WAL: .8, USA: .55, MEX: .6, BRA: .9, ARG: .9, KSA: .55, JPN: .85, ENG: .4, ESP: .6, ITA: .45, GER: .5, FRA: .55, POR: .45, NED: .55, BEL: .45, TUR: .55, SCO: .5, AUT: .6, SUI: .55, CZE: .75, GRE: .45, DEN: .65, POL: .65, UKR: .8, CRO: .7, SRB: .75, NOR: .75, SWE: .7 };
 const TVW = { USA: [2.5e5], MEX: [1.5e5], BRA: [2e5, 4e4], ARG: [8e4], KSA: [3e5], JPN: [1.2e5], ENG: [6.5e5, 8e4], ESP: [4.2e5, 5e4], ITA: [4e5, 4e4], GER: [4e5, 6e4], FRA: [2.8e5, 4e4], POR: [8e4], NED: [8e4], BEL: [6e4], TUR: [1e5], SCO: [4e4], AUT: [3e4], SUI: [3.5e4], CZE: [2.5e4], GRE: [3e4], DEN: [3e4], POL: [5e4, 1.5e4], UKR: [2e4], CRO: [2e4], SRB: [1.5e4], NOR: [2.5e4], SWE: [2.5e4] };
 const NCOL = {
   POL: ['#ffffff', '#dc143c'], ENG: ['#ffffff', '#1d3b8b'], ESP: ['#c60b1e', '#ffc400'], ITA: ['#0064aa', '#ffffff'], GER: ['#ffffff', '#111111'], FRA: ['#1d3b8b', '#ffffff'],
@@ -237,8 +237,8 @@ function genScout() {
 }
 
 /* ---------- kalendarz ---------- */
-const EURO_AFTER = { 5: ['LP', 0], 8: ['LP', 1], 11: ['LP', 2], 14: ['LP', 3], 18: ['LP', 4], 21: ['LP', 5], 25: ['LP', 6], 26: ['LP', 7], 28: ['PO', 1], 29: ['PO', 2], 31: ['R16', 1], 32: ['R16', 2], 35: ['QF', 1], 36: ['QF', 2], 39: ['SF', 1], 40: ['SF', 2] };
-const Q_AFTER = { 0: [0, 2], 1: [1, 1], 2: [1, 2], 3: [2, 1], 4: [2, 2] };
+const EURO_AFTER = { 6: ['LP', 0], 8: ['LP', 1], 11: ['LP', 2], 14: ['LP', 3], 18: ['LP', 4], 21: ['LP', 5], 25: ['LP', 6], 26: ['LP', 7], 28: ['PO', 1], 29: ['PO', 2], 31: ['R16', 1], 32: ['R16', 2], 35: ['QF', 1], 36: ['QF', 2], 39: ['SF', 1], 40: ['SF', 2] };
+const Q_AFTER = { 0: [1, 1], 1: [1, 2], 2: [2, 1], 3: [2, 2], 4: [3, 1], 5: [3, 2] };
 const CUP_AFTER = [6, 12, 17, 23, 33, 37, 43];
 const CUP_NAMES = { USA: 'US Open Cup', MEX: 'Copa MX', BRA: 'Copa do Brasil', ARG: 'Copa Argentina', KSA: 'Puchar Króla', JPN: 'Puchar Cesarza', ENG: 'FA Cup', ESP: 'Copa del Rey', ITA: 'Coppa Italia', GER: 'DFB-Pokal', FRA: 'Coupe de France', POL: 'Puchar Polski', NED: 'KNVB Beker', POR: 'Taça de Portugal', BEL: 'Croky Cup', TUR: 'Puchar Turcji', SCO: 'Scottish Cup', AUT: 'ÖFB-Cup', SUI: 'Puchar Szwajcarii', CZE: 'MOL Cup', GRE: 'Puchar Grecji', DEN: 'Pokal Danii', NOR: 'NM Cup', SWE: 'Svenska Cupen', UKR: 'Puchar Ukrainy', CRO: 'Puchar Chorwacji', SRB: 'Puchar Serbii' };
 const tierOf = id => S.leagues[club(id).lg].tier;
@@ -269,7 +269,7 @@ function tournamentType(season) { const y = season + 1; return y % 4 === 0 ? 'EU
 function buildCalendar() {
   const cal = []; let date = Date.UTC(S.season, 7, 9);
   const DAY = 864e5;
-  cal.push({ t: 'P', md: 0, date: date - 14 * DAY }, { t: 'P', md: 1, date: date - 10 * DAY }, { t: 'E', st: 'Q', r: 0, leg: 1, date: date - 5 * DAY });
+  cal.push({ t: 'P', md: 0, date: date - 14 * DAY }, { t: 'P', md: 1, date: date - 10 * DAY }, { t: 'E', st: 'Q', r: 0, leg: 1, date: date - 8 * DAY }, { t: 'E', st: 'Q', r: 0, leg: 2, date: date - 4 * DAY });
   for (let ls = 0; ls < LS; ls++) {
     cal.push({ t: 'L', ls, date }); const base = date;
     const ci = CUP_AFTER.indexOf(ls); if (ci >= 0) cal.push({ t: 'C', slot: ci, date: base + 2 * DAY });
@@ -332,66 +332,83 @@ function topScorers(lgId, n = 20, key = 'lg') {
 function countryRanking() { return Object.values(S.countries).filter(c => (c.conf || 'UEFA') === 'UEFA').map(c => ({ cc: c.code, tot: sum(c.coef), last: c.coef[4] })).sort((a, b) => b.tot - a.tot); }
 const clubCoef = id => sum(S.ccoef[id] || [0]);
 const isUEFA = c => (S.countries[c.cc].conf || 'UEFA') === 'UEFA';
-// strefy europejskie w tabeli ligi (wg tego samego klucza co allocateEurope)
+/* ---------- klucz dostępu UEFA (wzorowany na 2024–27) ----------
+   slot: [miejsce ('C' = zdobywca pucharu, liczba = kolejny klub z tabeli), puchar, runda: 'LP' lub 0–3 (I, II, III runda, play-off)] */
+function accessList(n) {
+  const L = (k, c) => Array.from({ length: k }, () => ['N', c, 'LP']);
+  if (n <= 4) return [...L(4, 'CL'), ['C', 'EL', 'LP'], ['N', 'EL', 'LP'], ['N', 'ECL', 3]];
+  if (n === 5) return [...L(3, 'CL'), ['C', 'EL', 'LP'], ['N', 'EL', 'LP'], ['N', 'ECL', 3]];
+  if (n === 6) return [...L(2, 'CL'), ['N', 'CL', 2], ['C', 'EL', 'LP'], ['N', 'EL', 2], ['N', 'ECL', 2]];
+  if (n <= 9) return [['N', 'CL', 'LP'], ['N', 'CL', 2], ['C', 'EL', 2], ['N', 'ECL', 2], ['N', 'ECL', 1]];
+  if (n === 10) return [['N', 'CL', 'LP'], ['N', 'CL', 1], ['C', 'EL', 2], ['N', 'ECL', 1], ['N', 'ECL', 1]];
+  if (n === 11) return [['N', 'CL', 3], ['N', 'CL', 1], ['C', 'EL', 2], ['N', 'ECL', 1], ['N', 'ECL', 1]];
+  if (n === 12) return [['N', 'CL', 2], ['N', 'CL', 1], ['C', 'EL', 1], ['N', 'ECL', 1], ['N', 'ECL', 1]];
+  if (n <= 15) return [['N', 'CL', 1], ['N', 'CL', 1], ['C', 'EL', 0], ['N', 'ECL', 1], ['N', 'ECL', 0]];
+  if (n <= 17) return [['N', 'CL', 1], ['C', 'EL', 0], ['N', 'ECL', 1], ['N', 'ECL', 0]];
+  if (n <= 33) return [['N', 'CL', 0], ['C', 'ECL', 1], ['N', 'ECL', 0], ['N', 'ECL', 0]];
+  return [['N', 'CL', 0], ['C', 'ECL', 0], ['N', 'ECL', 0]];
+}
+function accessFor(cc, rank, eps) {
+  const i = rank.findIndex(r => r.cc === cc); if (i < 0) return null;
+  const sl = accessList(i + 1);
+  if (eps.includes(cc)) { const k = sl.filter(x => x[1] === 'CL' && x[2] === 'LP').length; sl.splice(k, 0, ['N', 'CL', 'LP']); }
+  return { slots: sl, n: i + 1, eps: eps.includes(cc) };
+}
+const QNAME = ['I runda eliminacji', 'II runda eliminacji', 'III runda eliminacji', 'Runda play-off'];
+const QSHORT = ['I r. el.', 'II r. el.', 'III r. el.', 'play-off'];
+// strefy europejskie w tabeli ligi (ranking prognozowany na przyszły sezon – jak po przesunięciu współczynników)
 function euroZones(cc) {
   if ((S.countries[cc].conf || 'UEFA') !== 'UEFA') return null;
-  // ranking prognozowany na przyszły sezon (tak jak po przesunięciu współczynników w endSeason)
   const rank = Object.values(S.countries).filter(c => (c.conf || 'UEFA') === 'UEFA').map(c => { const r = S.cpts && S.cpts[c.code], now = r && r.n ? r.pts / r.n : 0; return { cc: c.code, tot: sum(c.coef.slice(1)) + now, last: now }; }).sort((a, b) => b.tot - a.tot);
-  const i = rank.findIndex(r => r.cc === cc); if (i < 0) return null;
   const eps = rank.slice().sort((a, b) => b.last - a.last).slice(0, 2).map(r => r.cc);
-  const q = i < 4 ? [4, 2, 1] : i < 6 ? [3, 2, 1] : i < 10 ? [2, 2, 1] : [1, 1, 1];
-  if (eps.includes(cc)) q[0]++;
-  const out = []; let pos = 1;
-  const add = (n, comp, qual) => { if (n > 0) { out.push({ from: pos, to: pos + n - 1, comp, qual }); pos += n; } };
-  add(q[0], 'CL', i >= 10); add(q[1], 'EL', i >= 15); add(q[2] + (i >= 4 ? 1 : 0), 'ECL', i >= 4);
-  return { zones: out, rank: i + 1, eps: eps.includes(cc) };
+  const A = accessFor(cc, rank, eps); if (!A) return null;
+  let pos = 0; const zones = [];
+  for (const [k, comp, rd] of A.slots) { if (k === 'C') { zones.cup = { comp, rd }; continue; } pos++; zones.push({ from: pos, to: pos, comp, rd, qual: rd !== 'LP' }); }
+  return { zones, rank: A.n, eps: A.eps, cup: zones.cup, total: A.slots.length };
 }
 function allocateEurope() {
   const rank = countryRanking();
   const eps = rank.slice().sort((a, b) => b.last - a.last).slice(0, 2).map(r => r.cc);
-  const CL = [], EL = [], ECL = [], clPool = [], elPool = [], eclPool = [], used = new Set();
-  const strength = id => club(id).rep + clubCoef(id) * 0.3;
   const tableOf = cc => { const top = S.countries[cc].leagues[0]; return (S.lastTables[top] || S.leagues[top].clubs).filter(id => club(id).lg === top || S.leagues[top].clubs.includes(id)); };
-  const W = S.lastWinners;
-  rank.forEach((r, i) => {
-    const order = tableOf(r.cc).filter(id => !used.has(id)), cw = S.lastCups ? S.lastCups[r.cc] : null;
-    const q = i < 4 ? [4, 2, 1] : i < 6 ? [3, 2, 1] : i < 10 ? [2, 2, 1] : [1, 1, 1];
-    if (eps.includes(r.cc)) q[0]++;
-    let k = 0; const take = () => { while (k < order.length && used.has(order[k])) k++; const id = order[k++]; if (id != null) used.add(id); return id; };
-    for (let j = 0; j < q[0]; j++) { const id = take(); if (id != null) (i < 10 ? CL : clPool).push(id); }
-    if (cw != null && !used.has(cw) && q[1] > 0) { used.add(cw); (i < 15 ? EL : elPool).push(cw); q[1]--; }
-    for (let j = 0; j < q[1]; j++) { const id = take(); if (id != null) (i < 15 ? EL : elPool).push(id); }
-    for (let j = 0; j < q[2]; j++) { const id = take(); if (id != null) ECL.push(id); }
-    for (let j = 0; j < (i >= 10 ? 3 : i >= 4 ? 2 : 0); j++) { const id = take(); if (id != null) eclPool.push(id); }
-  });
-  // obrońcy tytułów: jeśli i tak awansowali z ligi, ich kraj NIE dostaje dodatkowego miejsca (wolne miejsce trafia do puli)
-  const moveTo = (id, L) => { for (const X of [CL, EL, ECL, clPool, elPool, eclPool]) { const j = X.indexOf(id); if (j >= 0) X.splice(j, 1); } L.push(id); used.add(id); };
-  for (const w of [W.CL, W.EL]) if (w != null && !CL.includes(w)) moveTo(w, CL);
-  if (W.ECL != null && !CL.includes(W.ECL) && !EL.includes(W.ECL)) moveTo(W.ECL, EL);
-  // eliminacje: kluby z puli grają 3 rundy dwumeczów (lipiec–sierpień); przegrani spadają do pucharu niżej
+  const W = S.lastWinners || {}, used = new Set();
+  const E = {}; for (const id of ['CL', 'EL', 'ECL']) E[id] = { teams: [], entry: [[], [], [], []] };
+  // obrońcy tytułów: LM i LE → faza ligowa LM, LK → faza ligowa LE (ich miejsce z ligi przechodzi na kolejny klub)
+  for (const [w, c] of [[W.CL, 'CL'], [W.EL, 'CL'], [W.ECL, 'EL']]) if (w != null && !used.has(w) && isUEFA(club(w))) { used.add(w); E[c].teams.push(w); }
+  for (const r of rank) {
+    const A = accessFor(r.cc, rank, eps), order = tableOf(r.cc), cw = S.lastCups ? S.lastCups[r.cc] : null;
+    let k = 0; const next = () => { while (k < order.length && used.has(order[k])) k++; return order[k++]; };
+    for (const [key, comp, rd] of A.slots) {
+      let id = key === 'C' && cw != null && !used.has(cw) ? cw : next();
+      if (id == null) continue; used.add(id);
+      if (rd === 'LP') E[comp].teams.push(id); else E[comp].entry[rd].push(id);
+    }
+  }
   S.cpts = {}; for (const r of rank) S.cpts[r.cc] = { pts: 0, n: 0 };
-  for (const id of [...CL, ...EL, ...ECL, ...clPool, ...elPool, ...eclPool]) S.cpts[club(id).cc].n++;
+  for (const id of used) S.cpts[club(id).cc].n++;
   S.euro = {};
-  for (const [id, list, pool] of [['CL', CL, clPool], ['EL', EL, elPool], ['ECL', ECL, eclPool]])
-    S.euro[id] = { id, name: COMP_NAME[id], teams: list.slice(), lp: null, ko: {}, champion: null, q: { alive: pool.filter(x => !list.includes(x)), rounds: [], out: [] } };
+  for (const id of ['CL', 'EL', 'ECL'])
+    S.euro[id] = { id, name: COMP_NAME[id], teams: E[id].teams, lp: null, ko: {}, champion: null, q: { v: 2, alive: [], entry: E[id].entry, rounds: [], out: [] } };
 }
-const QNAME = ['I runda eliminacji', 'II runda eliminacji', 'Runda play-off'];
 const QLOW = { CL: 'EL', EL: 'ECL', ECL: null };
 const qStrength = id => club(id).rep + clubCoef(id) * 0.3;
-const euroOf = id => Object.values(S.euro).find(c => c.teams.includes(id) || (c.q && c.q.alive.includes(id))) || null;
+const euroOf = id => Object.values(S.euro).find(c => c.teams.includes(id) || (c.q && (c.q.alive.includes(id) || (c.q.entry || []).some(e => e.includes(id))))) || null;
+const qLast = q => q.v === 2 ? 3 : 2;
 function ensureQ(r) {
   const E = S.euro; if (!E.CL || !E.CL.q) return;
   let upperLast = 0;
   for (const id of ['CL', 'EL', 'ECL']) {
-    const c = E[id], q = c.q; if (q.rounds[r]) { upperLast = r === 2 ? q.rounds[r].length : 0; continue; }
+    const c = E[id], q = c.q, LAST = qLast(q);
+    if (q.rounds[r]) { upperLast = r === LAST ? q.rounds[r].length : 0; continue; }
+    if (q.entry && q.entry[r]) { q.alive.push(...q.entry[r].filter(x => !q.alive.includes(x))); q.entry[r] = []; }
     const alive = q.alive.slice().sort((x, y) => qStrength(y) - qStrength(x)), P = alive.length;
-    const target = Math.max(0, 36 - c.teams.length - (r === 2 ? upperLast : 0));
-    let ties = r < 2 ? clamp(Math.ceil((P - target) / (3 - r)), 0, Math.floor(P / 2)) : clamp(P - target, 0, Math.floor(P / 2));
+    const F = q.entry ? q.entry.slice(r + 1).reduce((a, e) => a + e.length, 0) : 0;
+    const target = Math.max(0, 36 - c.teams.length - (r === LAST ? upperLast : 0));
+    let ties = r < LAST ? clamp(Math.ceil((P + F - target) / (LAST + 1 - r)), 0, Math.floor(P / 2)) : clamp(P - target, 0, Math.floor(P / 2));
     const byes = alive.slice(0, P - 2 * ties), play = alive.slice(P - 2 * ties), T = [];
     for (let i = 0; i < ties; i++) { const s1 = play[i], s2 = play[play.length - 1 - i]; T.push(rnd() < 0.5 ? tie(s1, s2) : tie(s2, s1)); }
-    if (r === 2 && byes.length > target) { const cut = byes.splice(target); q.alive = q.alive.filter(x => !cut.includes(x)); qDrop(id, cut, true); }
-    q.rounds[r] = T; upperLast = r === 2 ? ties : 0;
-    if (byes.includes(S.user)) msg(`${c.name}: wolny los`, r === 2 ? 'Jako najwyżej rozstawiony klub eliminacji awansujemy bez gry do fazy ligowej!' : `W rundzie „${QNAME[r]}” mamy wolny los – wchodzimy do gry w kolejnej rundzie.`);
+    if (r === LAST && byes.length > target) { const cut = byes.splice(target); q.alive = q.alive.filter(x => !cut.includes(x)); qDrop(id, cut, true); }
+    q.rounds[r] = T; upperLast = r === LAST ? ties : 0;
+    if (byes.includes(S.user)) msg(`${c.name}: wolny los`, r === LAST ? 'Jako najwyżej rozstawiony klub eliminacji awansujemy bez gry do fazy ligowej!' : `W rundzie „${QNAME[r]}” mamy wolny los – jako rozstawieni wchodzimy do gry w kolejnej rundzie.`);
   }
 }
 function qDrop(id, list, last) {
@@ -406,15 +423,16 @@ function finishQ(r) {
     q.alive = q.alive.filter(x => !losers.includes(x));
     for (const t of T) if (t.a === S.user || t.b === S.user) {
       const won = t.w === S.user, low = QLOW[id] && E[QLOW[id]];
-      msg(won ? `✅ ${E[id].name}: awans!` : `❌ ${E[id].name}: odpadamy`, won ? (r === 2 ? `Wygraliśmy ${QNAME[r].toLowerCase()} – zagramy w fazie ligowej!` : `Przechodzimy do kolejnej rundy eliminacji.`) : low ? `Przegraliśmy dwumecz, ale gramy dalej w rozgrywkach: ${low.name}${r === 2 ? ' (faza ligowa)' : ' (eliminacje)'}.` : 'Przegraliśmy dwumecz i żegnamy się z Europą w tym sezonie.');
+      const last = r === qLast(q);
+      msg(won ? `✅ ${E[id].name}: awans!` : `❌ ${E[id].name}: odpadamy`, won ? (last ? `Wygraliśmy rundę play-off – zagramy w fazie ligowej!` : `Przechodzimy do kolejnej rundy eliminacji.`) : low ? `Przegraliśmy dwumecz, ale gramy dalej w rozgrywkach: ${low.name}${last ? ' (faza ligowa)' : ' (eliminacje)'}.` : 'Przegraliśmy dwumecz i żegnamy się z Europą w tym sezonie.');
     }
-    qDrop(id, losers, r === 2);
+    qDrop(id, losers, r === qLast(q));
   }
-  if (r === 2) finalizeEurope();
+  if (r === qLast(E.CL.q)) finalizeEurope();
 }
 function finalizeEurope() {
   const E = S.euro, W = S.lastWinners || {};
-  for (const id of ['CL', 'EL', 'ECL']) { const c = E[id]; c.teams.push(...c.q.alive.filter(x => !c.teams.includes(x))); c.q.alive = []; }
+  for (const id of ['CL', 'EL', 'ECL']) { const c = E[id], rest = [...c.q.alive, ...(c.q.entry || []).flat()]; c.teams.push(...rest.filter(x => !c.teams.includes(x))); c.q.alive = []; if (c.q.entry) c.q.entry = [[], [], [], []]; }
   const inAny = x => ['CL', 'EL', 'ECL'].some(id => E[id].teams.includes(x));
   // nadmiar spada niżej, braki uzupełniają najlepsze kluby, które nie grają w Europie
   for (const id of ['CL', 'EL', 'ECL']) {
@@ -679,7 +697,7 @@ function processDay(live) {
   }
   if (d.t === 'L') weekly(d);
   if (d.t === 'E' && d.st === 'Q' && d.leg === 2) finishQ(d.r);
-  if (d.t === 'E' && d.st === 'Q' && d.r === 2 && d.leg === 2 && S.user >= 0 && typeof setBoardObjective === 'function') { const ec = Object.values(S.euro).find(c => c.teams.includes(S.user)); if (ec) S.board.euro = euroGoal(ec); }
+  if (d.t === 'E' && d.st === 'Q' && S.euro.CL && S.euro.CL.q && d.r === qLast(S.euro.CL.q) && d.leg === 2 && S.user >= 0 && typeof setBoardObjective === 'function') { const ec = Object.values(S.euro).find(c => c.teams.includes(S.user)); if (ec) S.board.euro = euroGoal(ec); }
   if (d.t === 'E' && d.st === 'LP' && d.md === 7) for (const c of Object.values(S.euro)) lpBonus(c);
   if (d.t === 'E' && d.st === 'LP' && d.md === 5 && S.euro.ECL) lpBonus(S.euro.ECL);
   S.day++;
@@ -895,13 +913,38 @@ function clubResponse(p, fee, o = {}) {
 function wageDemand(p) {
   const ut = userClub(), c = clubOf(p);
   const base = calcWage(p, Math.max(ut.rep, c ? c.rep : 50));
-  const f = 1 + Math.max(0, (c ? c.rep : 50) - ut.rep) / 50;
+  const gap = c ? presOf(c) - presOf(ut) : 0, f = (1 + Math.max(0, gap) * 0.1) * (1.08 - presOf(ut) * 0.012);
   return Math.round(base * f * (p.age > 30 ? 0.9 : 1) / 100) * 100;
 }
+/* ---------- prestiż klubu (1–10, w UI 5 gwiazdek) – rośnie powoli przy długotrwałych sukcesach ---------- */
+const presOf = c => c.pres != null ? c.pres : (c.pres = Math.round(clamp(1 + (c.rep - 25) / 7.2, 1, 10) * 10) / 10);
+function prestigeSeason(finals) {
+  const cupW = new Set(Object.values(S.cups || {}).map(c => c.champion).filter(x => x != null)), eu = {};
+  for (const c of Object.values(S.euro || {})) {
+    const w = c.id === 'CL' ? 1 : c.id === 'EL' ? 0.6 : 0.4;
+    for (const t of c.teams) eu[t] = (eu[t] || 0) + 0.5 * w;
+    for (const st of ['R16', 'QF', 'SF', 'F']) for (const x of c.ko[st] || []) for (const t of [x.a, x.b]) eu[t] = (eu[t] || 0) + 0.25 * w;
+    if (c.champion != null) eu[c.champion] = (eu[c.champion] || 0) + 1.5 * w;
+  }
+  const champ = new Set(Object.keys(finals).map(id => finals[id][0] && finals[id][0].id)), out = {}, lgAvg = {};
+  for (const lg of Object.values(S.leagues)) lgAvg[lg.id] = avg(lg.clubs.map(id => eloOf(club(id))));
+  for (const c of S.clubs) {
+    const tier = S.leagues[c.lg].tier;
+    // siła klubu mieszana z siłą ligi: dominacja w słabej lidze daje mniej prestiżu niż czołówka mocnej ligi
+    let sc = clamp((0.6 * eloOf(c) + 0.4 * lgAvg[c.lg] - 1150) / 95, 0, 8.5);
+    if (champ.has(c.id)) sc += tier === 1 ? 1 : 0.4;
+    if (cupW.has(c.id)) sc += 0.6;
+    sc = clamp(sc + (eu[c.id] || 0), 0.5, 10);
+    const old = presOf(c); c.pres = Math.round((old * 0.85 + sc * 0.15) * 100) / 100; out[c.id] = old;
+  }
+  return out;
+}
+const presStars = c => { const p = presOf(c); return `<span class="pstars" title="Prestiż ${p.toFixed(1)}/10"><span style="width:${clamp(Math.round(p * 2) / 2, 0.5, 10) * 10}%">★★★★★</span>★★★★★</span>`; };
+const presWord = p => p >= 9 ? 'światowa marka' : p >= 7.5 ? 'europejska potęga' : p >= 6 ? 'uznany klub' : p >= 4.5 ? 'solidna firma' : p >= 3 ? 'klub regionalny' : 'mało znany klub';
 function playerInterest(p) {
-  const ut = userClub(), c = clubOf(p);
-  if (c && c.rep - ut.rep > 14) return { ok: false, msg: `${p.n} nie chce przejść do słabszego klubu.` };
-  if (p.ovr > teamLevel(ut) + 11) return { ok: false, msg: `${p.n} uważa, że Twój klub nie spełnia jego ambicji.` };
+  const ut = userClub(), c = clubOf(p), gap = c ? presOf(c) - presOf(ut) : 0;
+  if (c && gap > 2.5) return { ok: false, msg: `${p.n} nie chce przejść do mniej prestiżowego klubu (prestiż ${presOf(c).toFixed(1)} vs ${presOf(ut).toFixed(1)}).` };
+  if (p.ovr > teamLevel(ut) + 9 + presOf(ut) * 0.5) return { ok: false, msg: `${p.n} uważa, że Twój klub nie spełnia jego ambicji – wyższy prestiż przyciągnie lepszych piłkarzy.` };
   return { ok: true };
 }
 function personalTerms(p, wage, years) {
@@ -1095,7 +1138,7 @@ function genYouth() {
   const A = S.acad, ut = userClub();
   const nat = A.region && rnd() < 0.7 ? A.region : rnd() < 0.85 ? S.countries[ut.cc].nat : foreignNat(false);
   const pos = pick(POSITIONS);
-  let pot = Math.round(52 + A.fac * 5 + A.rec * 1.5 + (A.nextQ || 0) + gauss() * 8);
+  let pot = Math.round(52 + A.fac * 5 + A.rec * 1.5 + (A.nextQ || 0) + (presOf(ut) - 5) * 0.6 + gauss() * 8);
   if (rnd() < 0.03 + A.rec * 0.006) pot += ri(8, 14);   // talent pokolenia
   pot = clamp(pot, 50, 95);
   const y = genPlayer(pos, 0, nat, { age: ri(15, 16), adjAge: false, pot, con: 3 });
@@ -1296,6 +1339,8 @@ function endSeason() {
   const eh = { season: S.season };
   for (const c of Object.values(S.euro)) { eh[c.id] = c.champion; if (c.champion != null) lines.push(`🏆 ${c.name}: ${club(c.champion).name}.`); }
   S.euroHist.push(eh);
+  const presOld = prestigeSeason(finals);
+  { const o = presOld[ut.id], n = presOf(ut); lines.push(`⭐ Prestiż klubu: ${o.toFixed(1)} → ${n.toFixed(1)} / 10 (${presWord(n)}).`); }
   S.lastWinners = { CL: S.euro.CL && S.euro.CL.champion, EL: S.euro.EL && S.euro.EL.champion, ECL: S.euro.ECL && S.euro.ECL.champion };
   const myEuro = Object.values(S.euro).find(c => c.teams.includes(ut.id)) || euroOf(ut.id);
   let euroOk = true;

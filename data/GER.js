@@ -184,33 +184,6 @@ COUNTRY_DATA.push({
         ['Junior Adamu', 'ST', 25, 73, 76, 'AUT'],
         ['Igor Matanović', 'ST', 23, 73, 78, 'CRO']
       ]],
-      ['VfL Wolfsburg', 'WOB', '#65B32E', '#FFFFFF', 72, 28917, [
-        ['Kamil Grabara', 'GK', 27, 79, 81, 'POL', [79, 76, 74, 82, 50, 77]],
-        ['Marius Müller', 'GK', 33, 70, 70, 'GER'],
-        ['Pavao Pervan', 'GK', 39, 64, 64, 'AUT'],
-        ['Denis Vavro', 'CB', 30, 76, 76, 'SVK'],
-        ['Konstantinos Koulierakis', 'CB', 22, 76, 82, 'GRE'],
-        ['Moritz Jenz', 'CB', 27, 74, 75, 'GER'],
-        ['Jenson Seelt', 'CB', 23, 72, 77, 'NED'],
-        ['Joakim Mæhle', 'RB', 29, 77, 77, 'DEN'],
-        ['Kilian Fischer', 'RB', 26, 75, 77, 'GER'],
-        ['Sael Kumbedi', 'RB', 21, 71, 78, 'FRA'],
-        ['Aaron Zehnter', 'LB', 22, 70, 77, 'GER'],
-        ['Maximilian Arnold', 'CDM', 32, 77, 77, 'GER'],
-        ['Vinicius Souza', 'CDM', 27, 77, 78, 'BRA'],
-        ['Mattias Svanberg', 'CM', 27, 76, 77, 'SWE'],
-        ['Yannick Gerhardt', 'CM', 32, 73, 73, 'GER'],
-        ['Christian Eriksen', 'CAM', 34, 78, 78, 'DEN', [50, 74, 85, 78, 55, 60]],
-        ['Lovro Majer', 'CAM', 28, 77, 77, 'CRO'],
-        ['Bence Dárdai', 'CAM', 20, 70, 80, 'HUN'],
-        ['Patrick Wimmer', 'RM', 25, 76, 78, 'AUT'],
-        ['Jesper Lindstrøm', 'LW', 26, 75, 77, 'DEN'],
-        ['Andreas Skov Olsen', 'RW', 26, 77, 78, 'DEN'],
-        ['Kevin Paredes', 'LM', 23, 70, 75, 'USA'],
-        ['Mohamed Amoura', 'ST', 26, 79, 81, 'ALG', [94, 76, 68, 78, 35, 68]],
-        ['Jonas Wind', 'ST', 27, 78, 78, 'DEN', [65, 78, 74, 74, 40, 80]],
-        ['Dženan Pejčinović', 'ST', 21, 70, 79, 'GER']
-      ]],
       ['Borussia Mönchengladbach', 'BMG', '#FFFFFF', '#00A651', 72, 54042, [
         ['Moritz Nicolas', 'GK', 29, 76, 76, 'GER'],
         ['Jonas Omlin', 'GK', 32, 76, 76, 'SUI'],
@@ -421,7 +394,109 @@ COUNTRY_DATA.push({
         ['Robert Glatzel', 'ST', 32, 72, 72, 'GER'],
         ['Rayan Philippe', 'ST', 26, 71, 73, 'FRA']
       ]],
-      ['FC St. Pauli', 'STP', '#5A3828', '#FFFFFF', 66, 29546, [
+      ['FC Schalke 04', 'SCH', '#004D9D', '#FFFFFF', 65, 62271, [
+        ['Loris Karius', 'GK', 33, 68, 68, 'GER'],
+        ['Justin Heekeren', 'GK', 25, 64, 68, 'GER'],
+        ['Nikola Katić', 'CB', 30, 70, 70, 'CRO'],
+        ['Timo Becker', 'CB', 29, 66, 66, 'GER'],
+        ['Mertcan Ayhan', 'CB', 25, 66, 68, 'TUR'],
+        ['Hasan Kurucay', 'CB', 29, 66, 66, 'DEN'],
+        ['Derry John Murkin', 'LB', 26, 66, 68, 'ENG'],
+        ['Vitalie Becker', 'LB', 22, 62, 68, 'GER'],
+        ['Adrian Gantenbein', 'RB', 25, 66, 68, 'SUI'],
+        ['Ron Schallenberg', 'CDM', 28, 68, 68, 'GER'],
+        ['Soufiane El-Faouzi', 'CM', 23, 64, 69, 'GER'],
+        ['Max Grüger', 'CM', 25, 63, 66, 'GER'],
+        ['Kenan Karaman', 'CAM', 32, 68, 68, 'TUR'],
+        ['Christopher Antwi-Adjei', 'RW', 32, 64, 64, 'GHA'],
+        ['Bryan Lasme', 'LW', 28, 66, 66, 'FRA'],
+        ['Moussa Sylla', 'ST', 26, 67, 68, 'MLI'],
+        ['Emil Højlund', 'ST', 21, 63, 70, 'DEN'],
+        ['Pape Meissa Ba', 'ST', 28, 63, 63, 'SEN']
+      ]],
+      ['SV Elversberg', 'SVE', '#000000', '#FFFFFF', 62, 10000, [
+        ['Nicolas Kristof', 'GK', 26, 66, 68, 'GER'],
+        ['Maximilian Rohr', 'CB', 31, 64, 64, 'GER'],
+        ['Lukas Pinckert', 'RB', 26, 64, 66, 'GER'],
+        ['Jan Gyamerah', 'RB', 31, 63, 63, 'GER'],
+        ['Maurice Neubauer', 'LB', 27, 64, 64, 'GER'],
+        ['Robin Fellhauer', 'RM', 29, 66, 66, 'GER'],
+        ['Carlo Sickinger', 'CDM', 29, 64, 64, 'GER'],
+        ['Semih Şahin', 'CM', 27, 65, 66, 'TUR'],
+        ['Muhammed Damar', 'CAM', 22, 68, 74, 'GER'],
+        ['Bambasé Conté', 'LW', 23, 66, 70, 'FRA'],
+        ['Lukas Petkov', 'RW', 26, 66, 67, 'GER'],
+        ['Younes Ebnoutalib', 'ST', 23, 67, 72, 'GER'],
+        ['Luca Schnellbacher', 'ST', 32, 64, 64, 'GER']
+      ]],
+      ['SC Paderborn 07', 'SCP', '#004F9F', '#000000', 62, 15000, [
+        ['Dennis Seimen', 'GK', 20, 64, 74, 'GER'],
+        ['Manuel Riemann', 'GK', 38, 64, 64, 'GER'],
+        ['Calvin Brackelmann', 'CB', 27, 65, 66, 'GER'],
+        ['Laurin Curda', 'RB', 23, 64, 68, 'GER'],
+        ['Raphael Obermair', 'RB', 30, 64, 64, 'GER'],
+        ['Santiago Castañeda', 'CDM', 22, 65, 71, 'USA'],
+        ['Sebastian Klaas', 'CM', 28, 66, 66, 'GER'],
+        ['Mika Baur', 'LW', 22, 64, 69, 'GER'],
+        ['Filip Bilbija', 'ST', 26, 66, 67, 'GER'],
+        ['Sven Michel', 'ST', 36, 63, 63, 'GER']
+      ]]
+    ]},
+    { id: 'GER2', name: '2. Bundesliga', tier: 2, clubs: [
+      ['VfL Wolfsburg', 'WOB', '#65B32E', '#FFFFFF', 62, 28917, [
+        ['Kamil Grabara', 'GK', 27, 79, 81, 'POL', [79, 76, 74, 82, 50, 77]],
+        ['Marius Müller', 'GK', 33, 70, 70, 'GER'],
+        ['Pavao Pervan', 'GK', 39, 64, 64, 'AUT'],
+        ['Denis Vavro', 'CB', 30, 76, 76, 'SVK'],
+        ['Konstantinos Koulierakis', 'CB', 22, 76, 82, 'GRE'],
+        ['Moritz Jenz', 'CB', 27, 74, 75, 'GER'],
+        ['Jenson Seelt', 'CB', 23, 72, 77, 'NED'],
+        ['Joakim Mæhle', 'RB', 29, 77, 77, 'DEN'],
+        ['Kilian Fischer', 'RB', 26, 75, 77, 'GER'],
+        ['Sael Kumbedi', 'RB', 21, 71, 78, 'FRA'],
+        ['Aaron Zehnter', 'LB', 22, 70, 77, 'GER'],
+        ['Maximilian Arnold', 'CDM', 32, 77, 77, 'GER'],
+        ['Vinicius Souza', 'CDM', 27, 77, 78, 'BRA'],
+        ['Mattias Svanberg', 'CM', 27, 76, 77, 'SWE'],
+        ['Yannick Gerhardt', 'CM', 32, 73, 73, 'GER'],
+        ['Christian Eriksen', 'CAM', 34, 78, 78, 'DEN', [50, 74, 85, 78, 55, 60]],
+        ['Lovro Majer', 'CAM', 28, 77, 77, 'CRO'],
+        ['Bence Dárdai', 'CAM', 20, 70, 80, 'HUN'],
+        ['Patrick Wimmer', 'RM', 25, 76, 78, 'AUT'],
+        ['Jesper Lindstrøm', 'LW', 26, 75, 77, 'DEN'],
+        ['Andreas Skov Olsen', 'RW', 26, 77, 78, 'DEN'],
+        ['Kevin Paredes', 'LM', 23, 70, 75, 'USA'],
+        ['Mohamed Amoura', 'ST', 26, 79, 81, 'ALG', [94, 76, 68, 78, 35, 68]],
+        ['Jonas Wind', 'ST', 27, 78, 78, 'DEN', [65, 78, 74, 74, 40, 80]],
+        ['Dženan Pejčinović', 'ST', 21, 70, 79, 'GER']
+      ]],
+      ['1. FC Heidenheim', 'FCH', '#E2001A', '#003B79', 62, 15000, [
+        ['Diant Ramaj', 'GK', 25, 72, 75, 'GER'],
+        ['Kevin Müller', 'GK', 35, 70, 70, 'GER'],
+        ['Frank Feller', 'GK', 22, 66, 72, 'GER'],
+        ['Patrick Mainka', 'CB', 31, 72, 72, 'GER'],
+        ['Benedikt Gimber', 'CB', 29, 70, 70, 'GER'],
+        ['Tim Siersleben', 'CB', 26, 70, 72, 'GER'],
+        ['Thomas Keller', 'CB', 27, 68, 69, 'GER'],
+        ['Jonas Föhrenbach', 'LB', 30, 70, 70, 'GER'],
+        ['Hennes Behrens', 'LB', 21, 66, 74, 'GER'],
+        ['Omar Traoré', 'RB', 28, 72, 72, 'GER'],
+        ['Marnon Busch', 'RB', 31, 68, 68, 'GER'],
+        ['Jan Schöppner', 'CDM', 27, 70, 71, 'GER'],
+        ['Niklas Dorsch', 'CDM', 28, 71, 71, 'GER'],
+        ['Lennard Maloney', 'CDM', 27, 71, 72, 'USA'],
+        ['Julian Niehues', 'CM', 25, 68, 70, 'GER'],
+        ['Adrian Beck', 'CAM', 29, 71, 71, 'GER'],
+        ['Arijon Ibrahimović', 'CAM', 21, 70, 78, 'GER'],
+        ['Mathias Honsak', 'LW', 29, 71, 71, 'AUT'],
+        ['Leonardo Scienza', 'LW', 25, 70, 72, 'BRA'],
+        ['Sirlord Conteh', 'RW', 30, 69, 69, 'GER'],
+        ['Budu Zivzivadze', 'ST', 32, 71, 71, 'GEO'],
+        ['Marvin Pieringer', 'ST', 27, 71, 72, 'GER'],
+        ['Stefan Schimmer', 'ST', 32, 68, 68, 'GER'],
+        ['Mikkel Kaufmann', 'ST', 25, 68, 70, 'DEN']
+      ]],
+      ['FC St. Pauli', 'STP', '#5A3828', '#FFFFFF', 62, 29546, [
         ['Nikola Vasilj', 'GK', 30, 76, 76, 'BIH'],
         ['Ben Voll', 'GK', 25, 65, 68, 'GER'],
         ['Sascha Burchert', 'GK', 37, 60, 60, 'GER'],
@@ -447,54 +522,6 @@ COUNTRY_DATA.push({
         ['Martijn Kaars', 'ST', 26, 70, 72, 'NED'],
         ['Abdoulie Ceesay', 'ST', 22, 66, 73, 'GAM'],
         ['Ricky-Jade Jones', 'ST', 24, 68, 72, 'ENG']
-      ]],
-      ['1. FC Heidenheim', 'FCH', '#E2001A', '#003B79', 65, 15000, [
-        ['Diant Ramaj', 'GK', 25, 72, 75, 'GER'],
-        ['Kevin Müller', 'GK', 35, 70, 70, 'GER'],
-        ['Frank Feller', 'GK', 22, 66, 72, 'GER'],
-        ['Patrick Mainka', 'CB', 31, 72, 72, 'GER'],
-        ['Benedikt Gimber', 'CB', 29, 70, 70, 'GER'],
-        ['Tim Siersleben', 'CB', 26, 70, 72, 'GER'],
-        ['Thomas Keller', 'CB', 27, 68, 69, 'GER'],
-        ['Jonas Föhrenbach', 'LB', 30, 70, 70, 'GER'],
-        ['Hennes Behrens', 'LB', 21, 66, 74, 'GER'],
-        ['Omar Traoré', 'RB', 28, 72, 72, 'GER'],
-        ['Marnon Busch', 'RB', 31, 68, 68, 'GER'],
-        ['Jan Schöppner', 'CDM', 27, 70, 71, 'GER'],
-        ['Niklas Dorsch', 'CDM', 28, 71, 71, 'GER'],
-        ['Lennard Maloney', 'CDM', 27, 71, 72, 'USA'],
-        ['Julian Niehues', 'CM', 25, 68, 70, 'GER'],
-        ['Adrian Beck', 'CAM', 29, 71, 71, 'GER'],
-        ['Arijon Ibrahimović', 'CAM', 21, 70, 78, 'GER'],
-        ['Mathias Honsak', 'LW', 29, 71, 71, 'AUT'],
-        ['Leonardo Scienza', 'LW', 25, 70, 72, 'BRA'],
-        ['Sirlord Conteh', 'RW', 30, 69, 69, 'GER'],
-        ['Budu Zivzivadze', 'ST', 32, 71, 71, 'GEO'],
-        ['Marvin Pieringer', 'ST', 27, 71, 72, 'GER'],
-        ['Stefan Schimmer', 'ST', 32, 68, 68, 'GER'],
-        ['Mikkel Kaufmann', 'ST', 25, 68, 70, 'DEN']
-      ]]
-    ]},
-    { id: 'GER2', name: '2. Bundesliga', tier: 2, clubs: [
-      ['FC Schalke 04', 'SCH', '#004D9D', '#FFFFFF', 62, 62271, [
-        ['Loris Karius', 'GK', 33, 68, 68, 'GER'],
-        ['Justin Heekeren', 'GK', 25, 64, 68, 'GER'],
-        ['Nikola Katić', 'CB', 30, 70, 70, 'CRO'],
-        ['Timo Becker', 'CB', 29, 66, 66, 'GER'],
-        ['Mertcan Ayhan', 'CB', 25, 66, 68, 'TUR'],
-        ['Hasan Kurucay', 'CB', 29, 66, 66, 'DEN'],
-        ['Derry John Murkin', 'LB', 26, 66, 68, 'ENG'],
-        ['Vitalie Becker', 'LB', 22, 62, 68, 'GER'],
-        ['Adrian Gantenbein', 'RB', 25, 66, 68, 'SUI'],
-        ['Ron Schallenberg', 'CDM', 28, 68, 68, 'GER'],
-        ['Soufiane El-Faouzi', 'CM', 23, 64, 69, 'GER'],
-        ['Max Grüger', 'CM', 25, 63, 66, 'GER'],
-        ['Kenan Karaman', 'CAM', 32, 68, 68, 'TUR'],
-        ['Christopher Antwi-Adjei', 'RW', 32, 64, 64, 'GHA'],
-        ['Bryan Lasme', 'LW', 28, 66, 66, 'FRA'],
-        ['Moussa Sylla', 'ST', 26, 67, 68, 'MLI'],
-        ['Emil Højlund', 'ST', 21, 63, 70, 'DEN'],
-        ['Pape Meissa Ba', 'ST', 28, 63, 63, 'SEN']
       ]],
       ['VfL Bochum', 'BOC', '#005CA9', '#FFFFFF', 60, 26000, [
         ['Timo Horn', 'GK', 33, 66, 66, 'GER'],
@@ -545,21 +572,6 @@ COUNTRY_DATA.push({
         ['Fabian Reese', 'LW', 29, 72, 72, 'GER'],
         ['Dawid Kownacki', 'ST', 29, 67, 67, 'POL'],
         ['Luca Schuler', 'ST', 27, 65, 66, 'SUI']
-      ]],
-      ['Fortuna Düsseldorf', 'FOR', '#DA251D', '#FFFFFF', 57, 54600, [
-        ['Florian Kastenmeier', 'GK', 29, 68, 68, 'GER'],
-        ['Karol Niemczycki', 'GK', 27, 63, 65, 'POL'],
-        ['Jamil Siebert', 'CB', 24, 66, 69, 'GER'],
-        ['Tim Oberdorf', 'CB', 30, 65, 65, 'GER'],
-        ['Jordy de Wijs', 'CB', 31, 66, 66, 'NED'],
-        ['Valgeir Lunddal Fridriksson', 'RB', 25, 66, 68, 'ISL'],
-        ['Matthias Zimmermann', 'RB', 34, 64, 64, 'GER'],
-        ['Sotiris Alexandropoulos', 'CM', 25, 66, 68, 'GRE'],
-        ['Shinta Appelkamp', 'CAM', 25, 67, 69, 'GER'],
-        ['Myron van Brederode', 'LW', 23, 66, 70, 'NED'],
-        ['Felix Klaus', 'RW', 34, 66, 66, 'GER'],
-        ['Emmanuel Iyoha', 'LW', 28, 66, 66, 'GER'],
-        ['Cedric Itten', 'ST', 29, 68, 68, 'SUI']
       ]],
       ['Hannover 96', 'HAN', '#00843D', '#000000', 57, 49000, [
         ['Leo Weinkauf', 'GK', 29, 64, 64, 'GER'],
@@ -642,33 +654,6 @@ COUNTRY_DATA.push({
         ['Fabian Schleusener', 'ST', 35, 66, 66, 'GER'],
         ['Louey Ben Farhat', 'ST', 20, 64, 74, 'TUN']
       ]],
-      ['SC Paderborn 07', 'SCP', '#004F9F', '#000000', 54, 15000, [
-        ['Dennis Seimen', 'GK', 20, 64, 74, 'GER'],
-        ['Manuel Riemann', 'GK', 38, 64, 64, 'GER'],
-        ['Calvin Brackelmann', 'CB', 27, 65, 66, 'GER'],
-        ['Laurin Curda', 'RB', 23, 64, 68, 'GER'],
-        ['Raphael Obermair', 'RB', 30, 64, 64, 'GER'],
-        ['Santiago Castañeda', 'CDM', 22, 65, 71, 'USA'],
-        ['Sebastian Klaas', 'CM', 28, 66, 66, 'GER'],
-        ['Mika Baur', 'LW', 22, 64, 69, 'GER'],
-        ['Filip Bilbija', 'ST', 26, 66, 67, 'GER'],
-        ['Sven Michel', 'ST', 36, 63, 63, 'GER']
-      ]],
-      ['SV Elversberg', 'SVE', '#000000', '#FFFFFF', 52, 10000, [
-        ['Nicolas Kristof', 'GK', 26, 66, 68, 'GER'],
-        ['Maximilian Rohr', 'CB', 31, 64, 64, 'GER'],
-        ['Lukas Pinckert', 'RB', 26, 64, 66, 'GER'],
-        ['Jan Gyamerah', 'RB', 31, 63, 63, 'GER'],
-        ['Maurice Neubauer', 'LB', 27, 64, 64, 'GER'],
-        ['Robin Fellhauer', 'RM', 29, 66, 66, 'GER'],
-        ['Carlo Sickinger', 'CDM', 29, 64, 64, 'GER'],
-        ['Semih Şahin', 'CM', 27, 65, 66, 'TUR'],
-        ['Muhammed Damar', 'CAM', 22, 68, 74, 'GER'],
-        ['Bambasé Conté', 'LW', 23, 66, 70, 'FRA'],
-        ['Lukas Petkov', 'RW', 26, 66, 67, 'GER'],
-        ['Younes Ebnoutalib', 'ST', 23, 67, 72, 'GER'],
-        ['Luca Schnellbacher', 'ST', 32, 64, 64, 'GER']
-      ]],
       ['1. FC Magdeburg', 'FCM', '#0069B4', '#FFFFFF', 53, 30098, [
         ['Dominik Reimann', 'GK', 29, 67, 67, 'GER'],
         ['Noah Kruth', 'GK', 22, 60, 66, 'GER'],
@@ -745,35 +730,43 @@ COUNTRY_DATA.push({
         ['Stefan Kutschke', 'ST', 37, 63, 63, 'GER'],
         ['Robin Meißner', 'ST', 27, 64, 64, 'GER']
       ]],
-      ['Preußen Münster', 'SCM', '#006B3F', '#000000', 49, 14300, [
-        ['Johannes Schenk', 'GK', 23, 64, 69, 'GER'],
-        ['Max Schulze Niehues', 'GK', 37, 62, 62, 'GER'],
-        ['Simon Scherder', 'CB', 33, 62, 62, 'GER'],
-        ['Niko Koulis', 'CB', 27, 63, 64, 'GRE'],
-        ['Jano ter Horst', 'RB', 25, 63, 65, 'GER'],
-        ['Jorrit Hendrix', 'CDM', 31, 65, 65, 'NED'],
-        ['Jakob Korte', 'CM', 29, 63, 63, 'GER'],
-        ['Marc Lorenz', 'LM', 38, 61, 61, 'GER'],
-        ['Joshua Mees', 'LW', 30, 64, 64, 'GER'],
-        ['Etienne Amenyido', 'ST', 28, 63, 63, 'GER'],
-        ['Malik Batmaz', 'ST', 26, 63, 64, 'GER'],
-        ['Oscar Vilhelmsson', 'ST', 23, 64, 69, 'SWE']
+      ['Energie Cottbus', 'FCE', '#E30613', '#FFFFFF', 50, 22528, [
+        ['Axel Borgmann', 'LB', 32, 58, 58, 'GER'],
+        ['Tolcay Ciğerci', 'CM', 31, 62, 62, 'GER'],
+        ['Tim Heike', 'RW', 26, 61, 62, 'GER'],
+        ['Erik Engelhardt', 'ST', 28, 62, 62, 'GER']
+      ]],
+      ['VfL Osnabrück', 'OSN', '#5A2D82', '#FFFFFF', 48, 15741, [
+        ['Lukas Jonsson', 'GK', 34, 60, 60, 'SWE'],
+        ['Bashkim Ajdini', 'RB', 34, 58, 58, 'KOS'],
+        ['Bryan Henning', 'CM', 31, 59, 59, 'GER'],
+        ['Lars Kehl', 'CM', 24, 59, 63, 'GER'],
+        ['David Kopacz', 'CAM', 27, 59, 60, 'POL'],
+        ['Ismail Badjie', 'LW', 25, 59, 61, 'GAM']
       ]]
     ]},
     { id: 'GER3', name: '3. Liga', tier: 3, clubs: [
+      ['Fortuna Düsseldorf', 'FOR', '#DA251D', '#FFFFFF', 52, 54600, [
+        ['Florian Kastenmeier', 'GK', 29, 68, 68, 'GER'],
+        ['Karol Niemczycki', 'GK', 27, 63, 65, 'POL'],
+        ['Jamil Siebert', 'CB', 24, 66, 69, 'GER'],
+        ['Tim Oberdorf', 'CB', 30, 65, 65, 'GER'],
+        ['Jordy de Wijs', 'CB', 31, 66, 66, 'NED'],
+        ['Valgeir Lunddal Fridriksson', 'RB', 25, 66, 68, 'ISL'],
+        ['Matthias Zimmermann', 'RB', 34, 64, 64, 'GER'],
+        ['Sotiris Alexandropoulos', 'CM', 25, 66, 68, 'GRE'],
+        ['Shinta Appelkamp', 'CAM', 25, 67, 69, 'GER'],
+        ['Myron van Brederode', 'LW', 23, 66, 70, 'NED'],
+        ['Felix Klaus', 'RW', 34, 66, 66, 'GER'],
+        ['Emmanuel Iyoha', 'LW', 28, 66, 66, 'GER'],
+        ['Cedric Itten', 'ST', 29, 68, 68, 'SUI']
+      ]],
       ['Jahn Regensburg', 'JAH', '#C8102E', '#FFFFFF', 49, 15210, [
         ['Felix Gebhardt', 'GK', 24, 62, 66, 'GER'],
         ['Louis Breunig', 'CB', 23, 60, 65, 'GER'],
         ['Benedikt Saller', 'RB', 34, 58, 58, 'GER'],
         ['Andreas Geipl', 'CDM', 34, 61, 61, 'GER'],
         ['Christian Kühlwetter', 'ST', 30, 61, 61, 'GER']
-      ]],
-      ['SSV Ulm 1846', 'ULM', '#000000', '#FFFFFF', 48, 17400, [
-        ['Christian Ortag', 'GK', 31, 62, 62, 'GER'],
-        ['Johannes Reichert', 'CB', 35, 60, 60, 'GER'],
-        ['Max Brandt', 'CM', 32, 60, 60, 'GER'],
-        ['Lucas Röser', 'ST', 33, 60, 60, 'GER'],
-        ['Felix Higl', 'ST', 29, 60, 60, 'GER']
       ]],
       ['1. FC Saarbrücken', 'FCS', '#003D7C', '#FFFFFF', 47, 16003, [
         ['Phillip Menzel', 'GK', 28, 61, 62, 'GER'],
@@ -783,12 +776,6 @@ COUNTRY_DATA.push({
         ['Patrick Sontheimer', 'CM', 27, 61, 62, 'GER'],
         ['Tim Civeja', 'CM', 24, 60, 64, 'GER'],
         ['Kai Brünker', 'ST', 32, 61, 61, 'GER']
-      ]],
-      ['Energie Cottbus', 'FCE', '#E30613', '#FFFFFF', 47, 22528, [
-        ['Axel Borgmann', 'LB', 32, 58, 58, 'GER'],
-        ['Tolcay Ciğerci', 'CM', 31, 62, 62, 'GER'],
-        ['Tim Heike', 'RW', 26, 61, 62, 'GER'],
-        ['Erik Engelhardt', 'ST', 28, 62, 62, 'GER']
       ]],
       ['FC Ingolstadt 04', 'FCI', '#BA1F33', '#000000', 48, 15200, [
         ['Marius Funk', 'GK', 30, 62, 62, 'GER'],
@@ -804,17 +791,6 @@ COUNTRY_DATA.push({
         ['Felix Ruschke', 'CM', 28, 59, 59, 'GER'],
         ['Christian Kinsombi', 'RW', 26, 60, 61, 'GER'],
         ['Kai Pröger', 'RW', 34, 60, 60, 'GER']
-      ]],
-      ['TSV 1860 Monachium', 'LOW', '#1E90FF', '#FFFFFF', 50, 15000, [
-        ['René Vollath', 'GK', 36, 60, 60, 'GER'],
-        ['Siemen Voet', 'CB', 26, 60, 61, 'BEL'],
-        ['Max Reinthaler', 'CB', 31, 59, 59, 'ITA'],
-        ['Raphael Schifferl', 'CB', 26, 59, 61, 'AUT'],
-        ['Thore Jacobsen', 'CM', 29, 61, 61, 'GER'],
-        ['Kevin Volland', 'ST', 34, 66, 66, 'GER'],
-        ['Florian Niederlechner', 'ST', 35, 63, 63, 'GER'],
-        ['Sigurd Haugen', 'ST', 29, 62, 62, 'NOR'],
-        ['Patrick Hobsch', 'ST', 31, 60, 60, 'GER']
       ]],
       ['Alemannia Aachen', 'AAC', '#FFED00', '#000000', 46, 32960, [
         ['Mika Schroers', 'CB', 24, 59, 63, 'GER'],
@@ -841,13 +817,19 @@ COUNTRY_DATA.push({
         ['Kaito Mizuta', 'RW', 26, 59, 61, 'JPN'],
         ['Ramien Safi', 'LW', 23, 58, 63, 'GER']
       ]],
-      ['VfL Osnabrück', 'OSN', '#5A2D82', '#FFFFFF', 45, 15741, [
-        ['Lukas Jonsson', 'GK', 34, 60, 60, 'SWE'],
-        ['Bashkim Ajdini', 'RB', 34, 58, 58, 'KOS'],
-        ['Bryan Henning', 'CM', 31, 59, 59, 'GER'],
-        ['Lars Kehl', 'CM', 24, 59, 63, 'GER'],
-        ['David Kopacz', 'CAM', 27, 59, 60, 'POL'],
-        ['Ismail Badjie', 'LW', 25, 59, 61, 'GAM']
+      ['Preußen Münster', 'SCM', '#006B3F', '#000000', 46, 14300, [
+        ['Johannes Schenk', 'GK', 23, 64, 69, 'GER'],
+        ['Max Schulze Niehues', 'GK', 37, 62, 62, 'GER'],
+        ['Simon Scherder', 'CB', 33, 62, 62, 'GER'],
+        ['Niko Koulis', 'CB', 27, 63, 64, 'GRE'],
+        ['Jano ter Horst', 'RB', 25, 63, 65, 'GER'],
+        ['Jorrit Hendrix', 'CDM', 31, 65, 65, 'NED'],
+        ['Jakob Korte', 'CM', 29, 63, 63, 'GER'],
+        ['Marc Lorenz', 'LM', 38, 61, 61, 'GER'],
+        ['Joshua Mees', 'LW', 30, 64, 64, 'GER'],
+        ['Etienne Amenyido', 'ST', 28, 63, 63, 'GER'],
+        ['Malik Batmaz', 'ST', 26, 63, 64, 'GER'],
+        ['Oscar Vilhelmsson', 'ST', 23, 64, 69, 'SWE']
       ]],
       ['Waldhof Mannheim', 'WAL', '#003D7C', '#000000', 44, 24302, [
         ['Jan-Christoph Bartels', 'GK', 27, 60, 61, 'GER'],
@@ -864,12 +846,6 @@ COUNTRY_DATA.push({
         ['Thijmen Goppel', 'RW', 29, 60, 60, 'NED'],
         ['Fatih Kaya', 'ST', 26, 61, 62, 'GER']
       ]],
-      ['Erzgebirge Aue', 'AUE', '#5A2D82', '#FFFFFF', 45, 16485, [
-        ['Martin Männel', 'GK', 38, 58, 58, 'GER'],
-        ['Steffen Nkansah', 'CB', 30, 58, 58, 'GER'],
-        ['Mirnes Pepić', 'CM', 31, 59, 59, 'MNE'],
-        ['Marcel Bär', 'ST', 34, 61, 61, 'GER']
-      ]],
       ['Viktoria Köln', 'VIK', '#E2001A', '#FFFFFF', 42, 10001, [
         ['Christoph Greger', 'CB', 29, 58, 58, 'GER'],
         ['Lars Dietz', 'CB', 29, 58, 58, 'GER'],
@@ -879,32 +855,56 @@ COUNTRY_DATA.push({
         ['Berkan Taz', 'CAM', 28, 61, 61, 'GER'],
         ['Timur Gayret', 'CM', 28, 59, 59, 'GER']
       ]],
+      ['SG Sonnenhof Großaspach', 'SGA', '#E2001A', '#000000', 41, 10001, []],
+      ['Fortuna Köln', 'FKO', '#E2001A', '#FFFFFF', 41, 11748, []],
       ['VfB Stuttgart II', 'STU', '#FFFFFF', '#E32219', 40, 5000, []],
       ['TSG Hoffenheim II', 'HOF', '#1C63B7', '#FFFFFF', 40, 2700, []],
-      ['1. FC Schweinfurt 05', 'SWF', '#00843D', '#FFFFFF', 40, 15060, []],
-      ['TSV Havelse', 'HAV', '#00843D', '#FFFFFF', 40, 3500, []]
+      ['TSV Havelse', 'HAV', '#00843D', '#FFFFFF', 40, 3500, []],
+      ['SV Meppen', 'MEP', '#003D7C', '#FFFFFF', 40, 13815, []],
+      ['Würzburger Kickers', 'WUE', '#E2001A', '#FFFFFF', 40, 13090, []]
     ]},
     { id: 'GER4', name: 'Regionalliga', tier: 4, clubs: [
+      ['SSV Ulm 1846', 'ULM', '#000000', '#FFFFFF', 36, 17400, [
+        ['Christian Ortag', 'GK', 31, 62, 62, 'GER'],
+        ['Johannes Reichert', 'CB', 35, 60, 60, 'GER'],
+        ['Max Brandt', 'CM', 32, 60, 60, 'GER'],
+        ['Lucas Röser', 'ST', 33, 60, 60, 'GER'],
+        ['Felix Higl', 'ST', 29, 60, 60, 'GER']
+      ]],
+      ['1. FC Schweinfurt 05', 'SWF', '#00843D', '#FFFFFF', 36, 15060, []],
+      ['Erzgebirge Aue', 'AUE', '#5A2D82', '#FFFFFF', 36, 16485, [
+        ['Martin Männel', 'GK', 38, 58, 58, 'GER'],
+        ['Steffen Nkansah', 'CB', 30, 58, 58, 'GER'],
+        ['Mirnes Pepić', 'CM', 31, 59, 59, 'MNE'],
+        ['Marcel Bär', 'ST', 34, 61, 61, 'GER']
+      ]],
+      ['TSV 1860 Monachium', 'LOW', '#1E90FF', '#FFFFFF', 36, 15000, [
+        ['René Vollath', 'GK', 36, 60, 60, 'GER'],
+        ['Siemen Voet', 'CB', 26, 60, 61, 'BEL'],
+        ['Max Reinthaler', 'CB', 31, 59, 59, 'ITA'],
+        ['Raphael Schifferl', 'CB', 26, 59, 61, 'AUT'],
+        ['Thore Jacobsen', 'CM', 29, 61, 61, 'GER'],
+        ['Kevin Volland', 'ST', 34, 66, 66, 'GER'],
+        ['Florian Niederlechner', 'ST', 35, 63, 63, 'GER'],
+        ['Sigurd Haugen', 'ST', 29, 62, 62, 'NOR'],
+        ['Patrick Hobsch', 'ST', 31, 60, 60, 'GER']
+      ]],
       ['1. FC Lokomotive Lipsk', 'LOK', '#003D7C', '#FFED00', 34, 10900, []],
       ['FC Carl Zeiss Jena', 'FCC', '#003D7C', '#FFFFFF', 34, 15000, []],
       ['Chemnitzer FC', 'CFC', '#4AB0E8', '#FFFFFF', 33, 15000, []],
       ['Hallescher FC', 'HFC', '#E2001A', '#FFFFFF', 34, 15057, []],
       ['Rot-Weiß Erfurt', 'ERF', '#E2001A', '#FFFFFF', 32, 18599, []],
       ['BFC Dynamo', 'BFC', '#7A1E2B', '#FFFFFF', 30, 10000, []],
-      ['SV Meppen', 'MEP', '#003D7C', '#FFFFFF', 32, 13815, []],
       ['VfB Oldenburg', 'VFO', '#003D7C', '#FFFFFF', 30, 15200, []],
       ['Kickers Offenbach', 'OFC', '#E2001A', '#FFFFFF', 34, 20500, []],
       ['SV Sandhausen', 'SVS', '#000000', '#FFFFFF', 33, 15414, [
         ['Dennis Diekmeier', 'RB', 36, 56, 56, 'GER']
       ]],
       ['Stuttgarter Kickers', 'SKI', '#003D7C', '#FFFFFF', 30, 11410, []],
-      ['FC 08 Homburg', 'HOM', '#00843D', '#FFFFFF', 29, 16488, []],
       ['SpVgg Unterhaching', 'UNT', '#E2001A', '#003D7C', 32, 15053, []],
-      ['Würzburger Kickers', 'WUE', '#E2001A', '#FFFFFF', 31, 13090, []],
       ['Bayern Monachium II', 'BAY', '#DC052D', '#FFFFFF', 33, 12500, []],
       ['Borussia Dortmund II', 'DOR', '#FDE100', '#000000', 33, 9999, []],
-      ['Rot-Weiß Oberhausen', 'RWO', '#E2001A', '#FFFFFF', 31, 21318, []],
-      ['Wuppertaler SV', 'WSV', '#E2001A', '#003D7C', 28, 23067, []]
+      ['Rot-Weiß Oberhausen', 'RWO', '#E2001A', '#FFFFFF', 31, 21318, []]
     ]}
   ]
 });

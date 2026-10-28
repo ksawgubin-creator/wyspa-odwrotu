@@ -414,31 +414,6 @@ COUNTRY_DATA.push({
         ['Walid Cheddira', 'ST', 28, 71, 71, 'MAR'],
         ['Luca Moro', 'ST', 25, 68, 71, 'ITA']
       ]],
-      ['Hellas Verona', 'VER', '#003B7A', '#FFD200', 65, 39211, [
-        ['Lorenzo Montipò', 'GK', 30, 75, 75, 'ITA'],
-        ['Simone Perilli', 'GK', 31, 66, 66, 'ITA'],
-        ['Giacomo Toniolo', 'GK', 22, 60, 68, 'ITA'],
-        ['Nicolás Valentini', 'CB', 25, 72, 76, 'ARG'],
-        ['Victor Nelsson', 'CB', 28, 73, 73, 'DEN'],
-        ['Unai Núñez', 'CB', 29, 72, 72, 'ESP'],
-        ['Enzo Ebosse', 'CB', 27, 69, 70, 'CMR'],
-        ['Daniel Oyegoke', 'CB', 23, 68, 74, 'ENG'],
-        ['Domagoj Bradarić', 'LB', 26, 72, 73, 'CRO'],
-        ['Martin Frese', 'LB', 28, 71, 71, 'DEN'],
-        ['Rafik Belghali', 'RB', 24, 72, 77, 'ALG'],
-        ['Suat Serdar', 'CM', 29, 74, 74, 'GER'],
-        ['Roberto Gagliardini', 'CDM', 32, 72, 72, 'ITA'],
-        ['Abdou Harroui', 'CM', 28, 71, 71, 'MAR'],
-        ['Antoine Bernede', 'CDM', 27, 70, 71, 'FRA'],
-        ['Grigoris Kastanos', 'CM', 28, 70, 70, 'CYP'],
-        ['Cheikh Niasse', 'CDM', 26, 67, 70, 'SEN'],
-        ['Jean-Daniel Akpa Akpro', 'CM', 34, 68, 68, 'CIV'],
-        ['Tomáš Suslov', 'CAM', 24, 73, 77, 'SVK'],
-        ['Giovane', 'ST', 23, 72, 79, 'BRA'],
-        ['Amin Sarr', 'ST', 25, 71, 75, 'SWE'],
-        ['Daniel Mosquera', 'ST', 27, 70, 71, 'COL'],
-        ['Gift Orban', 'ST', 24, 71, 75, 'NGA']
-      ]],
       ['Lecce', 'LEC', '#FFD100', '#D50032', 65, 31533, [
         ['Wladimiro Falcone', 'GK', 31, 77, 77, 'ITA'],
         ['Christian Früchtl', 'GK', 26, 68, 71, 'GER'],
@@ -466,78 +441,7 @@ COUNTRY_DATA.push({
         ['Nikola Štulić', 'ST', 25, 72, 75, 'SRB'],
         ['Francesco Camarda', 'ST', 18, 68, 85, 'ITA']
       ]],
-      ['Cremonese', 'CRE', '#C8102E', '#9EA2A2', 63, 16003, [
-        ['Emil Audero', 'GK', 29, 75, 75, 'ITA'],
-        ['Marco Silvestri', 'GK', 35, 70, 70, 'ITA'],
-        ['Lapo Nava', 'GK', 22, 60, 68, 'ITA'],
-        ['Federico Baschirotto', 'CB', 30, 73, 73, 'ITA'],
-        ['Matteo Bianchetti', 'CB', 33, 70, 70, 'ITA'],
-        ['Federico Ceccherini', 'CB', 34, 69, 69, 'ITA'],
-        ['Mikayil Faye', 'CB', 22, 70, 77, 'SEN'],
-        ['Filippo Terracciano', 'RB', 23, 70, 75, 'ITA'],
-        ['Tommaso Barbieri', 'RB', 24, 69, 74, 'ITA'],
-        ['Romano Floriani Mussolini', 'RB', 23, 66, 71, 'ITA'],
-        ['Giuseppe Pezzella', 'LB', 28, 72, 72, 'ITA'],
-        ['Leonardo Sernicola', 'LB', 29, 70, 70, 'ITA'],
-        ['Alberto Grassi', 'CDM', 31, 71, 71, 'ITA'],
-        ['Michele Collocolo', 'CM', 27, 70, 71, 'ITA'],
-        ['Warren Bondo', 'CM', 23, 71, 77, 'FRA'],
-        ['Youssef Maleh', 'CM', 28, 70, 70, 'MAR'],
-        ['Jari Vandeputte', 'RM', 30, 72, 72, 'BEL'],
-        ['Franco Vázquez', 'CAM', 37, 71, 71, 'ARG'],
-        ['Alessio Zerbin', 'RW', 27, 70, 71, 'ITA'],
-        ['Dennis Johnsen', 'LW', 28, 70, 70, 'NOR'],
-        ['Jamie Vardy', 'ST', 39, 74, 74, 'ENG'],
-        ['Federico Bonazzoli', 'ST', 29, 72, 72, 'ITA'],
-        ['Antonio Sanabria', 'ST', 30, 72, 72, 'PAR'],
-        ['Manuel De Luca', 'ST', 28, 68, 68, 'ITA']
-      ]],
-      ['Pisa', 'PIS', '#000000', '#4B9CD3', 63, 10500, [
-        ['Adrian Šemper', 'GK', 28, 72, 73, 'CRO'],
-        ['Simone Scuffet', 'GK', 30, 72, 72, 'ITA'],
-        ['Nícolas', 'GK', 38, 64, 64, 'BRA'],
-        ['Antonio Caracciolo', 'CB', 36, 70, 70, 'ITA'],
-        ['Arturo Calabresi', 'CB', 30, 70, 70, 'ITA'],
-        ['Simone Canestrelli', 'CB', 26, 70, 72, 'ITA'],
-        ['Mateus Lusuardi', 'CB', 22, 66, 74, 'BRA'],
-        ['Raúl Albiol', 'CB', 41, 70, 70, 'ESP'],
-        ['Daniel Denoon', 'CB', 22, 66, 73, 'SUI'],
-        ['Giovanni Bonfanti', 'CB', 23, 67, 73, 'ITA'],
-        ['Samuele Angori', 'LB', 23, 67, 72, 'ITA'],
-        ['Idrissa Touré', 'LM', 28, 70, 70, 'GER'],
-        ['Juan Cuadrado', 'RB', 38, 71, 71, 'COL'],
-        ['Marius Marin', 'CDM', 28, 72, 72, 'ROU'],
-        ['Michel Aebischer', 'CM', 29, 73, 73, 'SUI'],
-        ['Ebenezer Akinsanmiro', 'CM', 21, 68, 77, 'NGA'],
-        ['Malthe Højholt', 'CM', 25, 69, 72, 'DEN'],
-        ['Gabriele Piccinini', 'CM', 25, 68, 71, 'ITA'],
-        ['Matteo Tramoni', 'CAM', 26, 71, 72, 'FRA'],
-        ['Calvin Stengs', 'CAM', 27, 73, 74, 'NED'],
-        ['Mehdi Léris', 'RM', 28, 69, 69, 'ALG'],
-        ['M\'Bala Nzola', 'ST', 30, 72, 72, 'ANG'],
-        ['Stefano Moreo', 'ST', 33, 69, 69, 'ITA'],
-        ['Henrik Meister', 'ST', 23, 68, 74, 'DEN']
-      ]]
-    ]},
-    { id: 'ITA2', name: 'Serie B', tier: 2, clubs: [
-      ['Monza', 'MON', '#E30613', '#FFFFFF', 60, 16917, [
-        ['Semuel Pizzignacco', 'GK', 25, 66, 72, 'ITA'],
-        ['Demba Thiam', 'GK', 28, 66, 68, 'SEN'],
-        ['Andrea Carboni', 'CB', 25, 70, 73, 'ITA'],
-        ['Luca Caldirola', 'CB', 35, 67, 67, 'ITA'],
-        ['Armando Izzo', 'CB', 34, 68, 68, 'ITA'],
-        ['Georgios Kyriakopoulos', 'LB', 30, 70, 70, 'GRE'],
-        ['Samuele Birindelli', 'RB', 27, 69, 70, 'ITA'],
-        ['Matteo Pessina', 'CM', 29, 71, 71, 'ITA'],
-        ['Alessandro Bianco', 'CM', 24, 68, 73, 'ITA'],
-        ['Mattia Valoti', 'CAM', 33, 68, 68, 'ITA'],
-        ['Patrick Ciurria', 'RM', 31, 68, 68, 'ITA'],
-        ['Gianluca Caprari', 'CAM', 33, 69, 69, 'ITA'],
-        ['Keita Baldé', 'LW', 31, 68, 68, 'SEN'],
-        ['Dany Mota', 'ST', 28, 69, 69, 'POR'],
-        ['Andrea Petagna', 'ST', 31, 68, 68, 'ITA']
-      ]],
-      ['Venezia', 'VEN', '#F06A22', '#000000', 59, 11150, [
+      ['Venezia', 'VEN', '#F06A22', '#000000', 62, 11150, [
         ['Filip Stanković', 'GK', 24, 70, 75, 'SRB'],
         ['Michael Svoboda', 'CB', 28, 69, 70, 'AUT'],
         ['Marin Šverko', 'CB', 28, 68, 68, 'CRO'],
@@ -553,6 +457,37 @@ COUNTRY_DATA.push({
         ['Andrea Adorante', 'ST', 26, 67, 69, 'ITA'],
         ['Christian Gytkjær', 'ST', 36, 65, 65, 'DEN']
       ]],
+      ['Frosinone', 'FRO', '#FFE600', '#0058A3', 62, 16227, [
+        ['Lorenzo Palmisani', 'GK', 22, 62, 70, 'ITA'],
+        ['Ilario Monterisi', 'CB', 25, 64, 67, 'ITA'],
+        ['Anthony Oyono', 'RB', 25, 63, 67, 'GAB'],
+        ['Riccardo Marchizza', 'LB', 28, 64, 64, 'ITA'],
+        ['Francesco Gelli', 'CM', 26, 64, 66, 'ITA'],
+        ['Luca Garritano', 'CM', 32, 63, 63, 'ITA'],
+        ['Giorgi Kvernadze', 'RW', 23, 64, 70, 'GEO'],
+        ['Farès Ghedjemis', 'RW', 24, 63, 68, 'FRA'],
+        ['Giuseppe Ambrosino', 'ST', 23, 63, 69, 'ITA'],
+        ['Antonio Raimondo', 'ST', 22, 64, 71, 'ITA']
+      ]],
+      ['Monza', 'MON', '#E30613', '#FFFFFF', 63, 16917, [
+        ['Semuel Pizzignacco', 'GK', 25, 66, 72, 'ITA'],
+        ['Demba Thiam', 'GK', 28, 66, 68, 'SEN'],
+        ['Andrea Carboni', 'CB', 25, 70, 73, 'ITA'],
+        ['Luca Caldirola', 'CB', 35, 67, 67, 'ITA'],
+        ['Armando Izzo', 'CB', 34, 68, 68, 'ITA'],
+        ['Georgios Kyriakopoulos', 'LB', 30, 70, 70, 'GRE'],
+        ['Samuele Birindelli', 'RB', 27, 69, 70, 'ITA'],
+        ['Matteo Pessina', 'CM', 29, 71, 71, 'ITA'],
+        ['Alessandro Bianco', 'CM', 24, 68, 73, 'ITA'],
+        ['Mattia Valoti', 'CAM', 33, 68, 68, 'ITA'],
+        ['Patrick Ciurria', 'RM', 31, 68, 68, 'ITA'],
+        ['Gianluca Caprari', 'CAM', 33, 69, 69, 'ITA'],
+        ['Keita Baldé', 'LW', 31, 68, 68, 'SEN'],
+        ['Dany Mota', 'ST', 28, 69, 69, 'POR'],
+        ['Andrea Petagna', 'ST', 31, 68, 68, 'ITA']
+      ]]
+    ]},
+    { id: 'ITA2', name: 'Serie B', tier: 2, clubs: [
       ['Empoli', 'EMP', '#00579C', '#FFFFFF', 59, 16284, [
         ['Andrea Fulignati', 'GK', 31, 66, 66, 'ITA'],
         ['Lorenzo Seghetti', 'GK', 22, 58, 66, 'ITA'],
@@ -601,45 +536,6 @@ COUNTRY_DATA.push({
         ['Joel Pohjanpalo', 'ST', 32, 70, 70, 'FIN'],
         ['Matteo Brunori', 'ST', 31, 66, 66, 'ITA']
       ]],
-      ['Spezia', 'SPE', '#FFFFFF', '#000000', 55, 10336, [
-        ['Leandro Chichizola', 'GK', 36, 64, 64, 'ARG'],
-        ['Petko Hristov', 'CB', 27, 65, 66, 'BUL'],
-        ['Przemysław Wiśniewski', 'CB', 28, 65, 65, 'POL'],
-        ['Luca Vignali', 'RB', 28, 64, 64, 'ITA'],
-        ['Giuseppe Aurelio', 'LB', 26, 63, 66, 'ITA'],
-        ['Arkadiusz Reca', 'LB', 31, 65, 65, 'POL'],
-        ['Salvatore Esposito', 'CDM', 26, 68, 70, 'ITA'],
-        ['Filippo Bandinelli', 'CM', 31, 64, 64, 'ITA'],
-        ['Rachid Kouda', 'CM', 24, 64, 69, 'BFA'],
-        ['Francesco Cassata', 'CM', 29, 63, 63, 'ITA'],
-        ['Daniele Verde', 'RW', 30, 65, 65, 'ITA'],
-        ['Gianluca Lapadula', 'ST', 36, 66, 66, 'PER']
-      ]],
-      ['Frosinone', 'FRO', '#FFE600', '#0058A3', 54, 16227, [
-        ['Lorenzo Palmisani', 'GK', 22, 62, 70, 'ITA'],
-        ['Ilario Monterisi', 'CB', 25, 64, 67, 'ITA'],
-        ['Anthony Oyono', 'RB', 25, 63, 67, 'GAB'],
-        ['Riccardo Marchizza', 'LB', 28, 64, 64, 'ITA'],
-        ['Francesco Gelli', 'CM', 26, 64, 66, 'ITA'],
-        ['Luca Garritano', 'CM', 32, 63, 63, 'ITA'],
-        ['Giorgi Kvernadze', 'RW', 23, 64, 70, 'GEO'],
-        ['Farès Ghedjemis', 'RW', 24, 63, 68, 'FRA'],
-        ['Giuseppe Ambrosino', 'ST', 23, 63, 69, 'ITA'],
-        ['Antonio Raimondo', 'ST', 22, 64, 71, 'ITA']
-      ]],
-      ['Bari', 'BRI', '#E10019', '#FFFFFF', 54, 58270, [
-        ['Michele Cerofolini', 'GK', 27, 64, 66, 'ITA'],
-        ['Francesco Vicari', 'CB', 32, 64, 64, 'ITA'],
-        ['Raffaele Pucino', 'CB', 35, 62, 62, 'ITA'],
-        ['Mehdi Dorval', 'RB', 25, 64, 67, 'ALG'],
-        ['Raffaele Maiello', 'CDM', 35, 63, 63, 'ITA'],
-        ['Matthias Braunöder', 'CM', 24, 64, 68, 'AUT'],
-        ['Gaetano Castrovilli', 'CM', 29, 68, 68, 'ITA'],
-        ['Nicola Bellomo', 'CAM', 35, 62, 62, 'ITA'],
-        ['Giuseppe Sibilli', 'LW', 30, 63, 63, 'ITA'],
-        ['Kevin Lasagna', 'ST', 34, 65, 65, 'ITA'],
-        ['Gabriele Moncini', 'ST', 30, 64, 64, 'ITA']
-      ]],
       ['Modena', 'MOD', '#FFDD00', '#003399', 52, 21151, [
         ['Riccardo Gagno', 'GK', 28, 64, 64, 'ITA'],
         ['Antonio Pergreffi', 'CB', 38, 61, 61, 'ITA'],
@@ -678,12 +574,6 @@ COUNTRY_DATA.push({
         ['Silvio Merkaj', 'ST', 24, 63, 67, 'ALB'],
         ['Raphael Odogwu', 'ST', 35, 62, 62, 'ITA']
       ]],
-      ['Reggiana', 'REG', '#8B1A2F', '#FFFFFF', 50, 20084, [
-        ['Francesco Bardi', 'GK', 34, 63, 63, 'ITA'],
-        ['Paolo Rozzio', 'CB', 34, 61, 61, 'ITA'],
-        ['Manolo Portanova', 'CAM', 26, 64, 66, 'ITA'],
-        ['Cedric Gondo', 'ST', 30, 63, 63, 'CIV']
-      ]],
       ['Padova', 'PAD', '#FFFFFF', '#C8102E', 50, 18060, [
         ['Mattia Fortin', 'GK', 23, 61, 67, 'ITA'],
         ['Mattia Bortolussi', 'ST', 30, 63, 63, 'ITA']
@@ -706,11 +596,6 @@ COUNTRY_DATA.push({
         ['Nicolas Schiavi', 'CM', 31, 61, 61, 'ITA'],
         ['Mattia Finotto', 'LW', 34, 62, 62, 'ITA']
       ]],
-      ['Pescara', 'PES', '#4AB0E8', '#FFFFFF', 48, 20476, [
-        ['Sebastiano Desplanches', 'GK', 23, 63, 70, 'ITA'],
-        ['Riccardo Brosco', 'CB', 35, 61, 61, 'ITA'],
-        ['Davide Merola', 'RW', 26, 64, 66, 'ITA']
-      ]],
       ['Avellino', 'AVE', '#00843D', '#FFFFFF', 47, 26308, [
         ['Gennaro Iannarilli', 'GK', 36, 60, 60, 'ITA'],
         ['Riccardo Palmiero', 'CM', 29, 61, 61, 'ITA'],
@@ -718,24 +603,99 @@ COUNTRY_DATA.push({
         ['Facundo Lescano', 'ST', 30, 62, 62, 'ARG']
       ]],
       ['Virtus Entella', 'ENT', '#1E90FF', '#FFFFFF', 46, 5535, [
-      ]]
-    ]},
-    { id: 'ITA3', name: 'Serie C', tier: 3, clubs: [
-      ['Vicenza', 'VIC', '#E30613', '#FFFFFF', 46, 12000, [
+      ]],
+      ['Cremonese', 'CRE', '#C8102E', '#9EA2A2', 60, 16003, [
+        ['Emil Audero', 'GK', 29, 75, 75, 'ITA'],
+        ['Marco Silvestri', 'GK', 35, 70, 70, 'ITA'],
+        ['Lapo Nava', 'GK', 22, 60, 68, 'ITA'],
+        ['Federico Baschirotto', 'CB', 30, 73, 73, 'ITA'],
+        ['Matteo Bianchetti', 'CB', 33, 70, 70, 'ITA'],
+        ['Federico Ceccherini', 'CB', 34, 69, 69, 'ITA'],
+        ['Mikayil Faye', 'CB', 22, 70, 77, 'SEN'],
+        ['Filippo Terracciano', 'RB', 23, 70, 75, 'ITA'],
+        ['Tommaso Barbieri', 'RB', 24, 69, 74, 'ITA'],
+        ['Romano Floriani Mussolini', 'RB', 23, 66, 71, 'ITA'],
+        ['Giuseppe Pezzella', 'LB', 28, 72, 72, 'ITA'],
+        ['Leonardo Sernicola', 'LB', 29, 70, 70, 'ITA'],
+        ['Alberto Grassi', 'CDM', 31, 71, 71, 'ITA'],
+        ['Michele Collocolo', 'CM', 27, 70, 71, 'ITA'],
+        ['Warren Bondo', 'CM', 23, 71, 77, 'FRA'],
+        ['Youssef Maleh', 'CM', 28, 70, 70, 'MAR'],
+        ['Jari Vandeputte', 'RM', 30, 72, 72, 'BEL'],
+        ['Franco Vázquez', 'CAM', 37, 71, 71, 'ARG'],
+        ['Alessio Zerbin', 'RW', 27, 70, 71, 'ITA'],
+        ['Dennis Johnsen', 'LW', 28, 70, 70, 'NOR'],
+        ['Jamie Vardy', 'ST', 39, 74, 74, 'ENG'],
+        ['Federico Bonazzoli', 'ST', 29, 72, 72, 'ITA'],
+        ['Antonio Sanabria', 'ST', 30, 72, 72, 'PAR'],
+        ['Manuel De Luca', 'ST', 28, 68, 68, 'ITA']
+      ]],
+      ['Hellas Verona', 'VER', '#003B7A', '#FFD200', 62, 39211, [
+        ['Lorenzo Montipò', 'GK', 30, 75, 75, 'ITA'],
+        ['Simone Perilli', 'GK', 31, 66, 66, 'ITA'],
+        ['Giacomo Toniolo', 'GK', 22, 60, 68, 'ITA'],
+        ['Nicolás Valentini', 'CB', 25, 72, 76, 'ARG'],
+        ['Victor Nelsson', 'CB', 28, 73, 73, 'DEN'],
+        ['Unai Núñez', 'CB', 29, 72, 72, 'ESP'],
+        ['Enzo Ebosse', 'CB', 27, 69, 70, 'CMR'],
+        ['Daniel Oyegoke', 'CB', 23, 68, 74, 'ENG'],
+        ['Domagoj Bradarić', 'LB', 26, 72, 73, 'CRO'],
+        ['Martin Frese', 'LB', 28, 71, 71, 'DEN'],
+        ['Rafik Belghali', 'RB', 24, 72, 77, 'ALG'],
+        ['Suat Serdar', 'CM', 29, 74, 74, 'GER'],
+        ['Roberto Gagliardini', 'CDM', 32, 72, 72, 'ITA'],
+        ['Abdou Harroui', 'CM', 28, 71, 71, 'MAR'],
+        ['Antoine Bernede', 'CDM', 27, 70, 71, 'FRA'],
+        ['Grigoris Kastanos', 'CM', 28, 70, 70, 'CYP'],
+        ['Cheikh Niasse', 'CDM', 26, 67, 70, 'SEN'],
+        ['Jean-Daniel Akpa Akpro', 'CM', 34, 68, 68, 'CIV'],
+        ['Tomáš Suslov', 'CAM', 24, 73, 77, 'SVK'],
+        ['Giovane', 'ST', 23, 72, 79, 'BRA'],
+        ['Amin Sarr', 'ST', 25, 71, 75, 'SWE'],
+        ['Daniel Mosquera', 'ST', 27, 70, 71, 'COL'],
+        ['Gift Orban', 'ST', 24, 71, 75, 'NGA']
+      ]],
+      ['Pisa', 'PIS', '#000000', '#4B9CD3', 60, 10500, [
+        ['Adrian Šemper', 'GK', 28, 72, 73, 'CRO'],
+        ['Simone Scuffet', 'GK', 30, 72, 72, 'ITA'],
+        ['Nícolas', 'GK', 38, 64, 64, 'BRA'],
+        ['Antonio Caracciolo', 'CB', 36, 70, 70, 'ITA'],
+        ['Arturo Calabresi', 'CB', 30, 70, 70, 'ITA'],
+        ['Simone Canestrelli', 'CB', 26, 70, 72, 'ITA'],
+        ['Mateus Lusuardi', 'CB', 22, 66, 74, 'BRA'],
+        ['Raúl Albiol', 'CB', 41, 70, 70, 'ESP'],
+        ['Daniel Denoon', 'CB', 22, 66, 73, 'SUI'],
+        ['Giovanni Bonfanti', 'CB', 23, 67, 73, 'ITA'],
+        ['Samuele Angori', 'LB', 23, 67, 72, 'ITA'],
+        ['Idrissa Touré', 'LM', 28, 70, 70, 'GER'],
+        ['Juan Cuadrado', 'RB', 38, 71, 71, 'COL'],
+        ['Marius Marin', 'CDM', 28, 72, 72, 'ROU'],
+        ['Michel Aebischer', 'CM', 29, 73, 73, 'SUI'],
+        ['Ebenezer Akinsanmiro', 'CM', 21, 68, 77, 'NGA'],
+        ['Malthe Højholt', 'CM', 25, 69, 72, 'DEN'],
+        ['Gabriele Piccinini', 'CM', 25, 68, 71, 'ITA'],
+        ['Matteo Tramoni', 'CAM', 26, 71, 72, 'FRA'],
+        ['Calvin Stengs', 'CAM', 27, 73, 74, 'NED'],
+        ['Mehdi Léris', 'RM', 28, 69, 69, 'ALG'],
+        ['M\'Bala Nzola', 'ST', 30, 72, 72, 'ANG'],
+        ['Stefano Moreo', 'ST', 33, 69, 69, 'ITA'],
+        ['Henrik Meister', 'ST', 23, 68, 74, 'DEN']
+      ]],
+      ['Vicenza', 'VIC', '#E30613', '#FFFFFF', 49, 12000, [
         ['Franco Ferrari', 'ST', 31, 60, 60, 'ITA']
       ]],
+      ['Arezzo', 'ARE', '#8B1A2F', '#FFFFFF', 48, 13128, []],
+      ['Benevento', 'BEN', '#FFD100', '#C8102E', 50, 16867, []],
+      ['Ascoli', 'ASC', '#000000', '#FFFFFF', 48, 20550, []]
+    ]},
+    { id: 'ITA3', name: 'Serie C', tier: 3, clubs: [
       ['Union Brescia', 'UBS', '#0050A0', '#FFFFFF', 47, 19550, []],
-      ['Triestina', 'TRI', '#C8102E', '#FFFFFF', 42, 25500, []],
       ['Cittadella', 'CIT', '#8B1A2F', '#FFFFFF', 44, 7623, []],
       ['Lecco', 'LCO', '#0A3D91', '#FFFFFF', 40, 4997, []],
       ['Novara', 'NOV', '#0047AB', '#FFFFFF', 40, 17875, []],
-      ['Ascoli', 'ASC', '#000000', '#FFFFFF', 45, 20550, []],
-      ['Ternana', 'TER', '#C8102E', '#FFFFFF', 45, 22000, []],
       ['Perugia', 'PER', '#C8102E', '#FFFFFF', 44, 23625, []],
-      ['Arezzo', 'ARE', '#8B1A2F', '#FFFFFF', 42, 13128, []],
       ['Livorno', 'LIV', '#8B1A2F', '#FFFFFF', 40, 19238, []],
       ['Ravenna', 'RAV', '#C8102E', '#FFD100', 40, 12020, []],
-      ['Benevento', 'BEN', '#FFD100', '#C8102E', 47, 16867, []],
       ['Salernitana', 'SAL', '#8B1A2F', '#FFFFFF', 48, 37800, []],
       ['Catania', 'CAT', '#0047AB', '#FFFFFF', 47, 20266, []],
       ['Crotone', 'CRO', '#0047AB', '#FFFFFF', 45, 16640, [
@@ -743,17 +703,55 @@ COUNTRY_DATA.push({
       ]],
       ['Cosenza', 'COS', '#C8102E', '#FFFFFF', 44, 20987, []],
       ['Foggia', 'FOG', '#C8102E', '#000000', 42, 22000, []],
-      ['Trapani', 'TRP', '#8B1A2F', '#FFFFFF', 41, 7787, []],
-      ['Juventus Next Gen', 'JNG', '#000000', '#FFFFFF', 38, 4100, []]
+      ['Juventus Next Gen', 'JNG', '#000000', '#FFFFFF', 38, 4100, []],
+      ['Bari', 'BRI', '#E10019', '#FFFFFF', 48, 58270, [
+        ['Michele Cerofolini', 'GK', 27, 64, 66, 'ITA'],
+        ['Francesco Vicari', 'CB', 32, 64, 64, 'ITA'],
+        ['Raffaele Pucino', 'CB', 35, 62, 62, 'ITA'],
+        ['Mehdi Dorval', 'RB', 25, 64, 67, 'ALG'],
+        ['Raffaele Maiello', 'CDM', 35, 63, 63, 'ITA'],
+        ['Matthias Braunöder', 'CM', 24, 64, 68, 'AUT'],
+        ['Gaetano Castrovilli', 'CM', 29, 68, 68, 'ITA'],
+        ['Nicola Bellomo', 'CAM', 35, 62, 62, 'ITA'],
+        ['Giuseppe Sibilli', 'LW', 30, 63, 63, 'ITA'],
+        ['Kevin Lasagna', 'ST', 34, 65, 65, 'ITA'],
+        ['Gabriele Moncini', 'ST', 30, 64, 64, 'ITA']
+      ]],
+      ['Reggiana', 'REG', '#8B1A2F', '#FFFFFF', 47, 20084, [
+        ['Francesco Bardi', 'GK', 34, 63, 63, 'ITA'],
+        ['Paolo Rozzio', 'CB', 34, 61, 61, 'ITA'],
+        ['Manolo Portanova', 'CAM', 26, 64, 66, 'ITA'],
+        ['Cedric Gondo', 'ST', 30, 63, 63, 'CIV']
+      ]],
+      ['Spezia', 'SPE', '#FFFFFF', '#000000', 48, 10336, [
+        ['Leandro Chichizola', 'GK', 36, 64, 64, 'ARG'],
+        ['Petko Hristov', 'CB', 27, 65, 66, 'BUL'],
+        ['Przemysław Wiśniewski', 'CB', 28, 65, 65, 'POL'],
+        ['Luca Vignali', 'RB', 28, 64, 64, 'ITA'],
+        ['Giuseppe Aurelio', 'LB', 26, 63, 66, 'ITA'],
+        ['Arkadiusz Reca', 'LB', 31, 65, 65, 'POL'],
+        ['Salvatore Esposito', 'CDM', 26, 68, 70, 'ITA'],
+        ['Filippo Bandinelli', 'CM', 31, 64, 64, 'ITA'],
+        ['Rachid Kouda', 'CM', 24, 64, 69, 'BFA'],
+        ['Francesco Cassata', 'CM', 29, 63, 63, 'ITA'],
+        ['Daniele Verde', 'RW', 30, 65, 65, 'ITA'],
+        ['Gianluca Lapadula', 'ST', 36, 66, 66, 'PER']
+      ]],
+      ['Pescara', 'PES', '#4AB0E8', '#FFFFFF', 45, 20476, [
+        ['Sebastiano Desplanches', 'GK', 23, 63, 70, 'ITA'],
+        ['Riccardo Brosco', 'CB', 35, 61, 61, 'ITA'],
+        ['Davide Merola', 'RW', 26, 64, 66, 'ITA']
+      ]],
+      ['Treviso', 'TRE', '#1E5AA8', '#FFFFFF', 35, 10001, []],
+      ['Grosseto', 'GRO', '#C8102E', '#FFFFFF', 35, 10200, []],
+      ['Barletta', 'BAR', '#C8102E', '#FFFFFF', 35, 9000, []]
     ]},
     { id: 'ITA4', name: 'Serie D', tier: 4, clubs: [
       ['Reggina', 'RGA', '#8B1A2F', '#FFFFFF', 35, 27543, []],
       ['Varese', 'VAR', '#C8102E', '#FFFFFF', 30, 9926, []],
-      ['Messina', 'MES', '#C8102E', '#FFD100', 32, 37895, []],
       ['Siena', 'SIE', '#000000', '#FFFFFF', 33, 15373, []],
       ['Fidelis Andria', 'AND', '#0047AB', '#FFFFFF', 28, 9140, []],
       ['Nocerina', 'NOC', '#C8102E', '#FFFFFF', 28, 7500, []],
-      ['Treviso', 'TRE', '#1E5AA8', '#FFFFFF', 29, 10001, []],
       ['Mestre', 'MET', '#FF8C00', '#000000', 26, 4000, []],
       ['ChievoVerona', 'CHV', '#0047AB', '#FFD100', 30, 3000, []],
       ['Sanremese', 'SRM', '#00529B', '#FFFFFF', 26, 4000, []],
@@ -761,10 +759,12 @@ COUNTRY_DATA.push({
       ['Pistoiese', 'PST', '#FF8C00', '#000000', 27, 13195, []],
       ['Prato', 'PRT', '#1E73BE', '#FFFFFF', 27, 6750, []],
       ['Fiorenzuola', 'FIZ', '#C8102E', '#FFFFFF', 25, 3000, []],
-      ['Barletta', 'BAR', '#C8102E', '#FFFFFF', 27, 9000, []],
-      ['Grosseto', 'GRO', '#C8102E', '#FFFFFF', 28, 10200, []],
       ['Ancona', 'ANC', '#C8102E', '#FFFFFF', 30, 23967, []],
-      ['Pro Sesto', 'PSE', '#C8102E', '#FFFFFF', 25, 4500, []]
+      ['Pro Sesto', 'PSE', '#C8102E', '#FFFFFF', 25, 4500, []],
+      ['Triestina', 'TRI', '#C8102E', '#FFFFFF', 35, 25500, []],
+      ['Trapani', 'TRP', '#8B1A2F', '#FFFFFF', 35, 7787, []],
+      ['Ternana', 'TER', '#C8102E', '#FFFFFF', 35, 22000, []],
+      ['Siracusa', 'SIR', '#0099D8', '#FFFFFF', 32, 6000, []]
     ]}
   ]
 });

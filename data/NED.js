@@ -1,4 +1,4 @@
-// Holandia – Eredivisie i Eerste Divisie (sezon 2025/26, wiek w październiku 2026)
+// Holandia – Eredivisie i Eerste Divisie (sezon 2026/27, wiek w październiku 2026)
 COUNTRY_DATA.push({
   code: 'NED', name: 'Holandia', flag: '🇳🇱', nat: 'NED',
   leagues: [
@@ -314,50 +314,6 @@ COUNTRY_DATA.push({
         ['Oskar Zawada', 'ST', 30, 66, 66, 'POL'],
         ['Younes Taha', 'LW', 24, 66, 70, 'NED']
       ]],
-      ['Heracles Almelo', 'HER', '#000000', '#FFFFFF', 55, 12080, [
-        ['Fabian de Keijzer', 'GK', 26, 68, 71, 'NED'],
-        ['Timo Jansink', 'GK', 23, 58, 66, 'NED'],
-        ['Damon Mirani', 'CB', 30, 66, 66, 'NED'],
-        ['Ivan Mesík', 'CB', 25, 68, 71, 'SVK'],
-        ['Justin Hoogma', 'CB', 28, 67, 67, 'NED'],
-        ['Sava-Arangel Čestić', 'CB', 25, 66, 69, 'SRB'],
-        ['Mimeirhel Benita', 'RB', 23, 65, 71, 'NED'],
-        ['Navajo Bakboord', 'LB', 27, 64, 65, 'NED'],
-        ['Thomas Bruns', 'CM', 34, 66, 66, 'NED'],
-        ['Brian De Keersmaecker', 'CM', 26, 67, 68, 'BEL'],
-        ['Jordy Bruijn', 'CAM', 30, 67, 67, 'NED'],
-        ['Marko Vejinović', 'CM', 36, 64, 64, 'NED'],
-        ['Ajdin Hrustić', 'CAM', 30, 68, 68, 'AUS'],
-        ['Mario Engels', 'LW', 33, 67, 67, 'GER'],
-        ['Suf Podgoreanu', 'RW', 24, 66, 70, 'ISR'],
-        ['Djevencio van der Kust', 'LB', 25, 64, 67, 'NED'],
-        ['Bryan Limbombe', 'RW', 25, 66, 69, 'BEL'],
-        ['Emil Hansson', 'RW', 28, 67, 67, 'SWE'],
-        ['Luka Kulenović', 'ST', 27, 66, 67, 'CRO'],
-        ['Jizz Hornkamp', 'ST', 28, 67, 67, 'NED']
-      ]],
-      ['NAC Breda', 'NAB', '#FFD100', '#000000', 56, 19000, [
-        ['Daniel Bielica', 'GK', 27, 69, 71, 'POL'],
-        ['Roy Kortsmit', 'GK', 34, 64, 64, 'NED'],
-        ['Boy Kemper', 'CB', 31, 66, 66, 'NED'],
-        ['Jan Van den Bergh', 'CB', 32, 67, 67, 'BEL'],
-        ['Leo Greiml', 'CB', 25, 68, 71, 'AUT'],
-        ['Martin Koscelník', 'RB', 31, 67, 67, 'SVK'],
-        ['Enes Mahmutović', 'CB', 29, 66, 66, 'LUX'],
-        ['Cherrion Valerius', 'LB', 25, 63, 67, 'NED'],
-        ['Clint Leemans', 'CM', 31, 68, 68, 'NED'],
-        ['Casper Staring', 'CM', 24, 65, 69, 'NED'],
-        ['Max Balard', 'CDM', 26, 66, 68, 'FRA'],
-        ['Dominik Janošek', 'CM', 28, 67, 67, 'CZE'],
-        ['Matthew Garbett', 'CAM', 24, 67, 71, 'NZL'],
-        ['Vurnon Anita', 'CDM', 37, 62, 62, 'CUW'],
-        ['Kamal Sowah', 'RW', 26, 68, 70, 'GHA'],
-        ['Raul Paula', 'CAM', 22, 66, 73, 'GER'],
-        ['Elías Már Ómarsson', 'ST', 26, 67, 69, 'ISL'],
-        ['Sydney van Hooijdonk', 'ST', 26, 67, 69, 'NED'],
-        ['Moussa Soumano', 'ST', 22, 63, 71, 'FRA'],
-        ['Rio Hillen', 'RW', 23, 62, 69, 'NED']
-      ]],
       ['Excelsior', 'EXC', '#E30613', '#000000', 52, 4500, [
         ['Calvin Raatsie', 'GK', 24, 63, 68, 'NED'],
         ['Redouan El Yaakoubi', 'CB', 30, 66, 66, 'MAR'],
@@ -387,7 +343,41 @@ COUNTRY_DATA.push({
         ['Jochem Ritmeester van de Kamp', 'CM', 21, 62, 70, 'NED'],
         ['Zakaria Eddahchouri', 'ST', 26, 65, 67, 'NED']
       ]],
-      ['FC Volendam', 'VOL', '#FF6600', '#000000', 51, 6260, [
+      ['ADO Den Haag', 'ADO', '#FFD100', '#00843D', 47, 15000, [
+        ['Evan Rottier', 'CB', 24, 62, 66, 'NED'],
+        ['Dhoraso Moreo Klas', 'CB', 25, 61, 65, 'NED'],
+        ['Gylermo Siereveld', 'CB', 23, 61, 66, 'NED'],
+        ['Steven van der Sloot', 'CM', 24, 63, 67, 'NED'],
+        ['Silvinho Esajas', 'CDM', 24, 61, 65, 'NED'],
+        ['Ricardo Kishna', 'LW', 31, 63, 63, 'NED'],
+        ['Daryl van Mieghem', 'RW', 37, 60, 60, 'NED']
+      ]],
+      ['SC Cambuur', 'CAB', '#FFD100', '#0047AB', 45, 10250, [
+        ['Marco Tol', 'CB', 28, 61, 62, 'NED'],
+        ['Floris Smand', 'CB', 23, 61, 66, 'NED'],
+        ['Mitchel Paulissen', 'CM', 33, 62, 62, 'NED'],
+        ['Daniel van Kaam', 'CM', 26, 63, 65, 'NED'],
+        ['Remco Balk', 'LW', 25, 63, 66, 'NED'],
+        ['Michael Breij', 'RW', 29, 62, 62, 'NED'],
+        ['Jacky Donkor', 'LW', 28, 61, 61, 'NED'],
+        ['Sven Braken', 'ST', 33, 61, 61, 'NED']
+      ]],
+      ['Willem II', 'WIL', '#E30613', '#FFFFFF', 48, 14700, [
+        ['Thomas Didillon-Hödl', 'GK', 30, 64, 64, 'BEL'],
+        ['Raffael Behounek', 'CB', 29, 64, 64, 'AUT'],
+        ['Freek Heerkens', 'CB', 37, 60, 60, 'NED'],
+        ['Mickaël Tirpan', 'LB', 33, 61, 61, 'BEL'],
+        ['Ringo Meerveld', 'CM', 26, 65, 66, 'NED'],
+        ['Jesse Bosch', 'CM', 26, 63, 65, 'NED'],
+        ['Mounir El Allouchi', 'CDM', 32, 62, 62, 'NED'],
+        ['Nick Doodeman', 'RW', 25, 63, 66, 'NED'],
+        ['Patrick Joosten', 'RW', 30, 63, 63, 'NED'],
+        ['Kyan Vaesen', 'ST', 24, 64, 68, 'BEL'],
+        ['Emilio Kehrer', 'LW', 24, 62, 67, 'GER']
+      ]]
+    ]},
+    { id: 'NED2', name: 'Eerste Divisie', tier: 2, clubs: [
+      ['FC Volendam', 'VOL', '#FF6600', '#000000', 48, 6260, [
         ['Kayne van Oevelen', 'GK', 23, 63, 70, 'NED'],
         ['Xavier Mbuyamba', 'CB', 24, 64, 68, 'NED'],
         ['Alex Plat', 'RB', 33, 63, 63, 'NED'],
@@ -400,21 +390,50 @@ COUNTRY_DATA.push({
         ['Lequincio Zeefuik', 'ST', 22, 62, 69, 'NED'],
         ['Robert Mühren', 'ST', 37, 65, 65, 'NED'],
         ['Henk Veerman', 'ST', 35, 65, 65, 'NED']
-      ]]
-    ]},
-    { id: 'NED2', name: 'Eerste Divisie', tier: 2, clubs: [
-      ['Willem II', 'WIL', '#E30613', '#FFFFFF', 45, 14700, [
-        ['Thomas Didillon-Hödl', 'GK', 30, 64, 64, 'BEL'],
-        ['Raffael Behounek', 'CB', 29, 64, 64, 'AUT'],
-        ['Freek Heerkens', 'CB', 37, 60, 60, 'NED'],
-        ['Mickaël Tirpan', 'LB', 33, 61, 61, 'BEL'],
-        ['Ringo Meerveld', 'CM', 26, 65, 66, 'NED'],
-        ['Jesse Bosch', 'CM', 26, 63, 65, 'NED'],
-        ['Mounir El Allouchi', 'CDM', 32, 62, 62, 'NED'],
-        ['Nick Doodeman', 'RW', 25, 63, 66, 'NED'],
-        ['Patrick Joosten', 'RW', 30, 63, 63, 'NED'],
-        ['Kyan Vaesen', 'ST', 24, 64, 68, 'BEL'],
-        ['Emilio Kehrer', 'LW', 24, 62, 67, 'GER']
+      ]],
+      ['NAC Breda', 'NAB', '#FFD100', '#000000', 53, 19000, [
+        ['Daniel Bielica', 'GK', 27, 69, 71, 'POL'],
+        ['Roy Kortsmit', 'GK', 34, 64, 64, 'NED'],
+        ['Boy Kemper', 'CB', 31, 66, 66, 'NED'],
+        ['Jan Van den Bergh', 'CB', 32, 67, 67, 'BEL'],
+        ['Leo Greiml', 'CB', 25, 68, 71, 'AUT'],
+        ['Martin Koscelník', 'RB', 31, 67, 67, 'SVK'],
+        ['Enes Mahmutović', 'CB', 29, 66, 66, 'LUX'],
+        ['Cherrion Valerius', 'LB', 25, 63, 67, 'NED'],
+        ['Clint Leemans', 'CM', 31, 68, 68, 'NED'],
+        ['Casper Staring', 'CM', 24, 65, 69, 'NED'],
+        ['Max Balard', 'CDM', 26, 66, 68, 'FRA'],
+        ['Dominik Janošek', 'CM', 28, 67, 67, 'CZE'],
+        ['Matthew Garbett', 'CAM', 24, 67, 71, 'NZL'],
+        ['Vurnon Anita', 'CDM', 37, 62, 62, 'CUW'],
+        ['Kamal Sowah', 'RW', 26, 68, 70, 'GHA'],
+        ['Raul Paula', 'CAM', 22, 66, 73, 'GER'],
+        ['Elías Már Ómarsson', 'ST', 26, 67, 69, 'ISL'],
+        ['Sydney van Hooijdonk', 'ST', 26, 67, 69, 'NED'],
+        ['Moussa Soumano', 'ST', 22, 63, 71, 'FRA'],
+        ['Rio Hillen', 'RW', 23, 62, 69, 'NED']
+      ]],
+      ['Heracles Almelo', 'HER', '#000000', '#FFFFFF', 52, 12080, [
+        ['Fabian de Keijzer', 'GK', 26, 68, 71, 'NED'],
+        ['Timo Jansink', 'GK', 23, 58, 66, 'NED'],
+        ['Damon Mirani', 'CB', 30, 66, 66, 'NED'],
+        ['Ivan Mesík', 'CB', 25, 68, 71, 'SVK'],
+        ['Justin Hoogma', 'CB', 28, 67, 67, 'NED'],
+        ['Sava-Arangel Čestić', 'CB', 25, 66, 69, 'SRB'],
+        ['Mimeirhel Benita', 'RB', 23, 65, 71, 'NED'],
+        ['Navajo Bakboord', 'LB', 27, 64, 65, 'NED'],
+        ['Thomas Bruns', 'CM', 34, 66, 66, 'NED'],
+        ['Brian De Keersmaecker', 'CM', 26, 67, 68, 'BEL'],
+        ['Jordy Bruijn', 'CAM', 30, 67, 67, 'NED'],
+        ['Marko Vejinović', 'CM', 36, 64, 64, 'NED'],
+        ['Ajdin Hrustić', 'CAM', 30, 68, 68, 'AUS'],
+        ['Mario Engels', 'LW', 33, 67, 67, 'GER'],
+        ['Suf Podgoreanu', 'RW', 24, 66, 70, 'ISR'],
+        ['Djevencio van der Kust', 'LB', 25, 64, 67, 'NED'],
+        ['Bryan Limbombe', 'RW', 25, 66, 69, 'BEL'],
+        ['Emil Hansson', 'RW', 28, 67, 67, 'SWE'],
+        ['Luka Kulenović', 'ST', 27, 66, 67, 'CRO'],
+        ['Jizz Hornkamp', 'ST', 28, 67, 67, 'NED']
       ]],
       ['RKC Waalwijk', 'RKC', '#FFD100', '#0047AB', 43, 7508, [
         ['Jeroen Houwen', 'GK', 30, 63, 63, 'NED'],
@@ -437,25 +456,6 @@ COUNTRY_DATA.push({
         ['Jeredy Hilterman', 'ST', 28, 62, 62, 'SUR'],
         ['Thomas Robinet', 'ST', 30, 62, 62, 'FRA'],
         ['Baptiste Guillaume', 'ST', 31, 61, 61, 'BEL']
-      ]],
-      ['ADO Den Haag', 'ADO', '#FFD100', '#00843D', 44, 15000, [
-        ['Evan Rottier', 'CB', 24, 62, 66, 'NED'],
-        ['Dhoraso Moreo Klas', 'CB', 25, 61, 65, 'NED'],
-        ['Gylermo Siereveld', 'CB', 23, 61, 66, 'NED'],
-        ['Steven van der Sloot', 'CM', 24, 63, 67, 'NED'],
-        ['Silvinho Esajas', 'CDM', 24, 61, 65, 'NED'],
-        ['Ricardo Kishna', 'LW', 31, 63, 63, 'NED'],
-        ['Daryl van Mieghem', 'RW', 37, 60, 60, 'NED']
-      ]],
-      ['SC Cambuur', 'CAB', '#FFD100', '#0047AB', 42, 10250, [
-        ['Marco Tol', 'CB', 28, 61, 62, 'NED'],
-        ['Floris Smand', 'CB', 23, 61, 66, 'NED'],
-        ['Mitchel Paulissen', 'CM', 33, 62, 62, 'NED'],
-        ['Daniel van Kaam', 'CM', 26, 63, 65, 'NED'],
-        ['Remco Balk', 'LW', 25, 63, 66, 'NED'],
-        ['Michael Breij', 'RW', 29, 62, 62, 'NED'],
-        ['Jacky Donkor', 'LW', 28, 61, 61, 'NED'],
-        ['Sven Braken', 'ST', 33, 61, 61, 'NED']
       ]],
       ['De Graafschap', 'DGR', '#0047AB', '#FFFFFF', 40, 12600, [
         ['Hidde Jurjus', 'GK', 32, 62, 62, 'NED'],

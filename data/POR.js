@@ -1,4 +1,4 @@
-// Portugalia – Liga Portugal i Liga Portugal 2 (sezon 2025/26, wiek w październiku 2026)
+// Portugalia – Liga Portugal i Liga Portugal 2 (sezon 2026/27, wiek w październiku 2026)
 COUNTRY_DATA.push({
   code: 'POR', name: 'Portugalia', flag: '🇵🇹', nat: 'POR',
   leagues: [
@@ -218,14 +218,16 @@ COUNTRY_DATA.push({
         ['Kikas', 'ST', 27, 65, 66, 'POR'],
         ['Jovane Cabral', 'LW', 28, 66, 66, 'CPV']
       ]],
-      ['AVS Futebol SAD', 'AVS', '#C8102E', '#FFFFFF', 50, 5000, [
+      ['FC Alverca', 'ALV', '#C8102E', '#FFFFFF', 50, 7705, []],
+      ['CS Marítimo', 'MAR', '#00843D', '#E30613', 45, 10600, []],
+      ['Académico de Viseu', 'ACV', '#000000', '#FFFFFF', 39, 9264, []]
+    ]},
+    { id: 'POR2', name: 'Liga Portugal 2', tier: 2, clubs: [
+      ['AVS Futebol SAD', 'AVS', '#C8102E', '#FFFFFF', 47, 5000, [
         ['Guillermo Ochoa', 'GK', 41, 69, 69, 'MEX'],
         ['Baptiste Roux', 'CB', 31, 63, 63, 'FRA']
       ]],
-      ['CD Tondela', 'TON', '#FFD100', '#00843D', 51, 5000, []],
-      ['FC Alverca', 'ALV', '#C8102E', '#FFFFFF', 50, 7705, []]
-    ]},
-    { id: 'POR2', name: 'Liga Portugal 2', tier: 2, clubs: [
+      ['CD Tondela', 'TON', '#FFD100', '#00843D', 48, 5000, []],
       ['SC Farense', 'FAR', '#000000', '#FFFFFF', 42, 7000, [
         ['Ricardo Velho', 'GK', 28, 66, 67, 'POR'],
         ['Cláudio Falcão', 'CDM', 32, 62, 62, 'BRA']
@@ -236,17 +238,15 @@ COUNTRY_DATA.push({
       ['Leixões SC', 'LEI', '#E30613', '#FFFFFF', 36, 9821, []],
       ['CD Feirense', 'FEI', '#0047AB', '#FFFFFF', 36, 5401, []],
       ['FC Penafiel', 'PEN', '#E30613', '#000000', 34, 5230, []],
-      ['Académico de Viseu', 'ACV', '#000000', '#FFFFFF', 36, 9264, []],
       ['SCU Torreense', 'TOR', '#E30613', '#0047AB', 35, 4500, []],
-      ['CS Marítimo', 'MAR', '#00843D', '#E30613', 42, 10600, []],
       ['União de Leiria', 'UNL', '#E30613', '#FFFFFF', 37, 23888, []],
       ['Benfica B', 'BEN', '#E83030', '#FFFFFF', 34, 2644, []],
       ['FC Porto B', 'FPB', '#003893', '#FFFFFF', 34, 8500, []],
       ['Sporting CP B', 'SPB', '#008057', '#FFFFFF', 32, 1180, []],
-      ['FC Paços de Ferreira', 'PAC', '#FFD100', '#000000', 38, 9077, []],
       ['FC Felgueiras 1932', 'FEL', '#E30613', '#0047AB', 31, 3000, []],
       ['Lusitânia Lourosa', 'LUS', '#E30613', '#FFFFFF', 30, 3000, []],
-      ['UD Oliveirense', 'OLI', '#E30613', '#000000', 31, 3000, []]
+      ['Académica de Coimbra', 'ACA', '#000000', '#FFFFFF', 34, 29622, []],
+      ['Amarante FC', 'AMA', '#000000', '#FFFFFF', 30, 5000, []]
     ]}
   ]
 });

@@ -1,4 +1,4 @@
-// Belgia – Jupiler Pro League i Challenger Pro League (sezon 2025/26, wiek w październiku 2026)
+// Belgia – Jupiler Pro League i Challenger Pro League (sezon 2026/27, wiek w październiku 2026)
 COUNTRY_DATA.push({
   code: 'BEL', name: 'Belgia', flag: '🇧🇪', nat: 'BEL',
   leagues: [
@@ -253,7 +253,25 @@ COUNTRY_DATA.push({
         ['Abdoul Kader Ouattara', 'LW', 21, 64, 73, 'CIV'],
         ['Steve Ngoura', 'ST', 21, 63, 72, 'FRA']
       ]],
-      ['FCV Dender', 'DEN', '#000000', '#FFFFFF', 52, 6429, [
+      ['RAAL La Louvière', 'RLL', '#00843D', '#FFFFFF', 50, 8050, []],
+      ['SV Zulte Waregem', 'ZWA', '#E30613', '#00843D', 53, 12500, [
+        ['Louis Bostyn', 'GK', 33, 64, 64, 'BEL'],
+        ['Nicolas Rommens', 'CM', 32, 64, 64, 'BEL'],
+        ['Jelle Vossen', 'ST', 37, 65, 65, 'BEL']
+      ]],
+      ['SK Beveren', 'BEV', '#FFD100', '#0047AB', 41, 8190, []],
+      ['KV Kortrijk', 'KVK', '#E30613', '#FFFFFF', 45, 9399, [
+        ['Patrik Gunnarsson', 'GK', 25, 64, 68, 'ISL'],
+        ['Brecht Dejaegere', 'CM', 35, 62, 62, 'BEL'],
+        ['Bram Lagae', 'CB', 25, 61, 65, 'BEL'],
+        ['Dion De Neve', 'LB', 24, 61, 66, 'BEL'],
+        ['Massimo Bruno', 'RW', 33, 62, 62, 'BEL'],
+        ['Thierry Ambrose', 'ST', 29, 63, 63, 'FRA']
+      ]],
+      ['Lommel SK', 'LOM', '#00843D', '#FFFFFF', 39, 8000, []]
+    ]},
+    { id: 'BEL2', name: 'Challenger Pro League', tier: 2, clubs: [
+      ['FCV Dender', 'DEN', '#000000', '#FFFFFF', 49, 6429, [
         ['Guillaume Dietsch', 'GK', 25, 66, 69, 'FRA'],
         ['Michael Verrips', 'GK', 30, 63, 63, 'NED'],
         ['Kobe Cools', 'CB', 29, 65, 65, 'BEL'],
@@ -265,29 +283,11 @@ COUNTRY_DATA.push({
         ['Bruny Nsimba', 'LW', 29, 66, 66, 'FRA'],
         ['Aurélien Scheidler', 'ST', 28, 66, 66, 'FRA']
       ]],
-      ['RAAL La Louvière', 'RLL', '#00843D', '#FFFFFF', 50, 8050, []],
-      ['SV Zulte Waregem', 'ZWA', '#E30613', '#00843D', 53, 12500, [
-        ['Louis Bostyn', 'GK', 33, 64, 64, 'BEL'],
-        ['Nicolas Rommens', 'CM', 32, 64, 64, 'BEL'],
-        ['Jelle Vossen', 'ST', 37, 65, 65, 'BEL']
-      ]]
-    ]},
-    { id: 'BEL2', name: 'Challenger Pro League', tier: 2, clubs: [
-      ['KV Kortrijk', 'KVK', '#E30613', '#FFFFFF', 42, 9399, [
-        ['Patrik Gunnarsson', 'GK', 25, 64, 68, 'ISL'],
-        ['Brecht Dejaegere', 'CM', 35, 62, 62, 'BEL'],
-        ['Bram Lagae', 'CB', 25, 61, 65, 'BEL'],
-        ['Dion De Neve', 'LB', 24, 61, 66, 'BEL'],
-        ['Massimo Bruno', 'RW', 33, 62, 62, 'BEL'],
-        ['Thierry Ambrose', 'ST', 29, 63, 63, 'FRA']
-      ]],
       ['K Beerschot VA', 'BEE', '#5C2483', '#FFFFFF', 42, 12771, [
         ['Tom Reyners', 'RB', 36, 59, 59, 'BEL'],
         ['Ismaila Coulibaly', 'CM', 26, 63, 65, 'MLI'],
         ['Loïc Mbe Soh', 'CB', 25, 62, 65, 'FRA']
       ]],
-      ['SK Beveren', 'BEV', '#FFD100', '#0047AB', 38, 8190, []],
-      ['Lommel SK', 'LOM', '#00843D', '#FFFFFF', 36, 8000, []],
       ['RWDM Brussels', 'RWD', '#E30613', '#FFFFFF', 37, 9000, []],
       ['Patro Eisden Maasmechelen', 'PAT', '#000000', '#FFFFFF', 33, 5000, []],
       ['Lierse Kempenzonen', 'LIE', '#FFD100', '#000000', 34, 14538, []],
@@ -295,11 +295,13 @@ COUNTRY_DATA.push({
       ['Francs Borains', 'FBO', '#E30613', '#FFFFFF', 31, 5000, []],
       ['KAS Eupen', 'EUP', '#FFFFFF', '#000000', 40, 8363, []],
       ['RFC Liège', 'RFL', '#E30613', '#0047AB', 33, 7000, []],
-      ['Olympic Charleroi', 'OLC', '#000000', '#FFFFFF', 30, 5000, []],
       ['Jong Genk', 'JGE', '#0047AB', '#FFFFFF', 30, 2000, []],
       ['Club NXT', 'NXT', '#0067CE', '#000000', 30, 2000, []],
       ['RSCA Futures', 'RSF', '#5C2483', '#FFFFFF', 30, 2000, []],
-      ['Jong KAA Gent', 'JGN', '#003A80', '#FFFFFF', 30, 2000, []]
+      ['Jong KAA Gent', 'JGN', '#003A80', '#FFFFFF', 30, 2000, []],
+      ['KSC Lokeren', 'KSL', '#FFFFFF', '#000000', 34, 12136, []],
+      ['Sporting Hasselt', 'HAS', '#000000', '#1F5FAD', 31, 8800, []],
+      ['Excelsior Virton', 'VIR', '#00843D', '#FFFFFF', 32, 4572, []]
     ]}
   ]
 });

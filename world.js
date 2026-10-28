@@ -1565,20 +1565,33 @@ function takeOver(id) {
 const ntAllowed = n => n.str <= S.mgr.ovr + 10;
 function setNT(code) { S.nt = code || null; if (code) S.ntTeams[code].sq = autoCallup(code); saveSoon(); }
 
-/* ---------- zapis (IndexedDB) ---------- */
-const DB_NAME = 'kariera_menedzera', SAVE_KEY = 'save';
+/* ---------- zapis (IndexedDB) – 4 sloty kariery ---------- */
+const DB_NAME = 'kariera_menedzera', SLOTS = 4;
+let SLOT = 1;
+const slotKey = n => 'save' + n;
 function idb() { return new Promise((res, rej) => { const r = indexedDB.open(DB_NAME, 1); r.onupgradeneeded = () => r.result.createObjectStore('s'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+const idbGet = (db, k) => new Promise((res, rej) => { const r = db.transaction('s').objectStore('s').get(k); r.onsuccess = () => res(r.result == null ? null : r.result); r.onerror = () => rej(r.error); });
+const idbPut = (db, k, v) => new Promise((res, rej) => { const tx = db.transaction('s', 'readwrite'); tx.objectStore('s').put(v, k); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+const idbDel = (db, k) => new Promise(res => { const tx = db.transaction('s', 'readwrite'); tx.objectStore('s').delete(k); tx.oncomplete = res; tx.onerror = res; });
+function slotMeta() { const ut = S && S.user >= 0 ? userClub() : null; return ut ? { name: S.manager, club: ut.name, short: ut.short, col: ut.col, lg: S.leagues[ut.lg].name, season: S.season, date: curDay() ? curDay().date : 0, ovr: Math.round(S.mgr.ovr), ts: Date.now() } : null; }
 async function saveNow() {
   if (typeof indexedDB === 'undefined' || !S) return;
-  try { const db = await idb(); await new Promise((res, rej) => { const tx = db.transaction('s', 'readwrite'); tx.objectStore('s').put(S, SAVE_KEY); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); } catch (e) { console.warn('save', e); }
+  try { const db = await idb(); await idbPut(db, slotKey(SLOT), S); const meta = (await idbGet(db, 'meta')) || {}; meta[SLOT] = slotMeta(); await idbPut(db, 'meta', meta); } catch (e) { console.warn('save', e); }
 }
 let saveT = null;
 function saveSoon() { clearTimeout(saveT); saveT = setTimeout(saveNow, 400); }
-async function loadSave() {
-  if (typeof indexedDB === 'undefined') return null;
-  try { const db = await idb(); return await new Promise((res, rej) => { const r = db.transaction('s').objectStore('s').get(SAVE_KEY); r.onsuccess = () => res(r.result || null); r.onerror = () => rej(r.error); }); } catch (e) { return null; }
+// lista slotów (tylko metadane); stary pojedynczy zapis trafia do slotu 1
+async function listSlots() {
+  if (typeof indexedDB === 'undefined') return {};
+  try {
+    const db = await idb(); let meta = (await idbGet(db, 'meta')) || {};
+    const legacy = await idbGet(db, 'save');
+    if (legacy && !meta[1]) { await idbPut(db, slotKey(1), legacy); const S0 = S; S = legacy; try { meta[1] = slotMeta(); } catch (e) { meta[1] = { name: legacy.manager, club: '?', season: legacy.season, ts: Date.now() }; } S = S0; await idbPut(db, 'meta', meta); await idbDel(db, 'save'); }
+    return meta;
+  } catch (e) { return {}; }
 }
-async function deleteSave() { if (typeof indexedDB === 'undefined') return; try { const db = await idb(); await new Promise(res => { const tx = db.transaction('s', 'readwrite'); tx.objectStore('s').delete(SAVE_KEY); tx.oncomplete = res; }); } catch (e) { } }
+async function loadSlot(n) { if (typeof indexedDB === 'undefined') return null; try { const db = await idb(); return await idbGet(db, slotKey(n)); } catch (e) { return null; } }
+async function deleteSlot(n) { if (typeof indexedDB === 'undefined') return; try { const db = await idb(); await idbDel(db, slotKey(n)); const meta = (await idbGet(db, 'meta')) || {}; delete meta[n]; await idbPut(db, 'meta', meta); } catch (e) { } }
 function useSave(s) { S = s; rebuildIndex(); if (typeof metaInit === 'function') metaInit(); if (S.user >= 0) initStaff(); }
 
 if (typeof module !== 'undefined') module.exports = { get S() { return S; } };

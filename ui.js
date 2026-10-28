@@ -95,6 +95,7 @@ function goBack() {
   const m = $('#modal');
   if (!m.classList.contains('hidden')) { if (m.dataset.lock) toast('Najpierw podejmij decyzję.'); else closeModal(); return; }
   if (!$('#match').classList.contains('hidden')) { if (!MS.over && !MS.paused) ACT.mpause(); toast('Mecz wstrzymany. Użyj ⏭ Koniec, aby go dokończyć.'); return; }
+  if (!$('#start').classList.contains('hidden') && ST.slot != null) return showMenu();
   if (!$('#start').classList.contains('hidden') || !S || S.user < 0) return minimize();
   if (UI.sel != null) { UI.sel = null; return render(); }
   const prev = NAVH.pop();
@@ -965,11 +966,11 @@ function vGame() {
   return `<div class="card"><h2>Zapis gry</h2><small class="mut">Gra zapisuje się automatycznie w pamięci urządzenia.</small>
     <div class="btns"><button class="btn sp" data-act="savegame">💾 Zapisz teraz</button><button class="btn" data-act="export">⬇️ Eksportuj</button><label class="btn">⬆️ Importuj<input type="file" accept=".json" data-change="import" hidden></label></div></div>
     <div class="card"><h2>Szybkość meczu</h2><div class="seg">${[1, 2, 4, 8].map(s => `<button class="btn sm ${S.settings.speed === s ? 'on' : ''}" data-act="defspeed" data-arg="${s}">x${s}</button>`).join('')}</div></div>
-    <div class="card"><h2>Nowa kariera</h2><div class="btns"><button class="btn red full" data-act="newgame">Rozpocznij od nowa</button></div></div>`;
+    <div class="card"><h2>Kariery</h2><small class="mut">Ta kariera jest w slocie ${SLOT}. W menu głównym możesz wczytać inną karierę albo zacząć nową w wolnym slocie.</small><div class="btns"><button class="btn full" data-act="newgame">🏠 Menu główne (sloty karier)</button></div></div>`;
 }
 ACT.savegame = async () => { await saveNow(); toast('Zapisano grę.'); };
 ACT.defspeed = s => { S.settings.speed = +s; saveSoon(); render(); };
-ACT.newgame = async () => { if (confirm('Rozpocząć nową karierę? Obecny zapis zostanie usunięty.')) { await deleteSave(); location.reload(); } };
+ACT.newgame = async () => { if (confirm('Wrócić do menu głównego? Kariera jest zapisana.')) { await saveNow(); location.reload(); } };
 ACT.export = () => {
   const blob = new Blob([JSON.stringify(S)], { type: 'application/json' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `kariera_${S.season}_${userClub().short}.json`; a.click();
@@ -1128,44 +1129,53 @@ function showSacked() {
 ACT.takeover = id => { closeModal(); takeOver(+id); UI.tab = 'home'; UI.lg = null; render(); };
 
 /* ---------- EKRAN STARTOWY ---------- */
-const PROFILES = [[45, 'Debiutant', 'OVR 45 – kluby niższych lig'], [55, 'Licencja UEFA Pro', 'OVR 55 – mocniejsze kluby niższych lig i małe kluby z najwyższych lig'], [0, 'Tryb swobodny', 'OVR 75 – dowolny klub, bez ograniczeń']];
-const ST = { cc: 'POL', lg: 'POL2', club: null, nt: '', prof: 45 };
-const stOvr = () => ST.prof || 75;
-const stAllowed = c => !ST.prof || c.rep <= maxRepFor(ST.prof);
-function showStart(hasSaveGame) {
+const ST = { cc: 'POL', lg: 'POL2', club: null, nt: '', prof: 45, slot: null };
+const stOvr = () => 45;
+const stAllowed = c => c.rep <= maxRepFor(45);
+let SLOTS_META = {};
+function showMenu() {
+  $('#app').classList.add('hidden'); $('#start').classList.remove('hidden'); ST.slot = null;
+  const card = n => { const m = SLOTS_META[n];
+    return m ? `<div class="card slot"><div class="row">${badge({ short: m.short || '?', col: m.col, name: m.club })}<div class="sp"><b>${esc(m.club)}</b><br><small class="mut">${esc(m.name || 'Menedżer')} • ${esc(m.lg || '')} • sezon ${SEASON_LABEL(m.season)}${m.date ? ' • ' + fmtDate(m.date) : ''}${m.ovr ? ' • OVR ' + m.ovr : ''}</small></div></div>
+      <div class="btns"><button class="btn pri sp" data-act="slotload" data-arg="${n}">▶ Kontynuuj</button><button class="btn" data-act="slotnew" data-arg="${n}">Nowa</button><button class="btn red" data-act="slotdel" data-arg="${n}">🗑</button></div></div>`
+      : `<button class="card slot empty" data-act="slotnew" data-arg="${n}"><b>Slot ${n} – pusty</b><br><small class="mut">＋ Rozpocznij nową karierę</small></button>`; };
+  const nClubs = S.clubs.length, nLg = Object.keys(S.leagues).length, nReal = sum(S.clubs.map(c => c.realCount || 0));
+  $('#start').innerHTML = `<div class="in"><div class="logo">⚽</div><h1>Kariera Menedżera</h1><p class="mut">${nLg} lig • ${nClubs} klubów • ${nReal} prawdziwych zawodników • Liga Mistrzów, Liga Europy, Liga Konferencji • reprezentacje • akademia</p>
+    <h3>Twoje kariery</h3>${[1, 2, 3, 4].map(card).join('')}
+    <small class="mut">Każdy slot to osobna kariera z własnym światem. Gra zapisuje się automatycznie.</small></div>`;
+}
+ACT.slotload = async n => { busy(true, 'Wczytywanie kariery…'); const s = await loadSlot(+n); busy(false); if (!s || s.v !== 3) return toast('Nie udało się wczytać zapisu.', 'bad'); SLOT = +n; useSave(s); enterApp(); if (S.sacked) showSacked(); };
+ACT.slotnew = n => { if (SLOTS_META[n] && !confirm(`Slot ${n} zawiera karierę (${SLOTS_META[n].club}). Nowa kariera ją zastąpi. Kontynuować?`)) return; ST.slot = +n; ST.club = null; showStart(); window.scrollTo(0, 0); };
+ACT.slotdel = async n => { if (!confirm(`Usunąć karierę ze slotu ${n}? Tego nie da się cofnąć.`)) return; await deleteSlot(+n); delete SLOTS_META[n]; showMenu(); };
+ACT.tomenu = () => showMenu();
+function showStart() {
   $('#app').classList.add('hidden'); $('#start').classList.remove('hidden');
   if (!S.leagues[ST.lg]) ST.lg = S.countries[ST.cc].leagues[0];
   const lg = S.leagues[ST.lg];
   const clubs = lg.clubs.map(club).sort((a, b) => b.rep - a.rep);
   const nClubs = S.clubs.length, nLg = Object.keys(S.leagues).length, nReal = sum(S.clubs.map(c => c.realCount || 0));
-  $('#start').innerHTML = `<div class="in"><div class="logo">⚽</div><h1>Kariera Menedżera</h1><p class="mut">${nLg} lig • ${nClubs} klubów • ${nReal} prawdziwych zawodników • Liga Mistrzów, Liga Europy, Liga Konferencji • reprezentacje • akademia</p>
-    ${hasSaveGame ? `<button class="btn pri full" data-act="continue" style="margin-bottom:14px">▶ Kontynuuj karierę</button>` : ''}
-    <h3>Nowa kariera</h3>
+  $('#start').innerHTML = `<div class="in"><button class="btn sm" data-act="tomenu">‹ Menu</button><h1>Nowa kariera <small class="mut" style="font-size:16px">slot ${ST.slot}</small></h1>
+    <p class="mut">Zaczynasz jako debiutant (OVR trenera 45) – na start dostępne są kluby niższych lig. Dobre wyniki podnoszą OVR i przynoszą oferty większych klubów.</p>
     <input id="mname" placeholder="Imię i nazwisko menedżera" maxlength="28" style="width:100%;margin-bottom:10px" value="${esc(S.manager || '')}">
-    <h3>Profil trenera</h3>
-    ${PROFILES.map(([o, n, d]) => `<button class="club ${ST.prof === o ? 'on' : ''}" data-act="stprof" data-arg="${o}"><span class="ovr ${ovrCls(o || 75)}">${o || 75}</span><div class="sp"><b>${n}</b><br><small>${d}</small></div></button>`).join('')}
     <h3>Wybierz klub</h3>
     <div class="flt"><select data-change="stcc">${Object.values(S.countries).map(c => `<option value="${c.code}" ${ST.cc === c.code ? 'selected' : ''}>${c.flag} ${c.name}</option>`).join('')}</select>
     <select data-change="stlg">${S.countries[ST.cc].leagues.map(id => `<option value="${id}" ${ST.lg === id ? 'selected' : ''}>${S.leagues[id].name}</option>`).join('')}</select></div>
-    ${ST.prof ? `<small class="mut">Z OVR ${ST.prof} możesz objąć kluby o reputacji do ${maxRepFor(ST.prof)}. Lepsze wyniki = wyższy OVR = oferty większych klubów.</small>` : ''}
+    <small class="mut">Dostępne kluby o reputacji do ${maxRepFor(45)}.</small>
     ${clubs.map(c => { const ok = stAllowed(c); return `<button class="club ${ST.club === c.id ? 'on' : ''} ${ok ? '' : 'locked'}" data-act="stclub" data-arg="${c.id}" ${ok ? '' : 'disabled'}>${badge(c)}<div class="sp"><b>${ok ? '' : '🔒 '}${esc(c.name)}</b><br><small>Budżet: ${money(c.tb)} • średnia ${Math.round(teamLevel(c))} • rep. ${c.rep}</small></div><span class="stars">${stars(c)}</span></button>`; }).join('')}
     <h3>Reprezentacja (opcjonalnie)</h3>
-    <select data-change="stnt" style="width:100%"><option value="">Bez reprezentacji</option>${NATIONS.filter(n => !ST.prof || n.str <= stOvr() + 10).sort((a, b) => a.name.localeCompare(b.name, 'pl')).map(n => `<option value="${n.code}" ${ST.nt === n.code ? 'selected' : ''}>${n.flag} ${n.name}</option>`).join('')}</select>
-    <button class="btn pri full" data-act="begin" style="position:sticky;bottom:10px;margin-top:14px" ${ST.club == null ? 'disabled' : ''}>Rozpocznij karierę</button></div>`;
+    <select data-change="stnt" style="width:100%"><option value="">Bez reprezentacji</option>${NATIONS.filter(n => n.str <= stOvr() + 10).sort((a, b) => a.name.localeCompare(b.name, 'pl')).map(n => `<option value="${n.code}" ${ST.nt === n.code ? 'selected' : ''}>${n.flag} ${n.name}</option>`).join('')}</select>
+    <div class="stbar"><button class="btn pri full" data-act="begin" ${ST.club == null ? 'disabled' : ''}>${ST.club == null ? 'Wybierz klub' : `Rozpocznij karierę – ${esc(club(ST.club).name)}`}</button></div></div>`;
 }
 const keepName = () => { const el = $('#mname'); if (el) S.manager = el.value; };
-CHG.stcc = v => { keepName(); ST.cc = v; ST.lg = S.countries[v].leagues[Math.min(1, S.countries[v].leagues.length - 1)]; ST.club = null; showStart(START_SAVE); };
-CHG.stlg = v => { keepName(); ST.lg = v; ST.club = null; showStart(START_SAVE); };
+CHG.stcc = v => { keepName(); ST.cc = v; ST.lg = S.countries[v].leagues[Math.min(1, S.countries[v].leagues.length - 1)]; ST.club = null; showStart(); };
+CHG.stlg = v => { keepName(); ST.lg = v; ST.club = null; showStart(); };
 CHG.stnt = v => { ST.nt = v; };
-ACT.stprof = o => { keepName(); ST.prof = +o; if (ST.club != null && !stAllowed(club(ST.club))) ST.club = null; ST.nt = ''; const y = window.scrollY; showStart(START_SAVE); window.scrollTo(0, y); };
-ACT.stclub = id => { keepName(); ST.club = +id; const y = window.scrollY; showStart(START_SAVE); window.scrollTo(0, y); };
+ACT.stclub = id => { keepName(); ST.club = +id; const y = window.scrollY; showStart(); window.scrollTo(0, y); };
 ACT.begin = () => {
   if (ST.club == null) return;
   const n = ($('#mname').value || '').trim() || 'Menedżer';
-  startCareer(n, ST.club, ST.nt || null, stOvr()); enterApp();
+  SLOT = ST.slot || 1; startCareer(n, ST.club, ST.nt || null, stOvr()); enterApp();
 };
-let START_SAVE = null;
-ACT.continue = () => { useSave(START_SAVE); enterApp(); if (S.sacked) showSacked(); };
 function enterApp() { $('#start').classList.add('hidden'); $('#app').classList.remove('hidden'); UI.tab = 'home'; render(); window.scrollTo(0, 0); }
 
 /* ---------- start ---------- */
@@ -1192,10 +1202,9 @@ document.addEventListener('change', e => { const el = e.target.closest('[data-ch
 (async () => {
   busy(true, 'Tworzenie świata…');
   await new Promise(r => setTimeout(r, 30));
-  START_SAVE = await loadSave();
-  if (START_SAVE && START_SAVE.v !== 3) START_SAVE = null;
+  SLOTS_META = await listSlots();
   createWorld();
   busy(false);
-  showStart(!!START_SAVE);
+  showMenu();
 })();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => { });

@@ -328,3 +328,8 @@ tr.cl td,tr.el td,tr.ecl td,tr.up td,tr.dn td{background:rgba(255,255,255,.025)}
 .seg button{font-size:12px;padding:6px 4px}
 
 .fut .attrs>div{cursor:pointer}
+
+.slot{display:block;width:100%;text-align:left;margin-bottom:10px}
+.slot.empty{border-style:dashed;color:var(--txt);padding:16px}
+.stbar{position:sticky;bottom:0;margin:14px -16px 0;padding:10px 16px calc(12px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--line);z-index:3}
+#start [data-act=begin]{box-shadow:none}

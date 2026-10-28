@@ -489,23 +489,7 @@ function matchPitchSVG(m, userSide) {
     /* oznaczenia drużyn i kierunku ataku */
     var lab = function (x, anc, t, col, arrow) { return '<text x="' + x + '" y="' + (Y1 - 4) + '" text-anchor="' + anc + '" font-size="10" font-weight="800" fill="rgba(255,255,255,.55)" letter-spacing=".04em">' + (anc === 'start' ? '' : arrow + ' ') + uk_esc(String(t.short || '').slice(0, 4)) + (anc === 'start' ? ' ' + arrow : '') + '</text>'; };
     out += lab(X0 + 4, 'start', ht, hCol, '→') + lab(X1 - 4, 'end', at, aCol, '←');
-    /* zawodnicy */
     var mom = uk_momentumOf(m);
-    var shift = mom * 0.06;
-    var dots = function (side, list, col, sec, isH) {
-      var f = uk_formation(list), mine = userSide === side, s = '';
-      var strokeC = uk_lum(col) > 0.5 ? 'rgba(0,0,0,.55)' : 'rgba(255,255,255,.85)';
-      f.forEach(function (p) {
-        var sh = p.pos === 'GK' ? 0 : shift;
-        var fx = isH ? p.x + sh : 1 - p.x + sh, fy = isH ? p.y : 1 - p.y;
-        var x = uk_r(uk_px(uk_clamp(fx, 0.02, 0.98))), y = uk_r(uk_py(uk_clamp(fy, 0.05, 0.95)));
-        var gk = p.pos === 'GK', gkc = uk_dist(sec, '#1b5638') < 90 || uk_dist(sec, col) < 60 ? '#ffd23f' : sec;
-        s += '<circle cx="' + x + '" cy="' + uk_r(y + 0.9) + '" r="4.4" fill="rgba(0,0,0,.28)"/>' +
-          '<circle cx="' + x + '" cy="' + y + '" r="' + (mine ? 4.6 : 4.1) + '" fill="' + (gk ? gkc : col) + '" stroke="' + (mine ? '#2ee59d' : strokeC) + '" stroke-width="' + (mine ? 1.4 : 1) + '"/>';
-      });
-      return s;
-    };
-    out += '<g class="uk-pl">' + dots('h', H.pitch, hCol, hc[1], true) + dots('a', A.pitch, aCol, aSec, false) + '</g>';
     /* piłka */
     var ev = Array.isArray(m.ev) ? m.ev : [], last = null;
     for (i = ev.length - 1; i >= 0; i--) if (ev[i] && typeof ev[i] === 'object') { last = ev[i]; break; }
@@ -522,6 +506,31 @@ function matchPitchSVG(m, userSide) {
     else if (ty === 'ht' || ty === 'ft' || ty === 'ko') { bx = cx; by = cy; }
     else { bx = cx + mom * L * 0.24 + j1 * 26; by = cy + j2 * Wd * 0.3; }
     bx = uk_clamp(bx, 4, W - 4); by = uk_clamp(by, Y0 + 3, Y1 - 3);
+    /* zawodnicy: pozycje z formacji (numer = pozycja w ustawieniu), cała drużyna przesuwa się za piłką */
+    var bf = uk_clamp((bx - X0) / L, 0, 1), bfy = uk_clamp((by - Y0) / Wd, 0, 1);
+    var dots = function (side, list, col, sec, isH) {
+      var mine = userSide === side, s = '', T = (isH ? H : A).t || {};
+      var FS = typeof FORMATIONS !== 'undefined' && FORMATIONS[T.formation], fb = uk_formation(list);
+      var strokeC = uk_lum(col) > 0.5 ? 'rgba(0,0,0,.55)' : 'rgba(255,255,255,.85)', txtC = uk_lum(col) > 0.5 ? '#0b1220' : '#fff';
+      (list || []).forEach(function (pl, n) {
+        if (!pl) return;
+        var sl = FS && pl.slot != null ? FS[pl.slot] : null, gk = pl.pos === 'GK', depth, wide;
+        if (sl) { depth = 0.04 + (sl.y / 100) * 0.56; wide = sl.x / 100; } else { var q = fb[n] || { x: 0.3, y: 0.5 }; depth = q.x; wide = q.y; }
+        // przesunięcie za piłką: w ataku drużyna idzie do przodu, w obronie się cofa; boczny ruch w stronę piłki
+        var ballOwn = isH ? bf : 1 - bf;
+        if (!gk) { depth += (ballOwn - 0.45) * 0.42; wide += (((isH ? bfy : 1 - bfy)) - 0.5) * 0.18; }
+        var hs = uk_hash((pl.p && pl.p.id) + '|' + now), jx = ((hs % 100) / 100 - 0.5) * 0.035, jy = (((hs >>> 8) % 100) / 100 - 0.5) * 0.05;
+        depth = uk_clamp(depth + (gk ? 0 : jx), 0.02, 0.97); wide = uk_clamp(wide + (gk ? 0 : jy), 0.06, 0.94);
+        var fx = isH ? depth : 1 - depth, fy = isH ? wide : 1 - wide;
+        var x = uk_r(uk_px(fx)), y = uk_r(uk_py(fy));
+        var gkc = uk_dist(sec, '#1b5638') < 90 || uk_dist(sec, col) < 60 ? '#ffd23f' : sec, num = sl ? pl.slot + 1 : n + 1;
+        s += '<circle cx="' + x + '" cy="' + uk_r(y + 1) + '" r="5.6" fill="rgba(0,0,0,.28)"/>' +
+          '<circle cx="' + x + '" cy="' + y + '" r="' + (mine ? 5.8 : 5.4) + '" fill="' + (gk ? gkc : col) + '" stroke="' + (mine ? '#2ee59d' : strokeC) + '" stroke-width="' + (mine ? 1.3 : 0.9) + '"/>' +
+          '<text x="' + x + '" y="' + uk_r(y + 2.1) + '" text-anchor="middle" font-size="6" font-weight="800" fill="' + (gk ? '#0b1220' : txtC) + '">' + num + '</text>';
+      });
+      return s;
+    };
+    out += '<g class="uk-pl">' + dots('h', H.pitch, hCol, hc[1], true) + dots('a', A.pitch, aCol, aSec, false) + '</g>';
     if (flash) {
       out += '<circle cx="' + uk_r(bx) + '" cy="' + uk_r(by) + '" r="10" fill="url(#' + id + 'f)" class="uk-flash"><animate attributeName="r" values="6;34;22" dur="1.1s" repeatCount="2"/><animate attributeName="opacity" values="1;.25;1" dur="1.1s" repeatCount="2"/></circle>';
     }

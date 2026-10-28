@@ -138,7 +138,7 @@ const isAvail = p => !p.inj && !p.susp;
 // rodzaje kontuzji: [nazwa, min dni, max dni, waga]
 const INJ = [['stłuczenie', 3, 10, 30], ['naciągnięcie mięśnia dwugłowego', 10, 28, 20], ['skręcenie stawu skokowego', 10, 35, 18], ['uraz pachwiny', 14, 40, 10], ['naderwanie mięśnia', 21, 49, 8], ['uraz kolana', 30, 70, 6], ['złamanie', 50, 100, 3], ['zerwanie więzadła krzyżowego', 150, 220, 1.2]];
 // ryzyko urazu rośnie przy zmęczeniu, po niedawnym urazie i po przyspieszonym powrocie
-const injRisk = (p, fit) => (1 + Math.max(0, 85 - fit) / 30) * (p._rushed && p._rushed > (typeof absDay === 'function' ? absDay() : 0) ? 3 : 1) * (p.injLast && typeof absDay === 'function' && absDay() - p.injLast < 60 ? 1.5 : 1);
+const injRisk = (p, fit) => (typeof S !== 'undefined' && S && S.trInt && p.tid === S.user && typeof TR_INT !== 'undefined' ? TR_INT[S.trInt].inj : 1) * (1 + Math.max(0, 85 - fit) / 30) * (p._rushed && p._rushed > (typeof absDay === 'function' ? absDay() : 0) ? 3 : 1) * (p.injLast && typeof absDay === 'function' && absDay() - p.injLast < 60 ? 1.5 : 1);
 function injure(p) {
   const recur = p.injT && p.injLast && typeof absDay === 'function' && absDay() - p.injLast < 60 && rnd() < 0.5;
   const t = recur ? INJ.find(x => x[0] === p.injT) || INJ[1] : wpick(INJ, x => x[3]);

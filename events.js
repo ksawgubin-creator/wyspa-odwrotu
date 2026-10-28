@@ -68,6 +68,7 @@ function applyFx(fx, ctx = {}, exact) {
   if (fx.money) { const v = Math.round(N(fx.money / 1000) * 1000); ut.bal += v; if (v > 0) { ut.fin.inc += v; ut.tb += Math.round(v * 0.5); } else ut.fin.exp -= v; out.push(`💶 ${v > 0 ? '+' : ''}${money(v)}`); }
   if (fx.mgr) { mgrGain(fx.mgr); out.push(`🧑‍💼 OVR trenera ${fx.mgr > 0 ? '+' : ''}${fx.mgr}`); }
   if (fx.fit && ctx.p) { const v = N(fx.fit); ctx.p.fit = clamp(ctx.p.fit + v, 10, 100); out.push(`🔋 Kondycja ${shortName(ctx.p)} ${sgn(v)}`); }
+  if (fx.shp) { const v = N(fx.shp); for (const p of uPlayers()) p.shp = clamp(p.shp + v, 0, 100); out.push(`⚡ Zgranie drużyny ${sgn(v)}`); }
   if (fx.teamFit) { const v = N(fx.teamFit); for (const p of uPlayers()) p.fit = clamp(p.fit + v, 10, 100); out.push(`🔋 Kondycja drużyny ${sgn(v)}`); }
   if (fx.inj && ctx.p) { const v = Math.max(3, N(fx.inj)); ctx.p.inj = Math.max(ctx.p.inj, v); out.push(`🚑 ${shortName(ctx.p)} pauzuje ~${Math.ceil(v / 7)} tyg.`); }
   if (fx.price) { ut.price = Math.round(ut.price * (1 + fx.price) * 10) / 10; out.push(`🎟️ Ceny biletów ${fx.price > 0 ? '+' : ''}${Math.round(fx.price * 100)}%`); }
@@ -87,6 +88,10 @@ function makePromise(p) { if (!S.promises.some(x => x.pid === p.id)) S.promises.
 // alt: { p: ctx=>szansa, fx|fn, r } – alternatywny (zwykle gorszy) wynik, mem: zapis w pamięci, follow: [id, dniOd, dniDo, szansa]
 const strictness = () => S.mem.strict - S.mem.soft;
 const EVENTS = [
+  { id: 'wintercamp', cat: 'Klub', follow: true, title: '❄️ Przerwa zimowa – obóz przygotowawczy', text: () => `Liga zrobiła sobie przerwę zimową. Gdzie drużyna ma przygotowywać się do rundy wiosennej? Koszt zależy od wyjazdu (budżet obozu: ${money(campCost(1))} – ${money(campCost(2))}).`,
+    choices: [{ t: '🏠 Zostajemy w kraju (bazy klubu)', fn: () => ({ teamFit: 6, shp: 4 }), r: 'Skromnie, ale bez wydatków. Śnieg utrudniał treningi.' },
+      { t: '🇹🇷 Turcja (Antalya) – sparingi z klubami z Europy', fn: () => ({ money: -campCost(1), teamFit: 12, shp: 10, team: 4 }), r: 'Dobre boiska i solidni sparingpartnerzy.' },
+      { t: '🇪🇸 Hiszpania / Dubaj – obóz premium', fn: () => ({ money: -campCost(2), teamFit: 16, shp: 14, team: 7, board: -2 }), r: 'Świetne warunki – zawodnicy zachwyceni, zarząd liczy koszty.' }] },
   { id: 'fanprotest', cat: 'Kibice', w: 4, ctx: () => lastRes(3).length === 3 && lastRes(3).every(r => r === 'L') ? {} : null,
     title: 'Protest kibiców', text: () => `Po serii porażek kibice ${userClub().name} protestują pod stadionem. Transparent: „Obudźcie się!”.`,
     choices: [{ t: 'Wyjdź do kibiców i porozmawiaj', hint: 'ryzykowne', fx: { fans: 8, press: 3, board: -1 }, r: 'Kibice docenili, że stanąłeś z nimi twarzą w twarz.', alt: { p: () => S.fans < 40 ? 0.45 : 0.2, fx: { fans: -6, press: -4 }, r: 'Rozmowa wymknęła się spod kontroli – posypały się wyzwiska, a kamery wszystko nagrały.' } },
@@ -449,6 +454,27 @@ function pressConference(x) {
   if (inj) qs.push({ q: `Jak bardzo zabraknie kontuzjowanego ${inj.n}?`, p: inj.id, a: [['„Mamy szeroką kadrę.”', 'calm', { team: 2, player: -2 }], ['„To ogromna strata.”', 'calm', { player: 4, team: -1 }], ['„Nie szukamy wymówek.”', 'harsh', { board: 2, fans: 1 }]] });
   if (listed) qs.push({ q: `Czy ${listed.n} odejdzie z klubu?`, p: listed.id, a: [['„Wszystko jest możliwe.”', 'evasive', { player: -3 }], ['„Chcę, żeby został.”', 'calm', { player: 6, fans: 2 }], ['„Nie jest już częścią moich planów.”', 'harsh', { player: -12, team: -2 }]] });
   if (young) qs.push({ q: `Kibice zachwycają się ${young.n}. Czy to przyszła gwiazda?`, p: young.id, a: [['„Ma ogromny potencjał.”', 'bold', { player: 6, fans: 3 }], ['„Musi jeszcze dużo pracować.”', 'harsh', traits(young).pro >= 12 ? { player: 2, form: 3 } : { player: -5 }], ['„Nie nakładajmy na niego presji.”', 'calm', { player: 2, press: 1 }]] });
+  const q = pick(qs);
+  return { q: q.q, star: q.p || null, a: q.a.map(([t, tone, fx]) => [t, fx, tone]) };
+}
+/* konferencja po meczu – pytanie zależne od przebiegu spotkania */
+function postMatchPress(m, user) {
+  if (!m || m.comp === 'P' || m.comp === 'F') return null;
+  const me = user === 'h' ? m.home : m.away, op = me === m.home ? m.away : m.home, gd = me.goals - op.goals;
+  const ev = [...me.scorers.map(g => ({ min: g.min, d: 1 })), ...op.scorers.map(g => ({ min: g.min, d: -1 }))].sort((a, b) => a.min - b.min);
+  let run = 0, worst = 0; for (const e of ev) { run += e.d; worst = Math.min(worst, run); }
+  const red = Object.values(me.rec).find(r => r.r), motm = m.motm && me.rec[m.motm.p.id] ? m.motm.p : null, dn = typeof derbyName === 'function' ? derbyName(me.t.id, op.t.id) : null;
+  const big = m.comp !== 'L' || dn || Math.abs(gd) >= 3 || red || (worst <= -1 && gd > 0);
+  if (!big && rnd() > 0.35) return null;
+  const qs = [];
+  if (gd >= 3) qs.push({ q: `${me.goals}:${op.goals}! Czy to najlepszy mecz Pana drużyny w tym sezonie?`, a: [['„Cieszymy się, ale jutro wracamy do pracy.”', 'calm', { team: 2, board: 1 }], ['„Tak gra drużyna, która myśli o czymś wielkim.”', 'bold', { fans: 5, team: 2, boast: true }], ['„Rywal ułatwił nam zadanie.”', 'evasive', { press: 2 }]] });
+  if (gd > 0 && worst <= -1) qs.push({ q: 'Wielki powrót! Co powiedział Pan zawodnikom, gdy przegrywaliście?', a: [['„Że wierzę w nich do ostatniej minuty.”', 'calm', { team: 4 }], ['„Kilka mocnych słów – i zadziałało.”', 'harsh', { team: 1, fans: 2, press: 2 }], ['„To zostaje w szatni.”', 'evasive', { press: -1, team: 2 }]] });
+  if (gd < 0) qs.push({ q: `Porażka ${me.goals}:${op.goals}. Co poszło nie tak?`, a: [['„Biorę odpowiedzialność na siebie.”', 'calm', { team: 3, board: 1, press: 1 }], ['„Zawodnicy nie zrealizowali założeń.”', 'harsh', { team: -4, fans: 2, press: 2 }], ['„Sędzia zdecydował o wyniku.”', 'bold', { fans: 3, press: -3, board: -1 }]] });
+  if (gd <= 0 && (me.xg || 0) > (op.xg || 0) + 0.8) qs.push({ q: 'Mieliście dużo więcej sytuacji. Brakuje skuteczności?', a: [['„Gramy dobrze – gole przyjdą.”', 'calm', { team: 2 }], ['„Napastnicy muszą to poprawić.”', 'harsh', { team: -2, press: 1 }], ['„Piłka bywa niesprawiedliwa.”', 'evasive', { press: 1 }]] });
+  if (red) qs.push({ q: `Czerwona kartka dla ${red.p.n}. Czy to zaważyło na meczu?`, p: red.p.id, a: [['„Bronię zawodnika – to była walka.”', 'calm', { player: 5, team: 2, press: -1 }], ['„To było nieodpowiedzialne.”', 'harsh', { player: -6, board: 1, press: 2 }], ['„Wyjaśnimy to wewnętrznie.”', 'evasive', { player: 1 }]] });
+  if (dn) qs.push({ q: gd > 0 ? `Wygrane ${dn}! Co to znaczy dla kibiców?` : gd < 0 ? `Przegrane ${dn}. Jak przeprosi Pan kibiców?` : `Remis w ${dn}. Zadowolony?`, a: [['„Ten wynik jest dla kibiców.”', 'calm', { fans: gd >= 0 ? 4 : 1, team: 1 }], [gd >= 0 ? '„To miasto jest nasze.”' : '„Rewanż będzie inny – obiecuję.”', 'bold', { fans: gd >= 0 ? 6 : 3, boast: gd < 0 }], ['„To tylko trzy punkty.”', 'evasive', { fans: -3, press: 1 }]] });
+  if (motm && gd >= 0) qs.push({ q: `${motm.n} zawodnikiem meczu. Jak go Pan oceni?`, p: motm.id, a: [['„Wielki występ – zasłużył.”', 'calm', { player: 5, team: 1 }], ['„To dopiero początek jego możliwości.”', 'bold', { player: 7, team: -1 }], ['„Wygrała drużyna, nie jeden zawodnik.”', 'evasive', { team: 2, player: -2 }]] });
+  if (!qs.length) qs.push({ q: `Wynik ${me.goals}:${op.goals}. Jak ocenia Pan ten mecz?`, a: [['„Solidny występ, idziemy dalej.”', 'calm', { team: 1, press: 1 }], ['„Stać nas na dużo więcej.”', 'harsh', { team: -1, board: 1 }], ['„Bez komentarza.”', 'evasive', { press: -2 }]] });
   const q = pick(qs);
   return { q: q.q, star: q.p || null, a: q.a.map(([t, tone, fx]) => [t, fx, tone]) };
 }

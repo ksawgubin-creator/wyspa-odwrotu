@@ -336,3 +336,6 @@ tr.cl td,tr.el td,tr.ecl td,tr.up td,tr.dn td{background:rgba(255,255,255,.025)}
 
 @keyframes intake-in{from{opacity:0;transform:rotateY(80deg) scale(.9)}to{opacity:1;transform:none}}
 .card.intake{animation:intake-in .45s ease-out both;margin:8px 0}
+
+.numrow{display:flex;align-items:center;gap:8px;margin:6px 0}.numrow span{font-size:13px;color:var(--mut);flex:none}
+.numin{flex:1;min-width:0;font-size:16px;font-weight:700;text-align:right}

@@ -6,7 +6,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const UI = {
   tab: 'home', sqTab: 'pitch', nt: false, compTab: 'league', cc: null, lg: null, lgTab: 'table', rnd: null,
-  euro: 'CL', euroTab: 'lp', md: null, mkTab: 'search', clubTab: 'fin', sel: null, listSort: 'pos',
+  euro: 'CL', euroTab: 'lp', md: null, mkTab: 'search', clubTab: 'mgr', offTab: 'fin', sel: null, listSort: 'pos',
   f: { real: true, cc: '', pos: '', age: 0, ovr: 0, ovrMax: 0, potMin: 0, potMax: 0, ageMin: 0, price: 0, sort: 'ovr', q: '' },
 };
 const ACT = {}, CHG = {};
@@ -43,6 +43,7 @@ const NAV_ICONS = {
   comps: 'M7 3h10v2h3v3a4 4 0 0 1-4 4h-.4A5 5 0 0 1 13 14.9V18h3v3H8v-3h3v-3.1A5 5 0 0 1 8.4 12H8a4 4 0 0 1-4-4V5h3zm-1 4v1a2 2 0 0 0 1 1.7V7zm11 0v2.7A2 2 0 0 0 18 8V7z',
   market: 'M10.5 3a7.5 7.5 0 0 1 6 12l4.3 4.3-1.5 1.5-4.3-4.3A7.5 7.5 0 1 1 10.5 3zm0 2.5a5 5 0 1 0 0 10 5 5 0 0 0 0-10z',
   club: 'M12 2 4 6v2h16V6zM5 9v9H3v3h18v-3h-2V9h-3v9h-2.5V9h-3v9H8V9z',
+  office: 'M9 4h6a1 1 0 0 1 1 1v2h4a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4V5a1 1 0 0 1 1-1zm1 3h4V6h-4zM3 12h18',
   acad: 'M12 3 1 8.5 12 14l9-4.5V16h2V8.5zM5 12.3V16c0 1.9 3.1 4 7 4s7-2.1 7-4v-3.7L12 16z',
   fac: 'M2 9c0-2.2 4.5-4 10-4s10 1.8 10 4v8c0 2.2-4.5 4-10 4S2 19.2 2 17zm10 2c4.4 0 8-1 8-2.5S16.4 6 12 6 4 7 4 8.5 7.6 11 12 11z',
   fin: 'M3 5h18v14H3zm2 2v10h14V7zm7 1.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7z',
@@ -53,9 +54,8 @@ const NAV_ICONS = {
   troph: 'M12 2l2.9 6.2 6.8.8-5 4.7 1.3 6.8L12 17.1 6 20.5l1.3-6.8-5-4.7 6.8-.8z',
 };
 // dolne menu: [klucz, nazwa, zakładka, [pole podzakładki, wartość]]
-const NAV = [['home', 'Pulpit', 'home'], ['squad', 'Skład', 'squad'], ['comps', 'Rozgrywki', 'comps', ['compTab', 'league']], ['cal', 'Terminarz', 'comps', ['compTab', 'cal']], ['market', 'Transfery', 'market', ['mkTab', 'search']],
-  ['scout', 'Skauting', 'market', ['mkTab', 'scout']], ['acad', 'Akademia', 'club', ['clubTab', 'acad']], ['fin', 'Finanse', 'club', ['clubTab', 'fin']], ['staff', 'Sztab', 'club', ['clubTab', 'staff']],
-  ['club', 'Klub', 'club', ['clubTab', 'mgr']], ['rank', 'Rankingi', 'comps', ['compTab', 'rank']], ['troph', 'Gablota', 'club', ['clubTab', 'troph']], ['fac', 'Obiekty', 'club', ['clubTab', 'fac']]];
+const NAV = [['home', 'Pulpit', 'home'], ['squad', 'Skład', 'squad'], ['comps', 'Rozgrywki', 'comps', ['compTab', 'league']], ['cal', 'Terminarz', 'comps', ['compTab', 'cal']], ['market', 'Transfery', 'market'],
+  ['acad', 'Akademia', 'acad'], ['fac', 'Obiekty', 'fac'], ['office', 'Biuro', 'office'], ['club', 'Klub', 'club']];
 function navCur() {
   const sub = NAV.find(n => n[3] && !['club', 'comps', 'market'].includes(n[0]) && UI.tab === n[2] && UI[n[3][0]] === n[3][1]);
   return sub ? sub[0] : UI.tab;
@@ -77,15 +77,15 @@ function render() {
   const unread = S.inbox.filter(m => !m.read).length;
   const cur = navCur();
   $('#nav').innerHTML = NAV.map(([k, n]) => `<button class="${cur === k ? 'on' : ''}" data-act="nav" data-arg="${k}"><i>${navIcon(k, cur === k)}</i>${n}${k === 'home' && unread ? `<span class="dot">${unread}</span>` : ''}${k === 'market' && S.offers.length ? `<span class="dot">${S.offers.length}</span>` : ''}</button>`).join('');
-  const vk = [UI.tab, UI.sqTab, UI.compTab, UI.clubTab, UI.mkTab, UI.rkTab].join('/'), v = $('#view');
+  const vk = [UI.tab, UI.sqTab, UI.compTab, UI.clubTab, UI.mkTab, UI.rkTab, UI.offTab].join('/'), v = $('#view');
   navFade(); { const nb = $('#nav'), on = nb.querySelector('.on'); if (on && (on.offsetLeft < nb.scrollLeft || on.offsetLeft + on.offsetWidth > nb.scrollLeft + nb.clientWidth)) nb.scrollLeft = on.offsetLeft - (nb.clientWidth - on.offsetWidth) / 2; }
-  v.innerHTML = ({ home: vHome, squad: vSquad, comps: vComps, market: vMarket, club: vClub })[UI.tab]();
+  v.innerHTML = ({ home: vHome, squad: vSquad, comps: vComps, market: vMarket, club: vClub, acad: vAcad, fac: vFac, office: vOffice })[UI.tab]();
   if (vk !== render._vk) { render._vk = vk; v.classList.remove('uk-fade', 'sw-l', 'sw-r'); void v.offsetWidth; v.classList.add(SWIPE_DIR ? 'sw-' + SWIPE_DIR : 'uk-fade'); }
   SWIPE_DIR = null;
   for (const t of document.querySelectorAll('#view .tabs')) { const on = t.querySelector('.on'); if (on) t.scrollLeft = Math.max(0, on.offsetLeft - (t.clientWidth - on.offsetWidth) / 2); }
 }
 /* ---------- historia nawigacji (przycisk „wstecz” Androida) ---------- */
-const NAVK = ['tab', 'sqTab', 'compTab', 'rkTab', 'clubTab', 'mkTab', 'lgTab', 'euroTab', 'nt'];
+const NAVK = ['tab', 'sqTab', 'compTab', 'rkTab', 'offTab', 'clubTab', 'mkTab', 'lgTab', 'euroTab', 'nt'];
 const NAVH = [];
 const snap = () => { const o = {}; for (const k of NAVK) o[k] = UI[k]; o.y = window.scrollY; return o; };
 function navPush() { const s0 = snap(), last = NAVH[NAVH.length - 1]; if (!last || NAVK.some(k => last[k] !== s0[k])) { NAVH.push(s0); if (NAVH.length > 40) NAVH.shift(); } }
@@ -276,7 +276,7 @@ ACT.jobs = () => {
 ACT.takejob = id => { if (!confirm('Przyjąć ofertę i zmienić klub?')) return; closeModal(); acceptJob(+id); UI.tab = 'home'; UI.lg = null; UI.nt = false; render(); toast(`Witamy w ${userClub().name}!`); };
 ACT.dropjob = id => { S.jobs = S.jobs.filter(j => j.id !== +id); saveSoon(); closeModal(); render(); };
 ACT.goeuro = a => { UI.tab = 'comps'; UI.compTab = 'euro'; UI.euro = a; render(); };
-ACT.gont = () => { UI.tab = 'club'; UI.clubTab = 'nt'; render(); };
+ACT.gont = () => { navPush(); UI.tab = 'club'; UI.clubTab = 'nt'; render(); };
 ACT.inbox = () => { S.inbox.forEach(m => m.read = true); saveSoon(); modal(`<h2>Wiadomości</h2>${S.inbox.map(m => `<div class="msg"><b>${esc(m.title)}</b><small>${m.date ? fmtDate(m.date) : ''}</small><p>${esc(m.body)}</p></div>`).join('')}<div class="btns"><button class="btn full" data-act="close">Zamknij</button></div>`); render(); };
 
 /* ---------- KONTYNUUJ ---------- */
@@ -337,7 +337,7 @@ function vSquadList(t) {
   const tot = sum(t.players.map(p => p.val || 0)), wages = sum(t.players.map(p => p.wage || 0));
   return `<div class="flt"><select data-change="lsort">${[['pos', 'wg pozycji'], ['ovr', 'wg ogólnej'], ['age', 'wg wieku'], ['fit', 'wg kondycji'], ['mor', 'wg morale'], ['val', 'wg wartości']].map(([k, n]) => `<option value="${k}" ${s === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
     ${t._st ? '' : `<small class="mut">Wartość kadry: ${money(tot)} • pensje: ${money(wages)}/tydz.</small>`}
-    <div class="card list"><div class="prow lh"><span class="pn mut">Zawodnik</span><span class="mini">Kond.</span><span class="lhc">OVR</span><span class="lhc">POT</span></div>${ps.map(p => `<div class="prow" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${esc(p.n)}<small>${flag(p.nat)} ${p.age} l. • ${money(p.val)} ${morale(p)} ${stTag(p)}</small></div>
+    <div class="card list"><div class="prow lh"><span class="pn mut">Zawodnik</span><span class="mini">Kond.</span><span class="lhc">OVR</span><span class="lhc">POT</span></div>${ps.map(p => `<div class="prow" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${esc(p.n)}<small>${flag(p.nat)} ${p.age} l. • ${p.tid === S.user ? ROLES[roleOf(p)][0].replace(' zawodnik', '') : money(p.val)} ${morale(p)} ${stTag(p)}</small></div>
       <span class="mini">${Math.round(p.fit)}%</span>${ovrTag(p.ovr)}<span class="potc">${p.pot}</span></div>`).join('')}</div>`;
 }
 const TAC = [['press', 'Pressing', ['Niski blok', 'Średni', 'Wysoki pressing'], 'Wysoki pressing częściej odbiera piłkę, ale szybciej męczy zawodników.'],
@@ -409,7 +409,10 @@ ACT.info = id => {
   if (mine) {
     act = `<div class="btns"><button class="btn sm pri" data-act="chat" data-arg="${p.id}">💬 Porozmawiaj</button></div>
       ${p.loan ? `<p class="mut">Wypożyczony z ${esc(club(p.loan.from).name)} do końca sezonu.</p><div class="btns"><button class="btn sm red" data-act="release" data-arg="${p.id}">Zakończ wypożyczenie</button></div>` : `
-      <h3>Kontrakt (${p.con} ${p.con === 1 ? 'rok' : 'lata'})</h3><div class="btns">${[1, 2, 3, 4, 5].map(y => `<button class="btn sm" data-act="renew" data-arg="${p.id}:${y}">${y} l. • ${money(renewDemand(p, y))}/t</button>`).join('')}</div>
+      <h3>Kontrakt (${p.con} ${p.con === 1 ? 'rok' : 'lata'}) • rola: ${ROLES[roleOf(p)][0]}</h3>
+      <div class="btns"><button class="btn sm pri" data-act="rennego" data-arg="${p.id}">📝 Negocjuj nowy kontrakt</button></div>
+      <div class="kv"><div><span>Rola w składzie</span><select data-change="setrole" data-pid="${p.id}">${ROLE_ORD.slice().reverse().filter(r => r !== 'pros' || p.age <= 21).map(r => `<option value="${r}" ${roleOf(p) === r ? 'selected' : ''}>${ROLES[r][0]}</option>`).join('')}</select></div></div>
+      <small class="mut">Zawodnik oczekuje roli: <b>${ROLES[expectedRole(p)][0].toLowerCase()}</b>. Rola to obietnica minut – ${ROLES[roleOf(p)][2] ? `co najmniej ok. ${Math.round(ROLES[roleOf(p)][2] * 100)}% gry` : 'bez gwarancji gry'}. Degradacja obniża morale, a niespełniona obietnica frustruje.</small>
       <div class="btns"><button class="btn sm ${p.listed ? 'pri' : ''}" data-act="list" data-arg="${p.id}">${p.listed ? '✔ Na liście transferowej' : 'Wystaw na sprzedaż'}</button><button class="btn sm" data-act="loanout" data-arg="${p.id}">Wypożycz</button><button class="btn sm red" data-act="release" data-arg="${p.id}">Rozwiąż (${money(p.wage * 20 * p.con)})</button></div>`}`;
   } else if (p.tid === -3) {
     act = `<div class="btns"><button class="btn pri sp" data-act="promote" data-arg="${p.id}">⬆ Awans do pierwszego zespołu</button><button class="btn red" data-act="relyouth" data-arg="${p.id}">Zwolnij</button></div>`;
@@ -518,17 +521,19 @@ function renderNego(note) {
       <small class="mut">${esc(c.name)} • wartość ${money(p.val)} • budżet ${money(ut.tb)}</small>
       ${releaseClause(p) ? `<br><small class="warn">📜 Klauzula odstępnego: <b>${money(releaseClause(p))}</b> – wpłata całości (bez rat) gwarantuje zgodę klubu.</small>` : ''}
       <div class="stepper"><button class="btn" data-act="fee" data-arg="-1">−</button><b>${money(NEG.fee)}</b><button class="btn" data-act="fee" data-arg="1">+</button></div>
-      ${(() => { const a = askPrice(p), lo = Math.round(a * 0.5), hi = Math.round(Math.max(a * 1.6, releaseClause(p) || 0)), pc = v => clamp((v - lo) / (hi - lo) * 100, 0, 100); return `<div class="slider"><input type="range" min="${lo}" max="${hi}" step="${feeStep(a)}" value="${clamp(NEG.fee, lo, hi)}" data-change="negfee"><div class="marks"><i style="left:${pc(p.val)}%" title="wartość"></i><i class="b" style="left:${pc(ut.tb)}%"></i></div><small class="mut">▮ wartość ${money(p.val)} • <span class="warn">▮</span> budżet ${money(ut.tb)} • cierpliwość klubu: ${'●'.repeat(Math.max(0, 3 - (p._bids || 0)))}${'○'.repeat(Math.min(3, p._bids || 0))}</small></div>`; })()}
+      <div class="numrow"><span>Wpisz kwotę (€):</span><input class="numin" type="number" inputmode="numeric" min="0" step="10000" value="${NEG.fee}" data-change="negfeenum"></div>
+      ${(() => { const a = askPrice(p), lo = Math.round(a * 0.5), hi = Math.round(Math.max(a * 1.6, releaseClause(p) || 0)), pc = v => clamp((v - lo) / (hi - lo) * 100, 0, 100); return `<div class="slider"><input type="range" min="${lo}" max="${hi}" step="${feeStep(a)}" value="${clamp(NEG.fee, lo, hi)}" data-change="negfee"><div class="marks"><i style="left:${pc(p.val)}%" title="wartość"></i><i class="b" style="left:${pc(ut.tb)}%"></i></div><small class="mut">▮ wartość ${money(p.val)} • <span class="warn">▮</span> budżet ${money(ut.tb)} • cierpliwość klubu: ${'●'.repeat(Math.max(0, 4 - (p._bids || 0)))}${'○'.repeat(Math.min(4, p._bids || 0))}</small></div>`; })()}
       <div class="seg"><button class="btn sm ${NEG.inst ? 'on' : ''}" data-act="neginst">💳 Raty</button><button class="btn sm ${NEG.sellOn ? 'on' : ''}" data-act="negsellon">🔁 Klauzula odsprzedaży 15%</button>${releaseClause(p) ? `<button class="btn sm" data-act="negrc">📜 Klauzula</button>` : ''}</div>
       <small class="mut">${NEG.inst ? `Raty: teraz ${money(upfront(NEG.fee, NEG))}, potem 2 × ${money(Math.round((Math.round(NEG.fee * INST_K) - upfront(NEG.fee, NEG)) / 2))} na koniec kolejnych sezonów (łącznie +10%).` : 'Płatność jednorazowa.'}${NEG.sellOn ? ' Odsprzedaż: klub sprzedający obniża cenę o ok. 10%, ale dostanie 15% z przyszłej sprzedaży.' : ''}</small>
       ${note ? `<p class="${note.cls}">${esc(note.t)}</p>` : ''}
-      <div class="btns"><button class="btn pri sp" data-act="sendbid">Złóż ofertę</button>${NEG.counter ? `<button class="btn" data-act="acccounter">Przyjmij kontrę</button>` : ''}</div>
+      <div class="btns"><button class="btn pri sp" data-act="sendbid">Złóż ofertę</button>${NEG.counter ? `<button class="btn" data-act="acccounter">Przyjmij ${money(NEG.counter)}</button>` : ''}</div>
       <div class="btns"><button class="btn full" data-act="close">Anuluj</button></div>`);
   } else {
     const dem = wageDemand(p);
     modal(`<h2>Warunki kontraktu</h2><div class="row">${posTag(p.pos)}<b class="sp">${esc(p.n)}</b>${ovrShow(p)}</div>
       <small class="mut">Agent zawodnika oczekuje ok. ${money(dem)}/tydz.${NEG.fee ? ` • kwota transferu: ${money(NEG.fee)}` : ''}</small>
       <h3>Pensja tygodniowa</h3><div class="stepper"><button class="btn" data-act="wage" data-arg="-1">−</button><b>${money(NEG.wage)}</b><button class="btn" data-act="wage" data-arg="1">+</button></div>
+      <div class="numrow"><span>Wpisz pensję (€/tydz.):</span><input class="numin" type="number" inputmode="numeric" min="0" step="100" value="${NEG.wage}" data-change="negwagenum"></div>
       <h3>Długość umowy</h3><div class="seg">${[1, 2, 3, 4, 5].map(y => `<button class="btn sm ${NEG.years === y ? 'on' : ''}" data-act="years" data-arg="${y}">${y} l.</button>`).join('')}</div>
       ${note ? `<p class="${note.cls}">${esc(note.t)}</p>` : ''}
       <div class="btns"><button class="btn pri sp" data-act="sendterms">Zaproponuj kontrakt</button></div><div class="btns"><button class="btn full" data-act="close">Anuluj</button></div>`);
@@ -538,6 +543,31 @@ ACT.fee = d => { NEG.fee = Math.max(0, NEG.fee + +d * feeStep(NEG.fee)); renderN
 ACT.wage = d => { NEG.wage = Math.max(500, NEG.wage + +d * (NEG.wage >= 50000 ? 5000 : NEG.wage >= 10000 ? 1000 : 250)); renderNego(); };
 ACT.years = y => { NEG.years = +y; renderNego(); };
 CHG.negfee = v => { NEG.fee = +v; NEG.counter = null; renderNego(); };
+CHG.negfeenum = v => { const n = Math.max(0, Math.round(+v || 0)); NEG.fee = n; NEG.counter = null; renderNego(); };
+CHG.negwagenum = v => { NEG.wage = Math.max(0, Math.round(+v || 0)); renderNego(); };
+CHG.setrole = (v, el) => { toast(setRole(+el.dataset.pid, v)); ACT.info(el.dataset.pid); render(); };
+let REN = null;
+ACT.rennego = id => { const p = pget(+id); const role = roleOf(p); REN = { pid: p.id, role, years: p.age >= 31 ? 1 : 3, wage: contractDemand(p, p.age >= 31 ? 1 : 3, role), counter: null }; renderRen(); };
+function renderRen(note) {
+  const p = pget(REN.pid), dem = contractDemand(p, REN.years, REN.role), exp = expectedRole(p);
+  modal(`<h2>📝 Nowy kontrakt</h2><div class="row">${posTag(p.pos)}<b class="sp">${esc(p.n)}</b>${ovrTag(p.ovr)}</div>
+    <small class="mut">Obecnie: ${money(p.wage)}/tydz., ${p.con} ${p.con === 1 ? 'rok' : 'lata'} • ${pers(p)} • oczekuje roli: <b>${ROLES[exp][0].toLowerCase()}</b></small>
+    <h3>Rola w składzie</h3><div class="seg">${ROLE_ORD.slice().reverse().filter(r => r !== 'pros' || p.age <= 21).map(r => `<button class="btn sm ${REN.role === r ? 'on' : ''}" data-act="renrole" data-arg="${r}">${ROLES[r][0]}</button>`).join('')}</div>
+    <small class="mut">${roleGap(p, REN.role) > 0 ? '⚠️ Proponujesz mniejszą rolę, niż oczekuje – zażąda wyższej pensji, a ambitni mogą odmówić.' : roleGap(p, REN.role) < 0 ? '✨ Większa rola niż oczekuje – zawodnik będzie zachwycony, ale musisz dać mu grać.' : 'Rola zgodna z oczekiwaniami.'}</small>
+    <h3>Długość umowy</h3><div class="seg">${[1, 2, 3, 4, 5].map(y => `<button class="btn sm ${REN.years === y ? 'on' : ''}" data-act="renyears" data-arg="${y}">${y} l.</button>`).join('')}</div>
+    <h3>Pensja tygodniowa</h3><div class="stepper"><button class="btn" data-act="renwage" data-arg="-1">−</button><b>${money(REN.wage)}</b><button class="btn" data-act="renwage" data-arg="1">+</button></div>
+    <div class="numrow"><span>Wpisz pensję (€/tydz.):</span><input class="numin" type="number" inputmode="numeric" min="0" step="100" value="${REN.wage}" data-change="renwagenum"></div>
+    <small class="mut">Agent sugeruje ok. ${money(dem)}/tydz.</small>
+    ${note ? `<p class="${note.cls}">${esc(note.t)}</p>` : ''}
+    <div class="btns"><button class="btn pri sp" data-act="rensend">Zaproponuj</button>${REN.counter ? `<button class="btn" data-act="renacc">Zgoda na ${money(REN.counter)}</button>` : ''}</div>
+    <div class="btns"><button class="btn full" data-act="info" data-arg="${p.id}">Wróć do karty</button></div>`);
+}
+ACT.renrole = r => { REN.role = r; REN.counter = null; renderRen(); };
+ACT.renyears = y => { REN.years = +y; REN.counter = null; renderRen(); };
+ACT.renwage = d => { REN.wage = Math.max(500, REN.wage + +d * (REN.wage >= 50000 ? 5000 : REN.wage >= 10000 ? 1000 : 250)); renderRen(); };
+CHG.renwagenum = v => { REN.wage = Math.max(0, Math.round(+v || 0)); renderRen(); };
+ACT.rensend = () => { const r = negotiateRenewal(REN.pid, REN.wage, REN.years, REN.role); if (r.res === 'accept') { toast(r.msg, 'ok'); ACT.info(REN.pid); render(); return; } if (r.res === 'counter') REN.counter = r.counter; else REN.counter = null; renderRen({ cls: r.res === 'counter' ? 'warn' : 'bad', t: r.msg }); };
+ACT.renacc = () => { REN.wage = REN.counter; ACT.rensend(); };
 ACT.neginst = () => { NEG.inst = !NEG.inst; NEG.counter = null; renderNego(); };
 ACT.negsellon = () => { NEG.sellOn = !NEG.sellOn; NEG.counter = null; renderNego(); };
 ACT.negrc = () => { NEG.fee = releaseClause(pget(NEG.pid)); NEG.inst = false; renderNego(); };
@@ -559,7 +589,7 @@ ACT.sendterms = () => {
 
 /* ---------- ROZGRYWKI ---------- */
 function vComps() {
-  const head = navCur() !== 'comps' ? '' : tabs([['cal', '📅 Terminarz'], ['league', 'Ligi'], ['cup', 'Puchary krajowe'], ['euro', 'Puchary UEFA'], ['rank', 'Rankingi'], ['nt', 'Reprezentacje'], ['hist', 'Historia']], UI.compTab, 'ctab');
+  const head = navCur() !== 'comps' ? '' : tabs([['cal', '📅 Terminarz'], ['league', 'Ligi'], ['cup', 'Puchary krajowe'], ['euro', 'Puchary UEFA'], ['nt', 'Reprezentacje'], ['hist', 'Historia']], UI.compTab, 'ctab');
   return head + ({ cal: vCal, league: vLeague, cup: vCup, euro: vEuro, rank: vRank, nt: vNT, hist: vHist })[UI.compTab]();
 }
 ACT.ctab = a => { if (a !== UI.compTab) navPush(); UI.compTab = a; render(); };
@@ -892,9 +922,15 @@ function vNews() { return `<div class="card">${S.news.map(n => `<div class="msg"
 
 /* ---------- KLUB ---------- */
 function vClub() {
-  const head = navCur() !== 'club' ? '' : tabs([['mgr', 'Trener'], ['troph', 'Gablota'], ['acad', 'Akademia'], ['fin', 'Finanse'], ['fac', 'Obiekty'], ['staff', 'Sztab'], ['nt', 'Reprezentacja'], ['game', 'Gra']], UI.clubTab, 'cltab');
-  return head + ({ mgr: vMgr, troph: vTroph, acad: vAcad, staff: vStaff, fin: vFin, fac: vFac, nt: vNTManage, game: vGame })[UI.clubTab]();
+  if (!['mgr', 'troph', 'nt', 'game'].includes(UI.clubTab)) UI.clubTab = 'mgr';
+  const head = tabs([['mgr', 'Trener'], ['troph', 'Gablota'], ['nt', 'Reprezentacja'], ['game', 'Gra']], UI.clubTab, 'cltab');
+  return head + ({ mgr: vMgr, troph: vTroph, nt: vNTManage, game: vGame })[UI.clubTab]();
 }
+function vOffice() {
+  if (!['fin', 'staff', 'rank'].includes(UI.offTab)) UI.offTab = 'fin';
+  return tabs([['fin', '💶 Finanse'], ['staff', '🧑‍💼 Sztab'], ['rank', '🏆 Rankingi']], UI.offTab, 'offtab') + ({ fin: vFin, staff: vStaff, rank: vRank })[UI.offTab]();
+}
+ACT.offtab = a => { if (a !== UI.offTab) navPush(); UI.offTab = a; render(); };
 ACT.cltab = a => { if (a !== UI.clubTab) navPush(); UI.clubTab = a; render(); };
 function vFin() {
   const ut = userClub(), lf = ut.lastFin, bill = sum(ut.players.map(p => p.wage)), sc = sum(S.scouts.map(s => s.cost));
@@ -955,27 +991,34 @@ function vStaff() {
 ACT.hirestaff = a => { const [k, i] = a.split(':'); if (!confirm('Zatrudnić nową osobę do sztabu?')) return; const r = hireStaff(k, +i); toast(r.msg, r.ok ? 'ok' : 'bad'); render(); };
 function vAcad() {
   const A = S.acad, ys = A.youth.slice().sort((a, b) => b.acad.est - a.acad.est);
-  const f = (k, d) => `<div class="row" style="margin:8px 0"><div class="sp"><b>${ACAD_NAMES[k]}</b><br><small class="mut">${d}</small></div><span class="stars">${'★'.repeat(A[k])}${'☆'.repeat(5 - A[k])}</span>${A[k] < 5 ? `<button class="btn sm" data-act="upfac" data-arg="${k}">${money(FAC_COST(A[k]))}</button>` : ''}</div>`;
   const potStars = v => { const n = clamp(Math.round((v - 50) / 9), 1, 5); return '★'.repeat(n) + '☆'.repeat(5 - n); };
-  return `<div class="card"><h2>🎓 Akademia</h2>
-    ${f('fac', 'Wyższy potencjał wychowanków')}${f('coach', 'Szybszy rozwój i trafniejsza ocena potencjału')}${f('rec', 'Więcej juniorów co sezon, większa szansa na talent pokolenia')}
-    <small class="mut">Koszt utrzymania: ${money(acadCost())}/tydz. • nabór: w marcu każdego sezonu.</small>
+  const prog = y => { const o0 = y.acad.ovr0 != null ? y.acad.ovr0 : y.ovr, gain = y.ovr - o0, pc = clamp(Math.round((y.ovr - 30) / Math.max(1, y.acad.est - 30) * 100), 0, 100); return `<div class="row" style="gap:6px"><div class="sp">${bar(pc)}</div><small class="${gain > 0 ? 'good' : 'mut'}">${gain > 0 ? '+' + gain : '±0'} OVR</small></div>`; };
+  const ready = ys.filter(y => y.ovr >= teamLevel(userClub()) - 8);
+  return `<div class="card"><div class="row"><h2 class="sp" style="margin:0">🎓 Akademia</h2><button class="btn sm" data-act="nav" data-arg="fac">🏗️ Rozbudowa</button></div>
+    <div class="grid3" style="margin-top:8px"><div class="card stat"><small>Juniorzy</small><b>${ys.length}</b></div><div class="card stat"><small>Najwyższy pot.</small><b>${ys.length ? '~' + ys[0].acad.est : '–'}</b></div><div class="card stat"><small>Gotowi</small><b>${ready.length}</b></div></div>
+    <small class="mut">Infrastruktura ${A.fac}/5 • trenerzy ${A.coach}/5 • rekrutacja ${A.rec}/5 • koszt ${money(acadCost())}/tydz. • nabór w marcu.</small>
     <h3>Region rekrutacji</h3><select data-change="acreg" style="width:100%"><option value="">Kraj klubu (${S.countries[userClub().cc].name})</option>${NATIONS.slice().sort((a, b) => a.name.localeCompare(b.name, 'pl')).map(n => `<option value="${n.code}" ${A.region === n.code ? 'selected' : ''}>${n.flag} ${n.name}</option>`).join('')}</select></div>
-    <h3>Juniorzy (${ys.length})</h3>
-    <div class="card list">${ys.map(y => `<div class="prow" data-act="info" data-arg="${y.id}">${posTag(y.pos)}<div class="pn">${flag(y.nat)} ${esc(y.n)}<small>${y.age} l. • potencjał <span class="stars">${potStars(y.acad.est)}</span> (~${y.acad.est})</small></div>${ovrTag(y.ovr)}<button class="btn sm" data-act="promote" data-arg="${y.id}">⬆</button><button class="ibtn" data-act="relyouth" data-arg="${y.id}">✕</button></div>`).join('') || empty('🎓', 'Brak juniorów', 'Nabór odbywa się w marcu. Rozbuduj Rekrutację, by przyszło więcej talentów.')}</div>
+    <h3>Juniorzy – rozwój</h3>
+    <div class="card list">${ys.map(y => `<div class="prow" data-act="info" data-arg="${y.id}" style="flex-wrap:wrap">${posTag(y.pos)}<div class="pn">${flag(y.nat)} ${esc(y.n)}<small>${y.age} l. • ${pers(y)} • potencjał <span class="stars">${potStars(y.acad.est)}</span> (~${y.acad.est})${y.focus != null ? ' • 🎯 trening specjalny' : ''}${(S.mentors || []).some(x => x.p === y.id) ? ' • 🧑‍🏫 mentor' : ''}</small></div>${ovrTag(y.ovr)}<button class="btn sm" data-act="promote" data-arg="${y.id}">⬆</button><button class="ibtn" data-act="relyouth" data-arg="${y.id}">✕</button><div style="flex-basis:100%">${prog(y)}</div></div>`).join('') || empty('🎓', 'Brak juniorów', 'Nabór odbywa się w marcu. Rozbuduj rekrutację w zakładce Obiekty, by przyszło więcej talentów.')}</div>
+    ${ready.length ? `<small class="good">✔ Gotowi do pierwszego zespołu: ${ready.map(y => esc(lastName(y))).join(', ')}.</small><br>` : ''}
     ${(S.mentors || []).length ? `<h3>🧑‍🏫 Mentorzy</h3><div class="card list">${S.mentors.map(x => { const m = pget(x.m), u = pget(x.p); return m && u ? `<div class="prow" data-act="info" data-arg="${u.id}"><div class="pn">${esc(m.n)} → ${esc(u.n)}<small>${pers(m)} • uczeń: ${pers(u)}</small></div></div>` : ''; }).join('')}</div>` : ''}
-    <small class="mut">⬆ – awans do pierwszego zespołu. Kliknij juniora, by ustawić trening specjalny, mentora lub wypożyczenie. Juniorzy, którzy skończą 21 lat bez awansu, odchodzą z klubu.</small>`;
+    <small class="mut">Pasek pokazuje drogę od obecnej oceny do szacowanego potencjału. ⬆ – awans do pierwszego zespołu. Kliknij juniora, by ustawić trening specjalny, mentora lub wypożyczenie. Juniorzy, którzy skończą 21 lat bez awansu, odchodzą z klubu.</small>`;
 }
 CHG.acreg = v => { S.acad.region = v; saveSoon(); };
 ACT.promote = id => { const r = promoteYouth(+id); toast(r.msg); closeModal(); render(); };
 ACT.relyouth = id => { if (confirm('Zwolnić juniora z akademii?')) { releaseYouth(+id); closeModal(); render(); } };
 function vFac() {
-  const ut = userClub();
-  const f = (k, n, d) => `<div class="card"><div class="row"><b class="sp">${n}</b><span class="stars">${'★'.repeat(facGet(k))}${'☆'.repeat(5 - facGet(k))}</span></div><small class="mut">${d}</small>
-    <div class="btns">${facGet(k) < 5 ? `<button class="btn sm pri" data-act="upfac" data-arg="${k}">Rozbuduj • ${money(FAC_COST(facGet(k)))}</button>` : '<span class="pill g">Maksymalny poziom</span>'}</div></div>`;
-  return f('train', 'Ośrodek treningowy', 'Przyspiesza rozwój zawodników.') + `<div class="card"><small class="mut">Obiekty akademii rozbudujesz w zakładce Akademia.</small></div>` +
-    stadiumCard(ut);
+  const ut = userClub(), A = S.acad;
+  const lvl = n => `<span class="stars">${'★'.repeat(n)}${'☆'.repeat(5 - n)}</span>`;
+  const fac = (k, n, d) => `<div class="row" style="margin:10px 0"><div class="sp"><b>${n}</b><br><small class="mut">${d}</small></div>${lvl(facGet(k))}${facGet(k) < 5 ? `<button class="btn sm" data-act="upfac" data-arg="${k}">${money(FAC_COST(facGet(k)))}</button>` : ''}</div>`;
+  const com = k => `<div class="row" style="margin:10px 0"><div class="sp"><b>${COMM[k][0]}</b><br><small class="mut">${COMM[k][1]}</small></div>${lvl(commLvl(k))}${commLvl(k) < 5 ? `<button class="btn sm" data-act="upcomm" data-arg="${k}">${money(commCost(k, commLvl(k)))}</button>` : ''}</div>`;
+  return `<div class="card"><h2>⚽ Ośrodek treningowy</h2>${fac('train', 'Boiska i siłownia', 'Szybszy rozwój wszystkich zawodników.')}</div>
+    <div class="card"><h2>🎓 Akademia – obiekty</h2>${fac('fac', ACAD_NAMES.fac, 'Wyższy potencjał wychowanków.')}${fac('coach', ACAD_NAMES.coach, 'Szybszy rozwój juniorów i trafniejsza ocena potencjału.')}${fac('rec', ACAD_NAMES.rec, 'Więcej juniorów co sezon, większa szansa na talent pokolenia.')}<small class="mut">Utrzymanie akademii: ${money(acadCost())}/tydz.</small></div>
+    <div class="card"><h2>💼 Obiekty komercyjne</h2>${com('gastro')}${com('park')}${com('shop')}${com('hotel')}
+      <small class="mut">${commLvl('hotel') ? `Hotel: ${money(hotelIncome())}/tydz. ` : ''}${commLvl('shop') ? `Sklep: ${money(shopIncome())}/tydz. ` : ''}Obiekty komercyjne zwiększają przychody klubu – zwracają się po kilku sezonach.</small></div>
+    ` + stadiumCard(ut);
 }
+ACT.upcomm = k => { const r = upgradeComm(k); toast(r.msg, r.ok ? 'ok' : 'bad'); render(); };
 const stadExp = c => { const add = Math.max(1000, Math.round(c.cap * 0.1 / 500) * 500); return { add, cost: Math.round(add * c.price * 90 / 1e5) * 1e5 }; };
 function stadiumCard(ut) {
   const e = stadExp(ut), fill = clamp(0.55 + ut.rep / 250 + (S.leagues[ut.lg].tier === 1 ? 0.05 : 0) + (S.fans != null ? (S.fans - 60) / 300 : 0), 0.3, 1) * (ut.cap0 ? Math.min(1, ut.cap0 * 1.25 / ut.cap) : 1), gate = Math.round(ut.cap * fill * ut.price);

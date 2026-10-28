@@ -280,31 +280,6 @@ COUNTRY_DATA.push({
         ['Arnaud Kalimuendo', 'ST', 24, 78, 82, 'FRA'],
         ['Taiwo Awoniyi', 'ST', 29, 73, 73, 'NGA']
       ]],
-      ['West Ham United', 'WHU', '#7A263A', '#F3D459', 75, 62500, [
-        ['Alphonse Areola', 'GK', 33, 78, 78, 'FRA'],
-        ['Mads Hermansen', 'GK', 26, 77, 80, 'DEN'],
-        ['Łukasz Fabiański', 'GK', 41, 71, 71, 'POL'],
-        ['Max Kilman', 'CB', 29, 79, 79, 'ENG'],
-        ['Jean-Clair Todibo', 'CB', 26, 79, 81, 'FRA'],
-        ['Konstantinos Mavropanos', 'CB', 28, 77, 77, 'GRE'],
-        ['Igor Julio', 'CB', 28, 74, 75, 'BRA'],
-        ['Aaron Wan-Bissaka', 'RB', 28, 80, 80, 'COD'],
-        ['Kyle Walker-Peters', 'RB', 29, 76, 76, 'ENG'],
-        ['El Hadji Malick Diouf', 'LB', 21, 76, 83, 'SEN'],
-        ['Oliver Scarles', 'LB', 20, 66, 77, 'ENG'],
-        ['Tomáš Souček', 'CM', 31, 78, 78, 'CZE'],
-        ['Guido Rodríguez', 'CDM', 32, 77, 77, 'ARG'],
-        ['Mateus Fernandes', 'CM', 22, 76, 83, 'POR'],
-        ['Soungoutou Magassa', 'CDM', 23, 74, 80, 'FRA'],
-        ['Freddie Potts', 'CM', 23, 66, 73, 'ENG'],
-        ['Lucas Paquetá', 'CAM', 29, 81, 81, 'BRA'],
-        ['Jarrod Bowen', 'RW', 29, 83, 83, 'ENG', [83, 81, 77, 82, 46, 74]],
-        ['Crysencio Summerville', 'LW', 25, 77, 80, 'NED'],
-        ['Luis Guilherme', 'RW', 20, 70, 79, 'BRA'],
-        ['George Earthy', 'CAM', 21, 64, 74, 'ENG'],
-        ['Callum Wilson', 'ST', 34, 76, 76, 'ENG'],
-        ['Niclas Füllkrug', 'ST', 33, 77, 77, 'GER']
-      ]],
       ['Crystal Palace', 'CRY', '#1B458F', '#FFFFFF', 76, 25486, [
         ['Dean Henderson', 'GK', 29, 81, 81, 'ENG'],
         ['Walter Benítez', 'GK', 33, 76, 76, 'ARG'],
@@ -430,31 +405,6 @@ COUNTRY_DATA.push({
         ['Beto', 'ST', 28, 75, 76, 'POR'],
         ['Thierno Barry', 'ST', 24, 76, 81, 'FRA']
       ]],
-      ['Wolverhampton Wanderers', 'WOL', '#FDB913', '#231F20', 72, 31750, [
-        ['José Sá', 'GK', 33, 78, 78, 'POR'],
-        ['Sam Johnstone', 'GK', 33, 75, 75, 'ENG'],
-        ['Dan Bentley', 'GK', 33, 63, 63, 'ENG'],
-        ['Toti Gomes', 'CB', 27, 76, 78, 'POR'],
-        ['Santiago Bueno', 'CB', 27, 76, 77, 'URU'],
-        ['Emmanuel Agbadou', 'CB', 29, 76, 76, 'CIV'],
-        ['Yerson Mosquera', 'CB', 25, 75, 78, 'COL'],
-        ['Ladislav Krejčí', 'CB', 27, 77, 78, 'CZE'],
-        ['Matt Doherty', 'RB', 34, 74, 74, 'IRL'],
-        ['Jackson Tchatchoua', 'RB', 25, 74, 77, 'CMR'],
-        ['Hugo Bueno', 'LB', 24, 74, 78, 'ESP'],
-        ['David Møller Wolfe', 'LB', 24, 72, 76, 'NOR'],
-        ['André', 'CDM', 25, 78, 81, 'BRA'],
-        ['João Gomes', 'CM', 25, 79, 82, 'BRA'],
-        ['Marshall Munetsi', 'CM', 30, 75, 75, 'ZIM'],
-        ['Jean-Ricner Bellegarde', 'CAM', 28, 76, 77, 'HAI'],
-        ['Rodrigo Gomes', 'RM', 23, 74, 79, 'POR'],
-        ['Fer López', 'CAM', 22, 72, 80, 'ESP'],
-        ['Jhon Arias', 'RW', 29, 79, 79, 'COL'],
-        ['Hwang Hee-chan', 'LW', 30, 75, 75, 'KOR'],
-        ['Jørgen Strand Larsen', 'ST', 26, 78, 80, 'NOR'],
-        ['Tolu Arokodare', 'ST', 25, 74, 77, 'NGA'],
-        ['Saša Kalajdžić', 'ST', 29, 72, 72, 'AUT']
-      ]],
       ['Leeds United', 'LEE', '#FFFFFF', '#1D428A', 69, 37645, [
         ['Lucas Perri', 'GK', 28, 77, 79, 'BRA'],
         ['Illan Meslier', 'GK', 26, 74, 77, 'FRA'],
@@ -483,33 +433,6 @@ COUNTRY_DATA.push({
         ['Joël Piroe', 'ST', 27, 75, 76, 'NED'],
         ['Largie Ramazani', 'LW', 25, 72, 75, 'BEL']
       ]],
-      ['Burnley', 'BUR', '#6C1D45', '#99D6EA', 67, 21944, [
-        ['Martin Dúbravka', 'GK', 37, 76, 76, 'SVK'],
-        ['Max Weiß', 'GK', 22, 70, 78, 'GER'],
-        ['Václav Hladký', 'GK', 35, 67, 67, 'CZE'],
-        ['Maxime Estève', 'CB', 24, 76, 81, 'FRA'],
-        ['Hjalmar Ekdal', 'CB', 28, 74, 75, 'SWE'],
-        ['Axel Tuanzebe', 'CB', 28, 72, 72, 'COD'],
-        ['Joe Worrall', 'CB', 29, 72, 72, 'ENG'],
-        ['Bashir Humphreys', 'CB', 23, 70, 76, 'ENG'],
-        ['Kyle Walker', 'RB', 36, 78, 78, 'ENG'],
-        ['Connor Roberts', 'RB', 31, 71, 71, 'WAL'],
-        ['Oliver Sonne', 'RB', 25, 70, 74, 'PER'],
-        ['Quilindschy Hartman', 'LB', 24, 74, 79, 'NED'],
-        ['Lucas Pires', 'LB', 25, 72, 75, 'BRA'],
-        ['Josh Cullen', 'CDM', 30, 74, 74, 'IRL'],
-        ['Josh Laurent', 'CM', 31, 73, 73, 'ENG'],
-        ['Lesley Ugochukwu', 'CDM', 22, 74, 80, 'FRA'],
-        ['Florentino Luís', 'CDM', 27, 77, 78, 'POR'],
-        ['Hannibal Mejbri', 'CAM', 23, 73, 77, 'TUN'],
-        ['Loum Tchaouna', 'RW', 23, 73, 78, 'FRA'],
-        ['Jaidon Anthony', 'LM', 26, 74, 75, 'ENG'],
-        ['Marcus Edwards', 'RW', 27, 73, 74, 'ENG'],
-        ['Zian Flemming', 'ST', 28, 74, 74, 'NED'],
-        ['Lyle Foster', 'ST', 26, 73, 75, 'RSA'],
-        ['Armando Broja', 'ST', 25, 73, 76, 'ALB'],
-        ['Jacob Bruun Larsen', 'LW', 28, 71, 71, 'DEN']
-      ]],
       ['Sunderland', 'SUN', '#EB172B', '#FFFFFF', 68, 48707, [
         ['Robin Roefs', 'GK', 23, 75, 82, 'NED'],
         ['Anthony Patterson', 'GK', 26, 72, 75, 'ENG'],
@@ -535,6 +458,72 @@ COUNTRY_DATA.push({
         ['Wilson Isidor', 'ST', 26, 74, 76, 'FRA'],
         ['Brian Brobbey', 'ST', 24, 75, 79, 'NED'],
         ['Eliezer Mayenda', 'ST', 21, 70, 78, 'ESP']
+      ]],
+      ['Coventry City', 'COV', '#59CBE8', '#1A2B4C', 66, 32609, [
+        ['Oliver Dovin', 'GK', 24, 67, 73, 'SWE'],
+        ['Carl Rushworth', 'GK', 25, 67, 72, 'ENG'],
+        ['Ben Wilson', 'GK', 34, 62, 62, 'ENG'],
+        ['Bobby Thomas', 'CB', 25, 69, 72, 'ENG'],
+        ['Liam Kitching', 'CB', 27, 68, 69, 'ENG'],
+        ['Luis Binks', 'CB', 25, 66, 69, 'ENG'],
+        ['Joel Latibeaudiere', 'CB', 26, 65, 67, 'JAM'],
+        ['Milan van Ewijk', 'RB', 26, 70, 72, 'NED'],
+        ['Jay Dasilva', 'LB', 28, 67, 67, 'ENG'],
+        ['Jake Bidwell', 'LB', 33, 64, 64, 'ENG'],
+        ['Matt Grimes', 'CM', 31, 70, 70, 'ENG'],
+        ['Victor Torp', 'CM', 27, 69, 70, 'DEN'],
+        ['Josh Eccles', 'CM', 26, 66, 68, 'ENG'],
+        ['Jack Rudoni', 'CAM', 25, 71, 73, 'ENG'],
+        ['Tatsuhiro Sakamoto', 'RW', 30, 68, 68, 'JPN'],
+        ['Ephron Mason-Clark', 'LW', 27, 68, 69, 'ENG'],
+        ['Kaine Kesler-Hayden', 'RB', 24, 66, 71, 'ENG'],
+        ['Haji Wright', 'ST', 28, 72, 72, 'USA'],
+        ['Ellis Simms', 'ST', 25, 68, 71, 'ENG'],
+        ['Brandon Thomas-Asante', 'ST', 27, 68, 69, 'GHA'],
+        ['Norman Bassette', 'ST', 22, 64, 72, 'BEL']
+      ]],
+      ['Ipswich Town', 'IPS', '#3A64A3', '#FFFFFF', 67, 29673, [
+        ['Christian Walton', 'GK', 30, 70, 70, 'ENG'],
+        ['Alex Palmer', 'GK', 30, 71, 71, 'ENG'],
+        ['Dara O\'Shea', 'CB', 27, 72, 73, 'IRL'],
+        ['Jacob Greaves', 'CB', 26, 71, 73, 'ENG'],
+        ['Cedric Kipré', 'CB', 29, 69, 69, 'CIV'],
+        ['Darnell Furlong', 'RB', 31, 68, 68, 'ENG'],
+        ['Ben Johnson', 'RB', 26, 68, 69, 'ENG'],
+        ['Leif Davis', 'LB', 26, 73, 75, 'ENG'],
+        ['Ashley Young', 'LB', 41, 64, 64, 'ENG'],
+        ['Jens Cajuste', 'CM', 27, 72, 73, 'SWE'],
+        ['Azor Matusiwa', 'CDM', 28, 72, 72, 'NED'],
+        ['Jack Taylor', 'CM', 28, 68, 68, 'IRL'],
+        ['Marcelino Núñez', 'CM', 26, 70, 71, 'CHI'],
+        ['Kalvin Phillips', 'CDM', 30, 71, 71, 'ENG'],
+        ['Sammie Szmodics', 'CAM', 31, 70, 70, 'IRL'],
+        ['Conor Chaplin', 'CAM', 29, 69, 69, 'ENG'],
+        ['Jack Clarke', 'LW', 25, 73, 75, 'ENG'],
+        ['Jaden Philogene', 'LW', 24, 72, 76, 'ENG'],
+        ['Wes Burns', 'RW', 31, 68, 68, 'WAL'],
+        ['Kasey McAteer', 'RW', 25, 67, 71, 'ENG'],
+        ['George Hirst', 'ST', 27, 70, 71, 'SCO'],
+        ['Iván Azón', 'ST', 24, 68, 73, 'ESP'],
+        ['Sindre Walle Egeli', 'ST', 20, 66, 76, 'NOR']
+      ]],
+      ['Hull City', 'HUL', '#F5A12D', '#000000', 66, 25586, [
+        ['Ivor Pandur', 'GK', 26, 68, 71, 'CRO'],
+        ['Dillon Phillips', 'GK', 31, 62, 62, 'ENG'],
+        ['John Egan', 'CB', 34, 67, 67, 'IRL'],
+        ['Charlie Hughes', 'CB', 23, 66, 72, 'ENG'],
+        ['Lewie Coyle', 'RB', 31, 66, 66, 'ENG'],
+        ['Cody Drameh', 'RB', 24, 66, 70, 'ENG'],
+        ['Ryan Giles', 'LB', 26, 68, 70, 'ENG'],
+        ['Regan Slater', 'CM', 27, 67, 68, 'ENG'],
+        ['Matt Crooks', 'CM', 32, 65, 65, 'ENG'],
+        ['Mohamed Belloumi', 'RW', 24, 67, 72, 'ALG'],
+        ['Abdülkadir Ömür', 'CAM', 27, 68, 69, 'TUR'],
+        ['Liam Millar', 'LW', 27, 67, 68, 'CAN'],
+        ['Joe Gelhardt', 'ST', 24, 67, 71, 'ENG'],
+        ['Kyle Joseph', 'ST', 25, 66, 69, 'SCO'],
+        ['Oli McBurnie', 'ST', 30, 67, 67, 'SCO'],
+        ['Enis Destan', 'ST', 24, 64, 69, 'TUR']
       ]]
     ]},
     { id: 'ENG2', name: 'Championship', tier: 2, clubs: [
@@ -560,49 +549,6 @@ COUNTRY_DATA.push({
         ['Cameron Archer', 'ST', 24, 70, 75, 'ENG'],
         ['Adam Armstrong', 'ST', 29, 71, 71, 'ENG'],
         ['Ross Stewart', 'ST', 30, 66, 66, 'SCO']
-      ]],
-      ['Leicester City', 'LEI', '#003090', '#FDBE11', 66, 32262, [
-        ['Jakub Stolarczyk', 'GK', 25, 68, 74, 'POL'],
-        ['Asmir Begović', 'GK', 39, 64, 64, 'BIH'],
-        ['Jannik Vestergaard', 'CB', 34, 70, 70, 'DEN'],
-        ['Caleb Okoli', 'CB', 25, 70, 74, 'ITA'],
-        ['Wout Faes', 'CB', 28, 72, 72, 'BEL'],
-        ['Ben Nelson', 'CB', 22, 64, 72, 'ENG'],
-        ['Ricardo Pereira', 'RB', 33, 72, 72, 'POR'],
-        ['Luke Thomas', 'LB', 25, 66, 70, 'ENG'],
-        ['Victor Kristiansen', 'LB', 23, 70, 75, 'DEN'],
-        ['Harry Winks', 'CM', 30, 72, 72, 'ENG'],
-        ['Oliver Skipp', 'CDM', 26, 71, 73, 'ENG'],
-        ['Boubakary Soumaré', 'CDM', 27, 70, 71, 'FRA'],
-        ['Stephy Mavididi', 'LW', 28, 74, 74, 'ENG'],
-        ['Abdul Fatawu', 'RW', 22, 73, 80, 'GHA'],
-        ['Jordan Ayew', 'ST', 35, 70, 70, 'GHA'],
-        ['Patson Daka', 'ST', 28, 70, 70, 'ZAM']
-      ]],
-      ['Ipswich Town', 'IPS', '#3A64A3', '#FFFFFF', 64, 29673, [
-        ['Christian Walton', 'GK', 30, 70, 70, 'ENG'],
-        ['Alex Palmer', 'GK', 30, 71, 71, 'ENG'],
-        ['Dara O\'Shea', 'CB', 27, 72, 73, 'IRL'],
-        ['Jacob Greaves', 'CB', 26, 71, 73, 'ENG'],
-        ['Cedric Kipré', 'CB', 29, 69, 69, 'CIV'],
-        ['Darnell Furlong', 'RB', 31, 68, 68, 'ENG'],
-        ['Ben Johnson', 'RB', 26, 68, 69, 'ENG'],
-        ['Leif Davis', 'LB', 26, 73, 75, 'ENG'],
-        ['Ashley Young', 'LB', 41, 64, 64, 'ENG'],
-        ['Jens Cajuste', 'CM', 27, 72, 73, 'SWE'],
-        ['Azor Matusiwa', 'CDM', 28, 72, 72, 'NED'],
-        ['Jack Taylor', 'CM', 28, 68, 68, 'IRL'],
-        ['Marcelino Núñez', 'CM', 26, 70, 71, 'CHI'],
-        ['Kalvin Phillips', 'CDM', 30, 71, 71, 'ENG'],
-        ['Sammie Szmodics', 'CAM', 31, 70, 70, 'IRL'],
-        ['Conor Chaplin', 'CAM', 29, 69, 69, 'ENG'],
-        ['Jack Clarke', 'LW', 25, 73, 75, 'ENG'],
-        ['Jaden Philogene', 'LW', 24, 72, 76, 'ENG'],
-        ['Wes Burns', 'RW', 31, 68, 68, 'WAL'],
-        ['Kasey McAteer', 'RW', 25, 67, 71, 'ENG'],
-        ['George Hirst', 'ST', 27, 70, 71, 'SCO'],
-        ['Iván Azón', 'ST', 24, 68, 73, 'ESP'],
-        ['Sindre Walle Egeli', 'ST', 20, 66, 76, 'NOR']
       ]],
       ['Sheffield United', 'SHU', '#EE2737', '#FFFFFF', 62, 32050, [
         ['Michael Cooper', 'GK', 27, 70, 72, 'ENG'],
@@ -638,29 +584,6 @@ COUNTRY_DATA.push({
         ['Morgan Whittaker', 'RW', 25, 72, 74, 'ENG'],
         ['Tommy Conway', 'ST', 24, 69, 73, 'SCO'],
         ['David Strelec', 'ST', 25, 68, 72, 'SVK']
-      ]],
-      ['Coventry City', 'COV', '#59CBE8', '#1A2B4C', 61, 32609, [
-        ['Oliver Dovin', 'GK', 24, 67, 73, 'SWE'],
-        ['Carl Rushworth', 'GK', 25, 67, 72, 'ENG'],
-        ['Ben Wilson', 'GK', 34, 62, 62, 'ENG'],
-        ['Bobby Thomas', 'CB', 25, 69, 72, 'ENG'],
-        ['Liam Kitching', 'CB', 27, 68, 69, 'ENG'],
-        ['Luis Binks', 'CB', 25, 66, 69, 'ENG'],
-        ['Joel Latibeaudiere', 'CB', 26, 65, 67, 'JAM'],
-        ['Milan van Ewijk', 'RB', 26, 70, 72, 'NED'],
-        ['Jay Dasilva', 'LB', 28, 67, 67, 'ENG'],
-        ['Jake Bidwell', 'LB', 33, 64, 64, 'ENG'],
-        ['Matt Grimes', 'CM', 31, 70, 70, 'ENG'],
-        ['Victor Torp', 'CM', 27, 69, 70, 'DEN'],
-        ['Josh Eccles', 'CM', 26, 66, 68, 'ENG'],
-        ['Jack Rudoni', 'CAM', 25, 71, 73, 'ENG'],
-        ['Tatsuhiro Sakamoto', 'RW', 30, 68, 68, 'JPN'],
-        ['Ephron Mason-Clark', 'LW', 27, 68, 69, 'ENG'],
-        ['Kaine Kesler-Hayden', 'RB', 24, 66, 71, 'ENG'],
-        ['Haji Wright', 'ST', 28, 72, 72, 'USA'],
-        ['Ellis Simms', 'ST', 25, 68, 71, 'ENG'],
-        ['Brandon Thomas-Asante', 'ST', 27, 68, 69, 'GHA'],
-        ['Norman Bassette', 'ST', 22, 64, 72, 'BEL']
       ]],
       ['West Bromwich Albion', 'WBA', '#122F67', '#FFFFFF', 60, 26850, [
         ['Josh Griffiths', 'GK', 25, 67, 72, 'ENG'],
@@ -744,24 +667,6 @@ COUNTRY_DATA.push({
         ['Robert Bozeník', 'ST', 26, 66, 68, 'SVK'],
         ['Sam Gallagher', 'ST', 31, 66, 66, 'ENG'],
         ['Divin Mubama', 'ST', 22, 64, 72, 'ENG']
-      ]],
-      ['Hull City', 'HUL', '#F5A12D', '#000000', 57, 25586, [
-        ['Ivor Pandur', 'GK', 26, 68, 71, 'CRO'],
-        ['Dillon Phillips', 'GK', 31, 62, 62, 'ENG'],
-        ['John Egan', 'CB', 34, 67, 67, 'IRL'],
-        ['Charlie Hughes', 'CB', 23, 66, 72, 'ENG'],
-        ['Lewie Coyle', 'RB', 31, 66, 66, 'ENG'],
-        ['Cody Drameh', 'RB', 24, 66, 70, 'ENG'],
-        ['Ryan Giles', 'LB', 26, 68, 70, 'ENG'],
-        ['Regan Slater', 'CM', 27, 67, 68, 'ENG'],
-        ['Matt Crooks', 'CM', 32, 65, 65, 'ENG'],
-        ['Mohamed Belloumi', 'RW', 24, 67, 72, 'ALG'],
-        ['Abdülkadir Ömür', 'CAM', 27, 68, 69, 'TUR'],
-        ['Liam Millar', 'LW', 27, 67, 68, 'CAN'],
-        ['Joe Gelhardt', 'ST', 24, 67, 71, 'ENG'],
-        ['Kyle Joseph', 'ST', 25, 66, 69, 'SCO'],
-        ['Oli McBurnie', 'ST', 30, 67, 67, 'SCO'],
-        ['Enis Destan', 'ST', 24, 64, 69, 'TUR']
       ]],
       ['Swansea City', 'SWA', '#FFFFFF', '#121212', 57, 21088, [
         ['Lawrence Vigouroux', 'GK', 32, 67, 67, 'CHI'],
@@ -905,25 +810,6 @@ COUNTRY_DATA.push({
         ['Rhian Brewster', 'ST', 26, 65, 67, 'ENG'],
         ['Patrick Agyemang', 'ST', 25, 67, 71, 'USA']
       ]],
-      ['Sheffield Wednesday', 'SHW', '#0E00F7', '#FFFFFF', 53, 39732, [
-        ['Pierce Charles', 'GK', 21, 65, 74, 'NIR'],
-        ['Ben Hamer', 'GK', 38, 60, 60, 'ENG'],
-        ['Dominic Iorfa', 'CB', 31, 65, 65, 'ENG'],
-        ['Di\'Shon Bernard', 'CB', 26, 64, 66, 'JAM'],
-        ['Gabriel Otegbayo', 'CB', 25, 62, 67, 'ENG'],
-        ['Yan Valery', 'RB', 27, 64, 65, 'TUN'],
-        ['Liam Palmer', 'RB', 35, 62, 62, 'SCO'],
-        ['Max Lowe', 'LB', 29, 63, 63, 'ENG'],
-        ['Harry Amass', 'LB', 19, 64, 77, 'ENG'],
-        ['Barry Bannan', 'CM', 36, 67, 67, 'SCO'],
-        ['Svante Ingelsson', 'CM', 28, 64, 64, 'SWE'],
-        ['Nathaniel Chalobah', 'CDM', 31, 64, 64, 'ENG'],
-        ['Sean Fusire', 'CM', 21, 60, 70, 'ENG'],
-        ['George Brown', 'CM', 22, 60, 68, 'ENG'],
-        ['Bailey Cadamarteri', 'ST', 21, 62, 72, 'JAM'],
-        ['Ike Ugbo', 'ST', 28, 64, 64, 'CAN'],
-        ['Jamal Lowe', 'ST', 32, 63, 63, 'JAM']
-      ]],
       ['Portsmouth', 'POR', '#001489', '#FFFFFF', 54, 20867, [
         ['Nicolas Schmid', 'GK', 29, 67, 68, 'AUT'],
         ['Jordan Archer', 'GK', 33, 62, 62, 'SCO'],
@@ -1007,24 +893,116 @@ COUNTRY_DATA.push({
         ['Lyndon Dykes', 'ST', 31, 65, 65, 'SCO'],
         ['Charlie Kelman', 'ST', 25, 62, 65, 'USA']
       ]],
-      ['Oxford United', 'OXF', '#FFF200', '#0B1F65', 50, 12500, [
-        ['Jamie Cumming', 'GK', 27, 66, 67, 'ENG'],
-        ['Matt Ingram', 'GK', 32, 62, 62, 'ENG'],
-        ['Ciaron Brown', 'CB', 28, 65, 65, 'NIR'],
-        ['Elliott Moore', 'CB', 29, 64, 64, 'ENG'],
-        ['Michał Helik', 'CB', 31, 65, 65, 'POL'],
-        ['Sam Long', 'RB', 31, 63, 63, 'ENG'],
-        ['Hidde ter Avest', 'RB', 29, 63, 63, 'NED'],
-        ['Greg Leigh', 'LB', 32, 62, 62, 'JAM'],
-        ['Brodie Spencer', 'RB', 22, 62, 69, 'NIR'],
-        ['Cameron Brannagan', 'CM', 30, 66, 66, 'ENG'],
-        ['Will Vaulks', 'CDM', 33, 63, 63, 'WAL'],
-        ['Tyler Goodrham', 'CAM', 23, 63, 69, 'ENG'],
-        ['Przemysław Płacheta', 'LW', 28, 65, 65, 'POL'],
-        ['Siriki Dembélé', 'RW', 30, 64, 64, 'BFA'],
-        ['Matt Phillips', 'RW', 35, 62, 62, 'SCO'],
-        ['Mark Harris', 'ST', 27, 64, 65, 'WAL'],
-        ['Will Lankshear', 'ST', 21, 63, 72, 'ENG']
+      ['West Ham United', 'WHU', '#7A263A', '#F3D459', 66, 62500, [
+        ['Alphonse Areola', 'GK', 33, 78, 78, 'FRA'],
+        ['Mads Hermansen', 'GK', 26, 77, 80, 'DEN'],
+        ['Łukasz Fabiański', 'GK', 41, 71, 71, 'POL'],
+        ['Max Kilman', 'CB', 29, 79, 79, 'ENG'],
+        ['Jean-Clair Todibo', 'CB', 26, 79, 81, 'FRA'],
+        ['Konstantinos Mavropanos', 'CB', 28, 77, 77, 'GRE'],
+        ['Igor Julio', 'CB', 28, 74, 75, 'BRA'],
+        ['Aaron Wan-Bissaka', 'RB', 28, 80, 80, 'COD'],
+        ['Kyle Walker-Peters', 'RB', 29, 76, 76, 'ENG'],
+        ['El Hadji Malick Diouf', 'LB', 21, 76, 83, 'SEN'],
+        ['Oliver Scarles', 'LB', 20, 66, 77, 'ENG'],
+        ['Tomáš Souček', 'CM', 31, 78, 78, 'CZE'],
+        ['Guido Rodríguez', 'CDM', 32, 77, 77, 'ARG'],
+        ['Mateus Fernandes', 'CM', 22, 76, 83, 'POR'],
+        ['Soungoutou Magassa', 'CDM', 23, 74, 80, 'FRA'],
+        ['Freddie Potts', 'CM', 23, 66, 73, 'ENG'],
+        ['Lucas Paquetá', 'CAM', 29, 81, 81, 'BRA'],
+        ['Jarrod Bowen', 'RW', 29, 83, 83, 'ENG', [83, 81, 77, 82, 46, 74]],
+        ['Crysencio Summerville', 'LW', 25, 77, 80, 'NED'],
+        ['Luis Guilherme', 'RW', 20, 70, 79, 'BRA'],
+        ['George Earthy', 'CAM', 21, 64, 74, 'ENG'],
+        ['Callum Wilson', 'ST', 34, 76, 76, 'ENG'],
+        ['Niclas Füllkrug', 'ST', 33, 77, 77, 'GER']
+      ]],
+      ['Burnley', 'BUR', '#6C1D45', '#99D6EA', 64, 21944, [
+        ['Martin Dúbravka', 'GK', 37, 76, 76, 'SVK'],
+        ['Max Weiß', 'GK', 22, 70, 78, 'GER'],
+        ['Václav Hladký', 'GK', 35, 67, 67, 'CZE'],
+        ['Maxime Estève', 'CB', 24, 76, 81, 'FRA'],
+        ['Hjalmar Ekdal', 'CB', 28, 74, 75, 'SWE'],
+        ['Axel Tuanzebe', 'CB', 28, 72, 72, 'COD'],
+        ['Joe Worrall', 'CB', 29, 72, 72, 'ENG'],
+        ['Bashir Humphreys', 'CB', 23, 70, 76, 'ENG'],
+        ['Kyle Walker', 'RB', 36, 78, 78, 'ENG'],
+        ['Connor Roberts', 'RB', 31, 71, 71, 'WAL'],
+        ['Oliver Sonne', 'RB', 25, 70, 74, 'PER'],
+        ['Quilindschy Hartman', 'LB', 24, 74, 79, 'NED'],
+        ['Lucas Pires', 'LB', 25, 72, 75, 'BRA'],
+        ['Josh Cullen', 'CDM', 30, 74, 74, 'IRL'],
+        ['Josh Laurent', 'CM', 31, 73, 73, 'ENG'],
+        ['Lesley Ugochukwu', 'CDM', 22, 74, 80, 'FRA'],
+        ['Florentino Luís', 'CDM', 27, 77, 78, 'POR'],
+        ['Hannibal Mejbri', 'CAM', 23, 73, 77, 'TUN'],
+        ['Loum Tchaouna', 'RW', 23, 73, 78, 'FRA'],
+        ['Jaidon Anthony', 'LM', 26, 74, 75, 'ENG'],
+        ['Marcus Edwards', 'RW', 27, 73, 74, 'ENG'],
+        ['Zian Flemming', 'ST', 28, 74, 74, 'NED'],
+        ['Lyle Foster', 'ST', 26, 73, 75, 'RSA'],
+        ['Armando Broja', 'ST', 25, 73, 76, 'ALB'],
+        ['Jacob Bruun Larsen', 'LW', 28, 71, 71, 'DEN']
+      ]],
+      ['Wolverhampton Wanderers', 'WOL', '#FDB913', '#231F20', 66, 31750, [
+        ['José Sá', 'GK', 33, 78, 78, 'POR'],
+        ['Sam Johnstone', 'GK', 33, 75, 75, 'ENG'],
+        ['Dan Bentley', 'GK', 33, 63, 63, 'ENG'],
+        ['Toti Gomes', 'CB', 27, 76, 78, 'POR'],
+        ['Santiago Bueno', 'CB', 27, 76, 77, 'URU'],
+        ['Emmanuel Agbadou', 'CB', 29, 76, 76, 'CIV'],
+        ['Yerson Mosquera', 'CB', 25, 75, 78, 'COL'],
+        ['Ladislav Krejčí', 'CB', 27, 77, 78, 'CZE'],
+        ['Matt Doherty', 'RB', 34, 74, 74, 'IRL'],
+        ['Jackson Tchatchoua', 'RB', 25, 74, 77, 'CMR'],
+        ['Hugo Bueno', 'LB', 24, 74, 78, 'ESP'],
+        ['David Møller Wolfe', 'LB', 24, 72, 76, 'NOR'],
+        ['André', 'CDM', 25, 78, 81, 'BRA'],
+        ['João Gomes', 'CM', 25, 79, 82, 'BRA'],
+        ['Marshall Munetsi', 'CM', 30, 75, 75, 'ZIM'],
+        ['Jean-Ricner Bellegarde', 'CAM', 28, 76, 77, 'HAI'],
+        ['Rodrigo Gomes', 'RM', 23, 74, 79, 'POR'],
+        ['Fer López', 'CAM', 22, 72, 80, 'ESP'],
+        ['Jhon Arias', 'RW', 29, 79, 79, 'COL'],
+        ['Hwang Hee-chan', 'LW', 30, 75, 75, 'KOR'],
+        ['Jørgen Strand Larsen', 'ST', 26, 78, 80, 'NOR'],
+        ['Tolu Arokodare', 'ST', 25, 74, 77, 'NGA'],
+        ['Saša Kalajdžić', 'ST', 29, 72, 72, 'AUT']
+      ]],
+      ['Lincoln City', 'LIN', '#E3001B', '#000000', 50, 10120, [
+        ['George Wickens', 'GK', 24, 61, 66, 'ENG'],
+        ['Paudie O\'Connor', 'CB', 29, 61, 61, 'IRL'],
+        ['Lewis Montsma', 'CB', 28, 60, 60, 'NED'],
+        ['Tendayi Darikwa', 'RB', 34, 57, 57, 'ZIM'],
+        ['Sean Roughan', 'LB', 23, 59, 64, 'IRL'],
+        ['Ethan Erhahon', 'CDM', 25, 61, 64, 'SCO'],
+        ['Tom Bayliss', 'CM', 27, 61, 62, 'ENG'],
+        ['Jack Moylan', 'CAM', 25, 61, 64, 'IRL'],
+        ['Ben House', 'ST', 27, 60, 61, 'ENG']
+      ]],
+      ['Cardiff City', 'CAR', '#0070B5', '#FFFFFF', 54, 33280, [
+        ['Ethan Horvath', 'GK', 31, 63, 63, 'USA'],
+        ['Jak Alnwick', 'GK', 33, 61, 61, 'ENG'],
+        ['Calum Chambers', 'CB', 31, 64, 64, 'ENG'],
+        ['Dylan Lawlor', 'CB', 20, 60, 70, 'WAL'],
+        ['Will Fish', 'CB', 23, 61, 66, 'ENG'],
+        ['Joel Bagan', 'LB', 24, 61, 65, 'IRL'],
+        ['Ryan Wintle', 'CM', 29, 63, 63, 'ENG'],
+        ['Rubin Colwill', 'CAM', 24, 63, 67, 'WAL'],
+        ['Cian Ashford', 'LW', 21, 60, 69, 'WAL'],
+        ['Isaak Davies', 'RW', 25, 60, 63, 'WAL'],
+        ['Callum Robinson', 'ST', 31, 64, 64, 'IRL'],
+        ['Yousef Salech', 'ST', 24, 63, 68, 'SWE']
+      ]],
+      ['Bolton Wanderers', 'BOL', '#FFFFFF', '#263C7E', 50, 28723, [
+        ['Luke Southwood', 'GK', 28, 61, 62, 'ENG'],
+        ['Eoin Toal', 'CB', 27, 63, 64, 'NIR'],
+        ['George Johnston', 'CB', 27, 61, 62, 'ENG'],
+        ['Josh Sheehan', 'CM', 31, 62, 62, 'WAL'],
+        ['Kyle Dempsey', 'CM', 30, 62, 62, 'ENG'],
+        ['John McAtee', 'ST', 27, 61, 62, 'ENG'],
+        ['Aaron Collins', 'ST', 29, 62, 62, 'WAL']
       ]]
     ]},
     { id: 'ENG3', name: 'League One', tier: 3, clubs: [
@@ -1043,20 +1021,6 @@ COUNTRY_DATA.push({
         ['Joe Edwards', 'RB', 36, 59, 59, 'ENG'],
         ['Bali Mumba', 'RB', 25, 62, 65, 'ENG'],
         ['Brendan Galloway', 'LB', 30, 60, 60, 'ZIM']
-      ]],
-      ['Cardiff City', 'CAR', '#0070B5', '#FFFFFF', 51, 33280, [
-        ['Ethan Horvath', 'GK', 31, 63, 63, 'USA'],
-        ['Jak Alnwick', 'GK', 33, 61, 61, 'ENG'],
-        ['Calum Chambers', 'CB', 31, 64, 64, 'ENG'],
-        ['Dylan Lawlor', 'CB', 20, 60, 70, 'WAL'],
-        ['Will Fish', 'CB', 23, 61, 66, 'ENG'],
-        ['Joel Bagan', 'LB', 24, 61, 65, 'IRL'],
-        ['Ryan Wintle', 'CM', 29, 63, 63, 'ENG'],
-        ['Rubin Colwill', 'CAM', 24, 63, 67, 'WAL'],
-        ['Cian Ashford', 'LW', 21, 60, 69, 'WAL'],
-        ['Isaak Davies', 'RW', 25, 60, 63, 'WAL'],
-        ['Callum Robinson', 'ST', 31, 64, 64, 'IRL'],
-        ['Yousef Salech', 'ST', 24, 63, 68, 'SWE']
       ]],
       ['Stockport County', 'STO', '#0055A5', '#FFFFFF', 46, 10841, [
         ['Ben Hinchliffe', 'GK', 38, 60, 60, 'ENG'],
@@ -1078,15 +1042,6 @@ COUNTRY_DATA.push({
         ['Jordan Brown', 'CM', 30, 60, 60, 'ENG'],
         ['Theo Archibald', 'LW', 28, 60, 60, 'SCO']
       ]],
-      ['Bolton Wanderers', 'BOL', '#FFFFFF', '#263C7E', 47, 28723, [
-        ['Luke Southwood', 'GK', 28, 61, 62, 'ENG'],
-        ['Eoin Toal', 'CB', 27, 63, 64, 'NIR'],
-        ['George Johnston', 'CB', 27, 61, 62, 'ENG'],
-        ['Josh Sheehan', 'CM', 31, 62, 62, 'WAL'],
-        ['Kyle Dempsey', 'CM', 30, 62, 62, 'ENG'],
-        ['John McAtee', 'ST', 27, 61, 62, 'ENG'],
-        ['Aaron Collins', 'ST', 29, 62, 62, 'WAL']
-      ]],
       ['Huddersfield Town', 'HUD', '#0E63AD', '#FFFFFF', 46, 24121, [
         ['Lee Nicholls', 'GK', 34, 62, 62, 'ENG'],
         ['Matty Pearson', 'CB', 33, 60, 60, 'ENG'],
@@ -1104,17 +1059,6 @@ COUNTRY_DATA.push({
         ['CJ Hamilton', 'RW', 31, 60, 60, 'IRL'],
         ['Ashley Fletcher', 'ST', 31, 61, 61, 'ENG']
       ]],
-      ['Lincoln City', 'LIN', '#E3001B', '#000000', 42, 10120, [
-        ['George Wickens', 'GK', 24, 61, 66, 'ENG'],
-        ['Paudie O\'Connor', 'CB', 29, 61, 61, 'IRL'],
-        ['Lewis Montsma', 'CB', 28, 60, 60, 'NED'],
-        ['Tendayi Darikwa', 'RB', 34, 57, 57, 'ZIM'],
-        ['Sean Roughan', 'LB', 23, 59, 64, 'IRL'],
-        ['Ethan Erhahon', 'CDM', 25, 61, 64, 'SCO'],
-        ['Tom Bayliss', 'CM', 27, 61, 62, 'ENG'],
-        ['Jack Moylan', 'CAM', 25, 61, 64, 'IRL'],
-        ['Ben House', 'ST', 27, 60, 61, 'ENG']
-      ]],
       ['Reading', 'REA', '#004494', '#FFFFFF', 46, 24161, [
         ['Joel Pereira', 'GK', 30, 62, 62, 'POR'],
         ['Andy Yiadom', 'RB', 34, 59, 59, 'GHA'],
@@ -1126,12 +1070,6 @@ COUNTRY_DATA.push({
         ['Luca Connell', 'CM', 25, 62, 65, 'IRL'],
         ['Adam Phillips', 'CM', 28, 62, 62, 'ENG'],
         ['Davis Keillor-Dunn', 'CAM', 28, 62, 62, 'ENG']
-      ]],
-      ['Rotherham United', 'ROT', '#D71920', '#FFFFFF', 43, 12021, [
-        ['Joe Rafferty', 'RB', 33, 58, 58, 'IRL'],
-        ['Cameron Humphreys', 'CDM', 28, 60, 60, 'ENG'],
-        ['Sam Nombe', 'ST', 28, 61, 61, 'ENG'],
-        ['Jordan Hugill', 'ST', 34, 59, 59, 'ENG']
       ]],
       ['Stevenage', 'STE', '#D71920', '#FFFFFF', 40, 7800, [
         ['Carl Piergianni', 'CB', 34, 59, 59, 'ENG'],
@@ -1155,20 +1093,8 @@ COUNTRY_DATA.push({
         ['Archie Collins', 'CM', 27, 61, 62, 'ENG'],
         ['Ricky-Jade Jones', 'ST', 23, 62, 68, 'ENG']
       ]],
-      ['Exeter City', 'EXE', '#D71920', '#FFFFFF', 40, 8714, [
-        ['Pierce Sweeney', 'CB', 32, 58, 58, 'IRL'],
-        ['Ilmari Niskanen', 'RW', 29, 60, 60, 'FIN'],
-        ['Jack Aitchison', 'CAM', 26, 59, 61, 'SCO'],
-        ['Josh Magennis', 'ST', 36, 58, 58, 'NIR']
-      ]],
       ['Burton Albion', 'BRT', '#FFDD00', '#000000', 39, 6912, [
         ['Max Crocombe', 'GK', 33, 59, 59, 'NZL']
-      ]],
-      ['Northampton Town', 'NTN', '#7E1416', '#FFFFFF', 40, 7798, [
-        ['Lee Burge', 'GK', 33, 60, 60, 'ENG'],
-        ['Jon Guthrie', 'CB', 33, 59, 59, 'ENG'],
-        ['Tyrese Fornah', 'CM', 27, 59, 60, 'ENG'],
-        ['Sam Hoskins', 'ST', 33, 59, 59, 'ENG']
       ]],
       ['Doncaster Rovers', 'DON', '#E3001B', '#FFFFFF', 42, 15231, [
         ['Jamie Sterry', 'RB', 30, 58, 58, 'ENG'],
@@ -1176,13 +1102,6 @@ COUNTRY_DATA.push({
         ['Harrison Biggins', 'CM', 30, 60, 60, 'ENG'],
         ['Luke Molyneux', 'RW', 28, 61, 61, 'ENG'],
         ['Billy Sharp', 'ST', 40, 56, 56, 'ENG']
-      ]],
-      ['Port Vale', 'PVA', '#FFFFFF', '#000000', 40, 15036, [
-        ['Ben Garrity', 'CM', 29, 61, 61, 'ENG'],
-        ['Funso Ojo', 'CDM', 34, 58, 58, 'BEL'],
-        ['Lewis Cass', 'CB', 26, 59, 61, 'ENG'],
-        ['Ronan Curtis', 'LW', 30, 60, 60, 'IRL'],
-        ['Jayden Stockley', 'ST', 33, 59, 59, 'ENG']
       ]],
       ['Bradford City', 'BRA', '#7A1E3B', '#F7B032', 43, 25136, [
         ['Neill Byrne', 'CB', 33, 58, 58, 'IRL'],
@@ -1196,17 +1115,94 @@ COUNTRY_DATA.push({
         ['Alistair Smith', 'CM', 27, 58, 59, 'ENG'],
         ['Josh Neufville', 'RW', 25, 59, 62, 'ENG'],
         ['Matty Stevens', 'ST', 28, 60, 60, 'ENG']
-      ]]
-    ]},
-    { id: 'ENG4', name: 'League Two', tier: 4, clubs: [
-      ['Crawley Town', 'CRA', '#C8102E', '#FFFFFF', 37, 6134, []],
-      ['Bristol Rovers', 'BRR', '#003DA5', '#FFFFFF', 39, 12300, []],
-      ['Cambridge United', 'CAM', '#FDB913', '#000000', 37, 8127, [
+      ]],
+      ['Leicester City', 'LEI', '#003090', '#FDBE11', 52, 32262, [
+        ['Jakub Stolarczyk', 'GK', 25, 68, 74, 'POL'],
+        ['Asmir Begović', 'GK', 39, 64, 64, 'BIH'],
+        ['Jannik Vestergaard', 'CB', 34, 70, 70, 'DEN'],
+        ['Caleb Okoli', 'CB', 25, 70, 74, 'ITA'],
+        ['Wout Faes', 'CB', 28, 72, 72, 'BEL'],
+        ['Ben Nelson', 'CB', 22, 64, 72, 'ENG'],
+        ['Ricardo Pereira', 'RB', 33, 72, 72, 'POR'],
+        ['Luke Thomas', 'LB', 25, 66, 70, 'ENG'],
+        ['Victor Kristiansen', 'LB', 23, 70, 75, 'DEN'],
+        ['Harry Winks', 'CM', 30, 72, 72, 'ENG'],
+        ['Oliver Skipp', 'CDM', 26, 71, 73, 'ENG'],
+        ['Boubakary Soumaré', 'CDM', 27, 70, 71, 'FRA'],
+        ['Stephy Mavididi', 'LW', 28, 74, 74, 'ENG'],
+        ['Abdul Fatawu', 'RW', 22, 73, 80, 'GHA'],
+        ['Jordan Ayew', 'ST', 35, 70, 70, 'GHA'],
+        ['Patson Daka', 'ST', 28, 70, 70, 'ZAM']
+      ]],
+      ['Oxford United', 'OXF', '#FFF200', '#0B1F65', 47, 12500, [
+        ['Jamie Cumming', 'GK', 27, 66, 67, 'ENG'],
+        ['Matt Ingram', 'GK', 32, 62, 62, 'ENG'],
+        ['Ciaron Brown', 'CB', 28, 65, 65, 'NIR'],
+        ['Elliott Moore', 'CB', 29, 64, 64, 'ENG'],
+        ['Michał Helik', 'CB', 31, 65, 65, 'POL'],
+        ['Sam Long', 'RB', 31, 63, 63, 'ENG'],
+        ['Hidde ter Avest', 'RB', 29, 63, 63, 'NED'],
+        ['Greg Leigh', 'LB', 32, 62, 62, 'JAM'],
+        ['Brodie Spencer', 'RB', 22, 62, 69, 'NIR'],
+        ['Cameron Brannagan', 'CM', 30, 66, 66, 'ENG'],
+        ['Will Vaulks', 'CDM', 33, 63, 63, 'WAL'],
+        ['Tyler Goodrham', 'CAM', 23, 63, 69, 'ENG'],
+        ['Przemysław Płacheta', 'LW', 28, 65, 65, 'POL'],
+        ['Siriki Dembélé', 'RW', 30, 64, 64, 'BFA'],
+        ['Matt Phillips', 'RW', 35, 62, 62, 'SCO'],
+        ['Mark Harris', 'ST', 27, 64, 65, 'WAL'],
+        ['Will Lankshear', 'ST', 21, 63, 72, 'ENG']
+      ]],
+      ['Sheffield Wednesday', 'SHW', '#0E00F7', '#FFFFFF', 50, 39732, [
+        ['Pierce Charles', 'GK', 21, 65, 74, 'NIR'],
+        ['Ben Hamer', 'GK', 38, 60, 60, 'ENG'],
+        ['Dominic Iorfa', 'CB', 31, 65, 65, 'ENG'],
+        ['Di\'Shon Bernard', 'CB', 26, 64, 66, 'JAM'],
+        ['Gabriel Otegbayo', 'CB', 25, 62, 67, 'ENG'],
+        ['Yan Valery', 'RB', 27, 64, 65, 'TUN'],
+        ['Liam Palmer', 'RB', 35, 62, 62, 'SCO'],
+        ['Max Lowe', 'LB', 29, 63, 63, 'ENG'],
+        ['Harry Amass', 'LB', 19, 64, 77, 'ENG'],
+        ['Barry Bannan', 'CM', 36, 67, 67, 'SCO'],
+        ['Svante Ingelsson', 'CM', 28, 64, 64, 'SWE'],
+        ['Nathaniel Chalobah', 'CDM', 31, 64, 64, 'ENG'],
+        ['Sean Fusire', 'CM', 21, 60, 70, 'ENG'],
+        ['George Brown', 'CM', 22, 60, 68, 'ENG'],
+        ['Bailey Cadamarteri', 'ST', 21, 62, 72, 'JAM'],
+        ['Ike Ugbo', 'ST', 28, 64, 64, 'CAN'],
+        ['Jamal Lowe', 'ST', 32, 63, 63, 'JAM']
+      ]],
+      ['Bromley', 'BRO', '#000000', '#FFFFFF', 38, 5000, [
+        ['Grant Smith', 'GK', 32, 55, 55, 'ENG'],
+        ['Omar Sowunmi', 'CB', 31, 55, 55, 'ENG'],
+        ['Corey Whitely', 'LW', 35, 54, 54, 'ENG'],
+        ['Michael Cheek', 'ST', 34, 56, 56, 'ENG']
+      ]],
+      ['Milton Keynes Dons', 'MKD', '#FFFFFF', '#000000', 41, 30500, [
+        ['Craig MacGillivray', 'GK', 33, 57, 57, 'SCO'],
+        ['Laurence Maguire', 'CB', 29, 57, 57, 'ENG'],
+        ['Joe Tomlinson', 'LB', 26, 57, 59, 'ENG'],
+        ['Alex Gilbey', 'CM', 32, 57, 57, 'ENG'],
+        ['Liam Kelly', 'CM', 36, 56, 56, 'SCO'],
+        ['Callum Paterson', 'ST', 32, 57, 57, 'SCO']
+      ]],
+      ['Cambridge United', 'CAM', '#FDB913', '#000000', 40, 8127, [
         ['Paul Digby', 'CDM', 31, 57, 57, 'ENG'],
         ['Michael Morrison', 'CB', 38, 54, 54, 'ENG'],
         ['James Brophy', 'LM', 32, 56, 56, 'ENG'],
         ['Elias Kachunga', 'ST', 34, 56, 56, 'COD']
       ]],
+      ['Notts County', 'NCO', '#000000', '#FFFFFF', 41, 19841, [
+        ['Kyle Cameron', 'CB', 29, 57, 57, 'SCO'],
+        ['Matt Palmer', 'CM', 33, 56, 56, 'ENG'],
+        ['Jodi Jones', 'LW', 29, 58, 58, 'ENG'],
+        ['Alassana Jatta', 'ST', 27, 58, 58, 'GAM'],
+        ['David McGoldrick', 'ST', 38, 56, 56, 'IRL']
+      ]]
+    ]},
+    { id: 'ENG4', name: 'League Two', tier: 4, clubs: [
+      ['Crawley Town', 'CRA', '#C8102E', '#FFFFFF', 37, 6134, []],
+      ['Bristol Rovers', 'BRR', '#003DA5', '#FFFFFF', 39, 12300, []],
       ['Shrewsbury Town', 'SHR', '#0055A5', '#F7B032', 35, 9875, [
         ['Taylor Perry', 'CM', 25, 57, 61, 'ENG'],
         ['John Marquis', 'ST', 34, 55, 55, 'ENG']
@@ -1215,13 +1211,6 @@ COUNTRY_DATA.push({
         ['Tommy Simkin', 'GK', 25, 57, 61, 'ENG'],
         ['Taylor Allen', 'LB', 26, 56, 58, 'ENG'],
         ['Jamille Matt', 'ST', 37, 55, 55, 'JAM']
-      ]],
-      ['Notts County', 'NCO', '#000000', '#FFFFFF', 38, 19841, [
-        ['Kyle Cameron', 'CB', 29, 57, 57, 'SCO'],
-        ['Matt Palmer', 'CM', 33, 56, 56, 'ENG'],
-        ['Jodi Jones', 'LW', 29, 58, 58, 'ENG'],
-        ['Alassana Jatta', 'ST', 27, 58, 58, 'GAM'],
-        ['David McGoldrick', 'ST', 38, 56, 56, 'IRL']
       ]],
       ['Chesterfield', 'CHF', '#0055A5', '#FFFFFF', 36, 10504, [
         ['Ryan Boot', 'GK', 31, 56, 56, 'ENG'],
@@ -1272,28 +1261,6 @@ COUNTRY_DATA.push({
       ['Cheltenham Town', 'CHT', '#E3001B', '#FFFFFF', 32, 7066, [
         ['Owen Evans', 'GK', 29, 56, 56, 'WAL']
       ]],
-      ['Milton Keynes Dons', 'MKD', '#FFFFFF', '#000000', 38, 30500, [
-        ['Craig MacGillivray', 'GK', 33, 57, 57, 'SCO'],
-        ['Laurence Maguire', 'CB', 29, 57, 57, 'ENG'],
-        ['Joe Tomlinson', 'LB', 26, 57, 59, 'ENG'],
-        ['Alex Gilbey', 'CM', 32, 57, 57, 'ENG'],
-        ['Liam Kelly', 'CM', 36, 56, 56, 'SCO'],
-        ['Callum Paterson', 'ST', 32, 57, 57, 'SCO']
-      ]],
-      ['Bromley', 'BRO', '#000000', '#FFFFFF', 33, 5000, [
-        ['Grant Smith', 'GK', 32, 55, 55, 'ENG'],
-        ['Omar Sowunmi', 'CB', 31, 55, 55, 'ENG'],
-        ['Corey Whitely', 'LW', 35, 54, 54, 'ENG'],
-        ['Michael Cheek', 'ST', 34, 56, 56, 'ENG']
-      ]],
-      ['Barrow', 'BRW', '#0055A5', '#FFFFFF', 32, 5045, [
-        ['Paul Farman', 'GK', 36, 55, 55, 'ENG'],
-        ['Niall Canavan', 'CB', 35, 54, 54, 'IRL'],
-        ['Robbie Gotts', 'CM', 27, 55, 56, 'ENG']
-      ]],
-      ['Harrogate Town', 'HAR', '#FDB913', '#000000', 30, 5000, [
-        ['James Belshaw', 'GK', 36, 55, 55, 'ENG']
-      ]],
       ['Newport County', 'NPT', '#F7B032', '#000000', 31, 7850, [
         ['Nick Townsend', 'GK', 31, 54, 54, 'ENG']
       ]],
@@ -1314,6 +1281,46 @@ COUNTRY_DATA.push({
         ['Mark Kitching', 'LB', 31, 54, 54, 'ENG'],
         ['Mike Fondop', 'ST', 32, 55, 55, 'CMR'],
         ['Joe Garner', 'ST', 38, 53, 53, 'ENG']
+      ]],
+      ['Northampton Town', 'NTN', '#7E1416', '#FFFFFF', 37, 7798, [
+        ['Lee Burge', 'GK', 33, 60, 60, 'ENG'],
+        ['Jon Guthrie', 'CB', 33, 59, 59, 'ENG'],
+        ['Tyrese Fornah', 'CM', 27, 59, 60, 'ENG'],
+        ['Sam Hoskins', 'ST', 33, 59, 59, 'ENG']
+      ]],
+      ['Rotherham United', 'ROT', '#D71920', '#FFFFFF', 40, 12021, [
+        ['Joe Rafferty', 'RB', 33, 58, 58, 'IRL'],
+        ['Cameron Humphreys', 'CDM', 28, 60, 60, 'ENG'],
+        ['Sam Nombe', 'ST', 28, 61, 61, 'ENG'],
+        ['Jordan Hugill', 'ST', 34, 59, 59, 'ENG']
+      ]],
+      ['Port Vale', 'PVA', '#FFFFFF', '#000000', 37, 15036, [
+        ['Ben Garrity', 'CM', 29, 61, 61, 'ENG'],
+        ['Funso Ojo', 'CDM', 34, 58, 58, 'BEL'],
+        ['Lewis Cass', 'CB', 26, 59, 61, 'ENG'],
+        ['Ronan Curtis', 'LW', 30, 60, 60, 'IRL'],
+        ['Jayden Stockley', 'ST', 33, 59, 59, 'ENG']
+      ]],
+      ['Exeter City', 'EXE', '#D71920', '#FFFFFF', 37, 8714, [
+        ['Pierce Sweeney', 'CB', 32, 58, 58, 'IRL'],
+        ['Ilmari Niskanen', 'RW', 29, 60, 60, 'FIN'],
+        ['Jack Aitchison', 'CAM', 26, 59, 61, 'SCO'],
+        ['Josh Magennis', 'ST', 36, 58, 58, 'NIR']
+      ]],
+      ['York City', 'YRK', '#C8102E', '#002D62', 35, 8500, [
+        ['Ryan Fallowfield', 'RB', 30, 55, 55, 'ENG'],
+        ['Mark Kitching', 'LB', 31, 55, 55, 'ENG'],
+        ['Alex Hunt', 'CM', 26, 56, 58, 'ENG'],
+        ['Ollie Banks', 'CM', 34, 54, 54, 'ENG'],
+        ['Hiram Boateng', 'CM', 30, 55, 55, 'ENG'],
+        ['Dipo Akinyemi', 'ST', 29, 57, 57, 'ENG'],
+        ['Ollie Pearce', 'ST', 30, 57, 57, 'ENG']
+      ]],
+      ['Rochdale', 'ROC', '#0055A5', '#000000', 34, 10249, [
+        ['Tobi Adebayo-Rowling', 'RB', 30, 55, 55, 'ENG'],
+        ['Ethan Ebanks-Landell', 'CB', 34, 54, 54, 'ENG'],
+        ['Kyron Gordon', 'CB', 24, 55, 59, 'ENG'],
+        ['Bryant Bilongo', 'LB', 24, 54, 58, 'ENG']
       ]]
     ]}
   ]

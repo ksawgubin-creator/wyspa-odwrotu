@@ -249,7 +249,7 @@ ACT.gooffers = () => { navPush(); UI.tab = 'market'; UI.mkTab = 'offers'; render
 ACT.choosepre = i => { choosePre(+i); saveSoon(); render(); };
 function cupAlive(cup, r) {
   if (r === 0) { if (cup.rounds[0]) return true; const m = cup.teams.length - Math.pow(2, cup.R - 1); return cup.teams.slice().sort((a, b) => tierOf(b) - tierOf(a) || club(a).rep - club(b).rep).slice(0, 2 * m).includes(S.user); }
-  const prev = cup.rounds[r - 1]; if (!prev) return cup.teams.includes(S.user);
+  const prev = cup.rounds[r - 1]; if (!prev) return cup.teams.includes(S.user) && !cup.rounds.some(rd => rd && rd.some(t => (t.h === S.user || t.a === S.user) && t.w != null && t.w !== S.user));
   if (r === 1 && cup.byes.includes(S.user)) return true;
   return prev.some(t => t.w === S.user);
 }
@@ -275,7 +275,7 @@ ACT.evnext = () => { closeModal(); render(); if (S.pending.length) ACT.event(S.p
 ACT.jobs = () => {
   modal(`<h2>📨 Oferty pracy</h2><small class="mut">Twój OVR trenera: ${Math.round(S.mgr.ovr)} (${mgrLabel(S.mgr.ovr)}). Przyjęcie oferty oznacza odejście z ${esc(userClub().name)}.</small>
     ${S.jobs.map(j => { const c = club(j.club), r = table(c.lg).find(x => x.id === c.id); return `<div class="card"><div class="row">${badge(c)}<div class="sp"><b>${esc(c.name)}</b><br><small>${S.countries[c.cc].flag} ${esc(S.leagues[c.lg].name)} • ${r.pos}. miejsce • rep. ${c.rep}</small></div><span class="stars">${stars(c)}</span></div>
-      <small class="mut">Budżet transferowy ${money(c.tb)} • średnia kadry ${Math.round(teamLevel(c))} • ważna do ${fmtDate(S.cal[Math.min(j.exp, S.cal.length - 1)].date)}</small>
+      <small class="mut">Budżet transferowy ${money(c.tb)} • średnia kadry ${Math.round(teamLevel(c))} • ważna do ${fmtDate(j.exp * 864e5)}</small>
       <div class="btns"><button class="btn pri sp" data-act="takejob" data-arg="${j.id}">Przyjmij</button><button class="btn" data-act="dropjob" data-arg="${j.id}">Odrzuć</button></div></div>`; }).join('')}
     <div class="btns"><button class="btn full" data-act="close">Zamknij</button></div>`);
 };
@@ -485,7 +485,7 @@ ACT.info = id => {
   if (!TABS.some(t => t[0] === UI.pcTab)) UI.pcTab = 'ov';
   const kv = rows => `<div class="kv">${rows.filter(Boolean).map(([l, v]) => `<div><span>${l}</span><b>${v}</b></div>`).join('')}</div>`;
   const body = {
-    ov: () => `${p.inj ? `<div class="card" style="margin:6px 0;border-color:var(--bad)"><b>🚑 ${esc(p.injT || 'Kontuzja')}</b><br><small class="mut">Fizjoterapeuta szacuje powrót za ok. ${Math.ceil(p.inj / 7)} tyg. (${p.inj} dni).${p.injN > 1 ? ` To już ${p.injN}. uraz tego zawodnika.` : ''}</small>${mine && p.inj <= 14 ? `<div class="btns"><button class="btn sm red" data-act="rushback" data-arg="${p.id}">⚡ Przyspiesz powrót (duże ryzyko nawrotu)</button></div>` : ''}</div>` : ''}${p._rushed > absDay() ? '<small class="warn">⚠️ Po przyspieszonym powrocie – podwyższone ryzyko urazu przez 3 tygodnie.</small><br>' : ''}${stTag(p)}${own ? `<small class="mut">Charakter: <b>${pers(p)}</b> – ${PERS_DESC[pers(p)]}</small><div class="fxl">${Object.entries(TRAITS).map(([k, n]) => `<span class="pill">${n}: ${traitWord(traits(p)[k], TRAIT_FEM[k])}</span>`).join(' ')}</div>` : `<small class="mut">Charakter: ? (poznasz go po transferze)</small>`}
+    ov: () => `${p.inj ? `<div class="card" style="margin:6px 0;border-color:var(--bad)"><b>🚑 ${esc(p.injT || 'Kontuzja')}</b><br><small class="mut">Fizjoterapeuta szacuje powrót za ok. ${Math.ceil(p.inj / 7)} tyg. (${plural(Math.ceil(p.inj), "dzień", "dni", "dni")}).${p.injN > 1 ? ` To już ${p.injN}. uraz tego zawodnika.` : ''}</small>${mine && p.inj <= 14 ? `<div class="btns"><button class="btn sm red" data-act="rushback" data-arg="${p.id}">⚡ Przyspiesz powrót (duże ryzyko nawrotu)</button></div>` : ''}</div>` : ''}${p._rushed > absDay() ? '<small class="warn">⚠️ Po przyspieszonym powrocie – podwyższone ryzyko urazu przez 3 tygodnie.</small><br>' : ''}${stTag(p)}${own ? `<small class="mut">Charakter: <b>${pers(p)}</b> – ${PERS_DESC[pers(p)]}</small><div class="fxl">${Object.entries(TRAITS).map(([k, n]) => `<span class="pill">${n}: ${traitWord(traits(p)[k], TRAIT_FEM[k])}</span>`).join(' ')}</div>` : `<small class="mut">Charakter: ? (poznasz go po transferze)</small>`}
       ${kv([['Wiek', p.age], ['Potencjał', `<span class="potv">${potTxt(p)}</span>${know(p) >= 30 && p.pot > p.ovr ? ` <small class="good">(+${Math.max(0, Math.round((ovrRange(p, true)[0] + ovrRange(p, true)[1]) / 2) - Math.round((r[0] + r[1]) / 2))})</small>` : ''}`], ['Kondycja', Math.round(p.fit) + '%'], ['Morale', moraleLabel(p.mor).join(' ')], ['Forma', formLabel(p.form)], ['Rytm meczowy', Math.round(p.shp) + '%'], ['Wartość', money(p.val)], ['Status', playerStatus(p)],
         !mine && releaseClause(p) ? ['Klauzula odstępnego', money(releaseClause(p))] : null])}
       ${known && typeof radarSVG === 'function' ? `<div style="text-align:center;margin-top:6px">${radarSVG(at, names, { size: 180 })}</div>` : ''}
@@ -613,7 +613,7 @@ function renderNego(note) {
       ${releaseClause(p) ? `<br><small class="warn">📜 Klauzula odstępnego: <b>${money(releaseClause(p))}</b> – wpłata całości (bez rat) gwarantuje zgodę klubu.</small>` : ''}
       <div class="stepper"><button class="btn" data-act="fee" data-arg="-1">−</button><b>${money(NEG.fee)}</b><button class="btn" data-act="fee" data-arg="1">+</button></div>
       <div class="numrow"><span>Wpisz kwotę (€):</span><input class="numin" type="number" inputmode="numeric" min="0" step="10000" value="${NEG.fee}" data-change="negfeenum"></div>
-      ${(() => { const a = askPrice(p), lo = Math.round(a * 0.5), hi = Math.round(Math.max(a * 1.6, releaseClause(p) || 0)), pc = v => clamp((v - lo) / (hi - lo) * 100, 0, 100); return `<div class="slider"><input type="range" min="${lo}" max="${hi}" step="${feeStep(a)}" value="${clamp(NEG.fee, lo, hi)}" data-change="negfee"><div class="marks"><i style="left:${pc(p.val)}%" title="wartość"></i><i class="b" style="left:${pc(ut.tb)}%"></i></div><small class="mut">▮ wartość ${money(p.val)} • <span class="warn">▮</span> budżet ${money(ut.tb)} • cierpliwość klubu: ${p._noTalk > absDay() ? 'rozmowy zerwane' : '●'.repeat(Math.max(0, 4 - (p._bids || 0))) + '○'.repeat(Math.min(4, p._bids || 0))}<br>Oferta poniżej 80% ceny zabiera 2 punkty cierpliwości.</small></div>`; })()}
+      ${(() => { const a = askPrice(p), lo = Math.round(a * 0.5), hi = Math.round(Math.max(a * 1.6, releaseClause(p) || 0)), pc = v => clamp((v - lo) / (hi - lo) * 100, 0, 100); return `<div class="slider"><input type="range" min="${lo}" max="${hi}" step="${feeStep(a)}" value="${clamp(NEG.fee, lo, hi)}" data-change="negfee"><div class="marks"><i style="left:${pc(p.val)}%" title="wartość"></i><i class="b" style="left:${pc(ut.tb)}%"></i></div><small class="mut">▮ wartość ${money(p.val)} • <span class="warn">▮</span> budżet ${money(ut.tb)} • cierpliwość klubu: ${p._noTalk > absDay() ? 'rozmowy zerwane' : '●'.repeat(Math.max(0, Math.floor(4 - (p._bids || 0)))) + '○'.repeat(Math.min(4, Math.ceil(p._bids || 0)))}<br>Oferta poniżej 70–80% ceny mocniej nadwyręża cierpliwość klubu.</small></div>`; })()}
       <div class="seg"><button class="btn sm ${NEG.inst ? 'on' : ''}" data-act="neginst">💳 Raty</button><button class="btn sm ${NEG.sellOn ? 'on' : ''}" data-act="negsellon">🔁 Klauzula odsprzedaży 15%</button>${releaseClause(p) ? `<button class="btn sm" data-act="negrc">📜 Klauzula</button>` : ''}</div>
       <small class="mut">${NEG.inst ? `Raty: teraz ${money(upfront(NEG.fee, NEG))}, potem 2 × ${money(Math.round((Math.round(NEG.fee * INST_K) - upfront(NEG.fee, NEG)) / 2))} na koniec kolejnych sezonów (łącznie +10%).` : 'Płatność jednorazowa.'}${NEG.sellOn ? ' Odsprzedaż: klub sprzedający obniża cenę o ok. 10%, ale dostanie 15% z przyszłej sprzedaży.' : ''}</small>
       ${note ? `<p class="${note.cls}">${esc(note.t)}</p>` : ''}
@@ -1005,7 +1005,7 @@ function renderMission() {
       <label>Pozycja<select data-change="mpos"><option value="">Dowolna</option>${POSITIONS.map(p => `<option value="${p}" ${m.pos === p ? 'selected' : ''}>${POS_PL[p]}</option>`).join('')}</select></label>
       <label>Wiek<select data-change="mage"><option value="0">Dowolny</option>${[18, 19, 21, 23, 26, 29].map(a => `<option value="${a}" ${m.maxAge === a ? 'selected' : ''}>do ${a} lat</option>`).join('')}</select></label>
       <label>Min. potencjał<select data-change="mpot"><option value="0">Dowolny</option>${[65, 70, 75, 80, 85].map(a => `<option value="${a}" ${m.minPot === a ? 'selected' : ''}>${a}+</option>`).join('')}</select></label>
-      <label>Czas trwania<select data-change="mweeks">${[2, 4, 8, 12].map(w => `<option value="${w}" ${m.weeks === w ? 'selected' : ''}>${w} tygodni</option>`).join('')}</select></label>
+      <label>Czas trwania<select data-change="mweeks">${[2, 4, 8, 12].map(w => `<option value="${w}" ${m.weeks === w ? 'selected' : ''}>${plural(w, "tydzień", "tygodnie", "tygodni")}</option>`).join('')}</select></label>
     </div><small class="mut">Co tydzień skaut przyśle 2–4 raporty o najciekawszych zawodnikach spełniających kryteria. Talenty (do 21 lat) oceniane są głównie po potencjale.</small>
     <div class="btns"><button class="btn pri sp" data-act="startmission">Wyślij</button><button class="btn" data-act="close">Anuluj</button></div>`);
 }
@@ -1308,7 +1308,7 @@ function upd() {
     const goals = [...H.scorers.map(g => ({ min: g.min, side: 'h' })), ...A.scorers.map(g => ({ min: g.min, side: 'a' }))];
     $('#mmom').innerHTML = momentumSVG(M.mom || [], { w: ($('#mmom').clientWidth || window.innerWidth - 32), h: 46, colH: H.t.col[0], colA: A.t.col[0], goals });
   }
-  if (M.alert === 'goal' && !MS.over && !MS.skipping && typeof uk_goalOverlay === 'function') { const g = M.ev[M.ev.length - 1]; uk_goalOverlay('GOL!', g ? g.text.replace(/^⚽\s*/, '') : ''); }
+  if (M.alert === 'goal' && M._gfx !== M.ev.length && !MS.over && !MS.skipping && typeof uk_goalOverlay === 'function') { M._gfx = M.ev.length; const g = M.ev[M.ev.length - 1]; uk_goalOverlay('GOL!', g ? g.text.replace(/^⚽\s*/, '') : ''); }
   $('#mfeed').innerHTML = M.ev.slice().reverse().map(e => `<div class="fe ${e.type}"><span class="mn">${e.min}'</span><span>${esc(e.text)}</span></div>`).join('');
 }
 function mctl() {
@@ -1399,7 +1399,7 @@ function showSummary(s) {
   for (const l of s.lines) {
     if (/^💰/.test(l)) G.fin.push(l);
     else if (/^(🏆|🏅|👟|⬆️|⬇️|Twoja pozycja|⭐ Prestiż|🇪🇺)/.test(l)) G.res.push(l);
-    else if (/^(✅|❌|🧑‍💼|🤝|🏛|Nowy sezon|📨|💳|🏟️)/.test(l)) G.you.push(l);
+    else if (/^(✅|❌|🧑‍💼|🤝|🏛|Nowy sezon|📨|💳|🏟️|⚠️)/.test(l)) G.you.push(l);
     else if (/^(Powroty|Zakończyli|Wygasły|🔮|🎓|👥|Z rezerw|📊|📝)/.test(l)) G.squad.push(l);
     else G.world.push(l);
   }

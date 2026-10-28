@@ -511,7 +511,7 @@ function fastSim(h, a, opts = {}) {
   };
   const xh = xg(H, A, ph), xa = xg(A, H, 1 - ph);
   if (!m.neutral) { xh.g *= HOME_ADV; xa.g *= AWAY_ADV; }
-  { const mg = (xh.g + xa.g) / 2; xh.g = xh.g * (1 - FAST_BLEND) + mg * FAST_BLEND; xa.g = xa.g * (1 - FAST_BLEND) + mg * FAST_BLEND; xh.g = 1.06 * Math.pow(xh.g, 0.85); xa.g = 1.06 * Math.pow(xa.g, 0.85); }   // mniej pogromów
+  { const mg = (xh.g + xa.g) / 2; xh.g = xh.g * (1 - FAST_BLEND) + mg * FAST_BLEND; xa.g = xa.g * (1 - FAST_BLEND) + mg * FAST_BLEND; xh.g = Math.min(4, 1.06 * Math.pow(xh.g, 0.85)); xa.g = Math.min(4, 1.06 * Math.pow(xa.g, 0.85)); }   // mniej pogromów
   const addGoals = (side, n, from, to) => {
     for (let i = 0; i < n; i++) {
       const c = side.pitch.filter(s => s.pos !== 'GK'); if (!c.length) return;

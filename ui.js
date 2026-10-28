@@ -130,8 +130,12 @@ function fixtureAt(i) {
     const d = S.cal[i];
     if (d.t === 'P' && S.pre) { const T = S.pre.chosen; if (d.md === 0) return { i, d, h: userClub(), a: T ? club(T.teams[0]) : { short: '?', name: 'Turniej przedsezonowy', col: ['#334', '#fff'] }, label: `${T ? T.name : 'Turniej przedsezonowy'} • Półfinał`, pre: true }; if (i === S.day) { const x = userMatchToday(); if (x) return { i, d, h: x.h, a: x.a, label: x.opts.label, pre: true }; } }
     if (d.t === 'L') { const lg = S.leagues[userClub().lg], r = lg.lsMap[d.ls]; if (r >= 0) { const f = lg.fix[r].find(f => f.h === S.user || f.a === S.user); return { i, d, h: club(f.h), a: club(f.a), label: `${lg.name} • ${r + 1}. kolejka`, sc: f.p ? [f.hg, f.ag] : null }; } }
-    if (d.t === 'E') for (const c of Object.values(S.euro)) {
-      if (d.st === 'LP') { const f = c.lp[d.md] && c.lp[d.md].find(f => f.h === S.user || f.a === S.user); if (f) return { i, d, h: club(f.h), a: club(f.a), label: `${c.name} • faza ligowa ${d.md + 1}`, sc: f.p ? [f.hg, f.ag] : null }; }
+    if (d.t === 'E' && d.st === 'Q') { for (const c of Object.values(S.euro)) { if (!c.q) continue; const T = c.q.rounds[d.r];
+      const t = T && T.find(t => t.a === S.user || t.b === S.user);
+      if (t) { const first = d.leg === 1; return { i, d, h: club(first ? t.a : t.b), a: club(first ? t.b : t.a), label: `${c.name} • ${QNAME[d.r]} (${first ? '1. mecz' : 'rewanż'})`, sc: first ? (t.m1 ? [t.m1.hg, t.m1.ag] : null) : t.m2 ? [t.m2.hg, t.m2.ag] : null }; }
+      if (!T && c.q.alive.includes(S.user)) return { i, d, h: userClub(), a: { short: '?', name: 'Losowanie', col: ['#334', '#fff'] }, label: `${c.name} • ${QNAME[d.r]} (losowanie)` }; } }
+    if (d.t === 'E' && d.st !== 'Q') for (const c of Object.values(S.euro)) {
+      if (d.st === 'LP') { if (!c.lp) continue; const f = c.lp[d.md] && c.lp[d.md].find(f => f.h === S.user || f.a === S.user); if (f) return { i, d, h: club(f.h), a: club(f.a), label: `${c.name} • faza ligowa ${d.md + 1}`, sc: f.p ? [f.hg, f.ag] : null }; }
       else if (c.ko[d.st]) { const t = c.ko[d.st].find(t => t.a === S.user || t.b === S.user); if (t) { const first = d.st === 'F' || d.leg === 1; return { i, d, h: club(first ? t.a : t.b), a: club(first ? t.b : t.a), label: `${c.name} • ${STAGE_NAME[d.st]}${d.st !== 'F' ? (d.leg === 1 ? ' (1. mecz)' : ' (rewanż)') : ''}`, sc: d.leg === 2 ? (t.m2 ? [t.m2.hg, t.m2.ag] : null) : t.m1 ? [t.m1.hg, t.m1.ag] : null }; } }
       else if (c.teams.includes(S.user) && i === S.day) { const x = userMatchToday(); if (x) return { i, d, h: x.h, a: x.a, label: x.opts.label }; }
     }
@@ -174,7 +178,7 @@ function vHome() {
   const ut = userClub(), nx = peekUser(), today = nx && nx.i === S.day;
   const tb = table(ut.lg), row = tb.find(r => r.id === ut.id);
   const out = ut.players.filter(p => p.inj || p.susp);
-  const conf = S.board.conf, ec = Object.values(S.euro).find(c => c.teams.includes(ut.id));
+  const conf = S.board.conf, ec = euroOf(ut.id);
   const mAvg = Math.round(avg(ut.players.map(p => p.mor))), fAvg = Math.round(avg(ut.players.map(p => p.fit)));
   return `
   <div class="card hl">
@@ -226,6 +230,8 @@ function cupAlive(cup, r) {
 }
 function euroStatus(c) {
   if (c.champion === S.user) return '🏆 Zwycięzca!';
+  if (c.q && c.q.alive.includes(S.user)) { const r = c.q.rounds.length - 1, t = r >= 0 && c.q.rounds[r].find(t => t.a === S.user || t.b === S.user); return t ? `eliminacje: ${QNAME[r]}` : r >= 0 ? `eliminacje: wolny los (${QNAME[r]})` : 'eliminacje'; }
+  if (!c.lp) return 'faza ligowa – losowanie po eliminacjach';
   for (const st of ['F', 'SF', 'QF', 'R16', 'PO']) if (c.ko[st]) { const t = c.ko[st].find(t => t.a === S.user || t.b === S.user); if (t) return t.w == null ? STAGE_NAME[st] : t.w === S.user ? `awans (${STAGE_NAME[st]})` : `odpadli: ${STAGE_NAME[st]}`; }
   const r = lpTable(c).find(r => r.id === S.user); return r ? `faza ligowa: ${r.pos}. m. (${r.Pts} pkt)` : '';
 }
@@ -575,9 +581,16 @@ ACT.clubv = id => {
 function vEuro() {
   const sel = tabs([['CL', '⭐ Liga Mistrzów'], ['EL', '🟠 Liga Europy'], ['ECL', '🟢 Konferencji']], UI.euro, 'euro');
   const c = S.euro[UI.euro]; if (!c) return sel;
-  const sub = tabs([['lp', 'Faza ligowa'], ['games', 'Mecze'], ['ko', 'Faza pucharowa']], UI.euroTab, 'eutab');
+  if (!c.lp && UI.euroTab !== 'q') UI.euroTab = 'q';
+  const sub = tabs([...(c.q ? [['q', 'Eliminacje']] : []), ['lp', 'Faza ligowa'], ['games', 'Mecze'], ['ko', 'Faza pucharowa']], UI.euroTab, 'eutab');
   let body = '';
-  if (UI.euroTab === 'lp') {
+  if (UI.euroTab === 'q' && c.q) {
+    const R = c.q.rounds.filter(Boolean);
+    body = `<div class="card"><small class="mut">Kluby z niżej notowanych krajów walczą o fazę ligową w 3 rundach dwumeczów (sierpień).${QLOW[c.id] ? ` Przegrani spadają do eliminacji / fazy ligowej: ${S.euro[QLOW[c.id]].name}.` : ' Przegrani odpadają z Europy.'} W grze: ${c.q.alive.length} klubów.</small></div>`
+      + (R.length ? c.q.rounds.map((T, r) => T && T.length ? `<h3>${QNAME[r]}</h3><div class="card list">${T.map(t => koRow(t, false)).join('')}</div>` : '').join('') : `<div class="card list"><b>Kluby w eliminacjach</b>${c.q.alive.map(id => { const cl = club(id); return `<div class="prow ${id === S.user ? 'me' : ''}" data-act="clubv" data-arg="${id}">${badge(cl, 'sm')}<div class="pn">${esc(cl.name)}<small>${S.countries[cl.cc].flag} ${esc(S.leagues[cl.lg].name)}</small></div></div>`; }).join('') || '<small class="mut">Eliminacje zakończone.</small>'}</div>`);
+  } else if (!c.lp) {
+    body = `<div class="card">${empty('🎲', 'Losowanie fazy ligowej po eliminacjach', `Pewni udziału: ${c.teams.length} klubów. Pozostałe miejsca zajmą zwycięzcy eliminacji (koniec sierpnia).`)}</div>`;
+  } else if (UI.euroTab === 'lp') {
     body = `<div class="card list"><table><tr><th>#</th><th>Klub</th><th>M</th><th>+/-</th><th>Pkt</th></tr>${lpTable(c).map(r => { const cl = club(r.id); return `<tr class="${r.id === S.user ? 'me' : ''} ${r.pos <= 8 ? 'cl' : r.pos <= 24 ? 'up' : 'dn'}" data-act="clubv" data-arg="${r.id}"><td>${r.pos}</td><td><span class="tn">${badge(cl, 'sm')}${S.countries[cl.cc].flag} ${esc(cl.name)}</span></td><td>${r.P}</td><td>${r.GF - r.GA}</td><td><b>${r.Pts}</b></td></tr>`; }).join('')}</table></div>
       <small class="mut">🔵 1–8: 1/8 finału • 🟩 9–24: baraże • 🟥 25–36: odpadają</small>`;
   } else if (UI.euroTab === 'games') {
@@ -605,7 +618,7 @@ function koRow(t, single, nt) {
 }
 ACT.euro = a => { UI.euro = a; UI.md = null; render(); };
 ACT.eutab = a => { if (a !== UI.euroTab) navPush(); UI.euroTab = a; render(); };
-ACT.md = d => { UI.md = clamp(UI.md + +d, 0, S.euro[UI.euro].lp.length - 1); render(); };
+ACT.md = d => { const c = S.euro[UI.euro]; if (!c.lp) return; UI.md = clamp(UI.md + +d, 0, c.lp.length - 1); render(); };
 function vCal() {
   UI.calAll = UI.calAll || false;
   const items = []; for (let i = 0; i < S.cal.length; i++) { const x = fixtureAt(i); if (x && !x.nt) items.push(x); }
@@ -1060,7 +1073,8 @@ ACT.finishday = () => {
   const label = x.opts.label.split(' • ')[0];
   let res = '';
   if (day.t === 'L') { const lg = S.leagues[x.h.lg || userClub().lg]; const rd = lg.fix[lg.lsMap[day.ls]] || []; res = rd.map(f => fxRow(club(f.h), club(f.a), `${f.hg} : ${f.ag}`, f.h === S.user || f.a === S.user)).join(''); }
-  else if (day.t === 'E') { const c = Object.values(S.euro).find(c => c.name === label || label.includes(c.name)); if (c) res = day.st === 'LP' ? c.lp[day.md].map(f => fxRow(club(f.h), club(f.a), `${f.hg} : ${f.ag}`, f.h === S.user || f.a === S.user)).join('') : (c.ko[day.st] || []).map(t => koRow(t, day.st === 'F')).join(''); }
+  else if (day.t === 'E') { const c = Object.values(S.euro).find(c => c.name === label || label.includes(c.name)); if (c && day.st === 'Q') res = (c.q.rounds[day.r] || []).map(t => koRow(t, false)).join('');
+    else if (c) res = day.st === 'LP' ? (c.lp ? c.lp[day.md] : []).map(f => fxRow(club(f.h), club(f.a), `${f.hg} : ${f.ag}`, f.h === S.user || f.a === S.user)).join('') : (c.ko[day.st] || []).map(t => koRow(t, day.st === 'F')).join(''); }
   else if (day.t === 'C') { const cup = S.cups[userClub().cc] || Object.values(S.cups).find(c => label.includes(c.name)); const r = day.slot - cup.slot0; if (cup.rounds[r]) res = cup.rounds[r].map(t => fxRow(club(t.h), club(t.a), `${t.m.hg} : ${t.m.ag}`, t.h === S.user || t.a === S.user, t.m.pens ? `karne ${t.m.pens.h}:${t.m.pens.a}` : t.m.et ? 'po dogrywce' : '')).join(''); }
   else if (day.t === 'P' && S.pre && S.pre.chosen) { const T = S.pre.chosen, row = t => fxRow(club(t.h), club(t.a), `${t.hg} : ${t.ag}`, t.h === S.user || t.a === S.user, t.pens ? `karne ${t.pens.h}:${t.pens.a}` : ''); res = (day.md === 0 ? T.sf : [T.fin, T.third]).filter(t => t && t.w != null).map(row).join(''); }
   else if (day.t === 'N' || day.t === 'T') { res = ''; }

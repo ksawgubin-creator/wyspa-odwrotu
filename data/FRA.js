@@ -274,30 +274,6 @@ COUNTRY_DATA.push({
         ['Emersonn', 'ST', 22, 73, 78, 'BRA'],
         ['Joshua King', 'ST', 34, 70, 70, 'NOR']
       ]],
-      ['FC Nantes', 'NAN', '#FCD405', '#00805F', 67, 35322, [
-        ['Anthony Lopes', 'GK', 36, 79, 79, 'POR', [78, 76, 77, 81, 50, 77]],
-        ['Patrik Carlgren', 'GK', 34, 69, 69, 'SWE'],
-        ['Jean-Charles Castelletto', 'CB', 31, 74, 74, 'CMR'],
-        ['Chidozie Awaziem', 'CB', 29, 75, 75, 'NGA'],
-        ['Nicolas Pallois', 'CB', 39, 71, 71, 'FRA'],
-        ['Uroš Radaković', 'CB', 32, 72, 72, 'SRB'],
-        ['Tylel Tati', 'CB', 21, 70, 78, 'FRA'],
-        ['Kelvin Amian', 'RB', 28, 74, 74, 'CMR'],
-        ['Fabien Centonze', 'RB', 30, 74, 74, 'FRA'],
-        ['Frédéric Guilbert', 'RB', 32, 70, 70, 'FRA'],
-        ['Nicolas Cozza', 'LB', 27, 73, 74, 'FRA'],
-        ['Pedro Chirivella', 'CDM', 29, 75, 75, 'ESP'],
-        ['Francis Coquelin', 'CDM', 35, 71, 71, 'FRA'],
-        ['Johann Lepenant', 'CM', 24, 75, 78, 'FRA'],
-        ['Louis Leroux', 'CM', 20, 69, 77, 'FRA'],
-        ['Herba Guirassy', 'CM', 20, 68, 77, 'FRA'],
-        ['Dehmaine Tabibou', 'CAM', 19, 64, 76, 'FRA'],
-        ['Rémy Cabella', 'CAM', 36, 72, 72, 'FRA'],
-        ['Yassine Benhattab', 'LW', 27, 72, 73, 'FRA'],
-        ['Ignatius Ganago', 'ST', 27, 72, 73, 'CMR'],
-        ['Matthis Abline', 'ST', 23, 76, 81, 'FRA'],
-        ['Mostafa Mohamed', 'ST', 28, 76, 76, 'EGY']
-      ]],
       ['AJ Auxerre', 'AJA', '#FFFFFF', '#00428C', 65, 18541, [
         ['Donovan Léon', 'GK', 34, 76, 76, 'FRA'],
         ['Théo De Percin', 'GK', 25, 69, 72, 'FRA'],
@@ -413,27 +389,12 @@ COUNTRY_DATA.push({
         ['Willem Geubbels', 'ST', 25, 73, 75, 'SUI'],
         ['Pierre-Yves Hamel', 'ST', 32, 70, 70, 'FRA']
       ]],
-      ['FC Metz', 'MET', '#7A0F2D', '#FFFFFF', 63, 30000, [
-        ['Jonathan Fischer', 'GK', 28, 73, 74, 'DEN'],
-        ['Pape Sy', 'GK', 25, 64, 68, 'SEN'],
-        ['Sadibou Sané', 'CB', 22, 70, 76, 'SEN'],
-        ['Terry Yegbe', 'CB', 25, 69, 72, 'GHA'],
-        ['Ismaël Traoré', 'CB', 40, 67, 67, 'CIV'],
-        ['Urie-Michel Mboula', 'CB', 21, 66, 74, 'FRA'],
-        ['Koffi Kouao', 'RB', 28, 72, 72, 'CIV'],
-        ['Maxime Colin', 'RB', 35, 69, 69, 'FRA'],
-        ['Fodé Ballo-Touré', 'LB', 29, 71, 71, 'SEN'],
-        ['Kévin Van Den Kerkhof', 'LB', 30, 70, 70, 'ALG'],
-        ['Boubacar Traoré', 'CDM', 25, 73, 75, 'MLI'],
-        ['Benjamin Stambouli', 'CDM', 36, 69, 69, 'FRA'],
-        ['Jessy Deminguet', 'CM', 28, 73, 73, 'FRA'],
-        ['Pape Amadou Diallo', 'LW', 22, 71, 76, 'SEN'],
-        ['Cheikh Sabaly', 'RW', 27, 70, 71, 'SEN'],
-        ['Giorgi Tsitaishvili', 'LW', 26, 72, 73, 'GEO'],
-        ['Ablie Jallow', 'RW', 28, 70, 70, 'GAM'],
-        ['Joël Asoro', 'ST', 27, 70, 71, 'SWE'],
-        ['Habib Diallo', 'ST', 31, 72, 72, 'SEN']
-      ]]
+      ['ESTAC Troyes', 'EST', '#005DAA', '#FFFFFF', 56, 20400, [
+        ['Ismaël Boura', 'LB', 26, 64, 66, 'FRA'],
+        ['Martin Adeline', 'CM', 23, 64, 69, 'FRA'],
+        ['Tawfik Bentayeb', 'ST', 24, 65, 69, 'MAR']
+      ]],
+      ['Le Mans FC', 'LMF', '#C8102E', '#FFD200', 51, 25064, []]
     ]},
     { id: 'FRA2', name: 'Ligue 2', tier: 2, clubs: [
       ['AS Saint-Étienne', 'STE', '#00843D', '#FFFFFF', 58, 41965, [
@@ -500,11 +461,6 @@ COUNTRY_DATA.push({
         ['Habib Keïta', 'CM', 24, 64, 68, 'MLI'],
         ['Henri Saivet', 'CM', 36, 61, 61, 'SEN']
       ]],
-      ['ESTAC Troyes', 'EST', '#005DAA', '#FFFFFF', 53, 20400, [
-        ['Ismaël Boura', 'LB', 26, 64, 66, 'FRA'],
-        ['Martin Adeline', 'CM', 23, 64, 69, 'FRA'],
-        ['Tawfik Bentayeb', 'ST', 24, 65, 69, 'MAR']
-      ]],
       ['EA Guingamp', 'EAG', '#E2001A', '#000000', 52, 18378, [
         ['Teddy Bartouche', 'GK', 29, 62, 62, 'FRA'],
         ['Donatien Gomis', 'CB', 32, 62, 62, 'SEN'],
@@ -531,30 +487,12 @@ COUNTRY_DATA.push({
         ['Sam Sanna', 'CM', 26, 62, 64, 'FRA'],
         ['Malik Tchokounté', 'ST', 38, 60, 60, 'FRA']
       ]],
-      ['SC Bastia', 'SCB', '#0055A4', '#FFFFFF', 51, 16480, [
-        ['Johny Placide', 'GK', 38, 63, 63, 'HAI'],
-        ['Dominique Guidi', 'CB', 30, 63, 63, 'FRA'],
-        ['Anthony Roncaglia', 'CB', 29, 62, 62, 'FRA'],
-        ['Lloyd Palun', 'LB', 38, 60, 60, 'GAB'],
-        ['Christophe Vincent', 'CM', 34, 63, 63, 'FRA'],
-        ['Tom Ducrocq', 'CDM', 27, 64, 65, 'FRA'],
-        ['Sébastien Salles-Lamonge', 'CM', 30, 63, 63, 'FRA'],
-        ['Florian Bohnert', 'RM', 29, 62, 62, 'LUX'],
-        ['Félix Tomi', 'ST', 23, 63, 69, 'FRA'],
-        ['Benjamin Santelli', 'ST', 35, 61, 61, 'FRA']
-      ]],
       ['Pau FC', 'PAU', '#FFD200', '#003B79', 48, 4000, [
         ['Antoine Batisse', 'CM', 31, 61, 61, 'FRA'],
         ['Steeve Beusnard', 'CM', 34, 61, 61, 'FRA']
       ]],
       ['Red Star FC', 'RSF', '#00843D', '#FFFFFF', 49, 6000, [
         ['Damien Durand', 'CB', 31, 61, 61, 'FRA']
-      ]],
-      ['Amiens SC', 'ASC', '#000000', '#FFFFFF', 51, 12097, [
-        ['Nicholas Opoku', 'CB', 29, 64, 64, 'GHA'],
-        ['Mamadou Fofana', 'CB', 28, 63, 63, 'MLI'],
-        ['Antoine Leautey', 'RW', 30, 63, 63, 'FRA'],
-        ['Gaël Kakuta', 'CAM', 35, 66, 66, 'COD']
       ]],
       ['Rodez AF', 'RAF', '#C8102E', '#FFD200', 48, 5955, [
         ['Quentin Braat', 'GK', 29, 62, 62, 'FRA'],
@@ -577,19 +515,79 @@ COUNTRY_DATA.push({
         ['Enzo Bardeli', 'CAM', 25, 63, 66, 'FRA'],
         ['Abdellah Zoubir', 'LW', 35, 61, 61, 'FRA']
       ]],
-      ['Le Mans FC', 'LMF', '#C8102E', '#FFD200', 48, 25064, []],
       ['AS Nancy Lorraine', 'NCY', '#E2001A', '#FFFFFF', 49, 20087, []],
-      ['US Boulogne', 'BLO', '#C8102E', '#000000', 46, 14500, []]
+      ['US Boulogne', 'BLO', '#C8102E', '#000000', 46, 14500, []],
+      ['FC Nantes', 'NAN', '#FCD405', '#00805F', 64, 35322, [
+        ['Anthony Lopes', 'GK', 36, 79, 79, 'POR', [78, 76, 77, 81, 50, 77]],
+        ['Patrik Carlgren', 'GK', 34, 69, 69, 'SWE'],
+        ['Jean-Charles Castelletto', 'CB', 31, 74, 74, 'CMR'],
+        ['Chidozie Awaziem', 'CB', 29, 75, 75, 'NGA'],
+        ['Nicolas Pallois', 'CB', 39, 71, 71, 'FRA'],
+        ['Uroš Radaković', 'CB', 32, 72, 72, 'SRB'],
+        ['Tylel Tati', 'CB', 21, 70, 78, 'FRA'],
+        ['Kelvin Amian', 'RB', 28, 74, 74, 'CMR'],
+        ['Fabien Centonze', 'RB', 30, 74, 74, 'FRA'],
+        ['Frédéric Guilbert', 'RB', 32, 70, 70, 'FRA'],
+        ['Nicolas Cozza', 'LB', 27, 73, 74, 'FRA'],
+        ['Pedro Chirivella', 'CDM', 29, 75, 75, 'ESP'],
+        ['Francis Coquelin', 'CDM', 35, 71, 71, 'FRA'],
+        ['Johann Lepenant', 'CM', 24, 75, 78, 'FRA'],
+        ['Louis Leroux', 'CM', 20, 69, 77, 'FRA'],
+        ['Herba Guirassy', 'CM', 20, 68, 77, 'FRA'],
+        ['Dehmaine Tabibou', 'CAM', 19, 64, 76, 'FRA'],
+        ['Rémy Cabella', 'CAM', 36, 72, 72, 'FRA'],
+        ['Yassine Benhattab', 'LW', 27, 72, 73, 'FRA'],
+        ['Ignatius Ganago', 'ST', 27, 72, 73, 'CMR'],
+        ['Matthis Abline', 'ST', 23, 76, 81, 'FRA'],
+        ['Mostafa Mohamed', 'ST', 28, 76, 76, 'EGY']
+      ]],
+      ['FC Metz', 'MET', '#7A0F2D', '#FFFFFF', 60, 30000, [
+        ['Jonathan Fischer', 'GK', 28, 73, 74, 'DEN'],
+        ['Pape Sy', 'GK', 25, 64, 68, 'SEN'],
+        ['Sadibou Sané', 'CB', 22, 70, 76, 'SEN'],
+        ['Terry Yegbe', 'CB', 25, 69, 72, 'GHA'],
+        ['Ismaël Traoré', 'CB', 40, 67, 67, 'CIV'],
+        ['Urie-Michel Mboula', 'CB', 21, 66, 74, 'FRA'],
+        ['Koffi Kouao', 'RB', 28, 72, 72, 'CIV'],
+        ['Maxime Colin', 'RB', 35, 69, 69, 'FRA'],
+        ['Fodé Ballo-Touré', 'LB', 29, 71, 71, 'SEN'],
+        ['Kévin Van Den Kerkhof', 'LB', 30, 70, 70, 'ALG'],
+        ['Boubacar Traoré', 'CDM', 25, 73, 75, 'MLI'],
+        ['Benjamin Stambouli', 'CDM', 36, 69, 69, 'FRA'],
+        ['Jessy Deminguet', 'CM', 28, 73, 73, 'FRA'],
+        ['Pape Amadou Diallo', 'LW', 22, 71, 76, 'SEN'],
+        ['Cheikh Sabaly', 'RW', 27, 70, 71, 'SEN'],
+        ['Giorgi Tsitaishvili', 'LW', 26, 72, 73, 'GEO'],
+        ['Ablie Jallow', 'RW', 28, 70, 70, 'GAM'],
+        ['Joël Asoro', 'ST', 27, 70, 71, 'SWE'],
+        ['Habib Diallo', 'ST', 31, 72, 72, 'SEN']
+      ]],
+      ['Dijon FCO', 'DFC', '#E30613', '#FFFFFF', 46, 15995, []],
+      ['FC Sochaux-Montbéliard', 'FCS', '#FFD200', '#003B79', 47, 20005, []]
     ]},
     { id: 'FRA3', name: 'National', tier: 3, clubs: [
       ['SM Caen', 'SMC', '#00447C', '#FFFFFF', 45, 20300, [
         ['Alexandre Mendy', 'ST', 32, 63, 63, 'FRA']
       ]],
-      ['FC Sochaux-Montbéliard', 'FCS', '#FFD200', '#003B79', 44, 20005, []],
-      ['Dijon FCO', 'DFC', '#E30613', '#FFFFFF', 43, 15995, []],
+      ['Amiens SC', 'ASC', '#000000', '#FFFFFF', 48, 12097, [
+        ['Nicholas Opoku', 'CB', 29, 64, 64, 'GHA'],
+        ['Mamadou Fofana', 'CB', 28, 63, 63, 'MLI'],
+        ['Antoine Leautey', 'RW', 30, 63, 63, 'FRA'],
+        ['Gaël Kakuta', 'CAM', 35, 66, 66, 'COD']
+      ]],
+      ['SC Bastia', 'SCB', '#0055A4', '#FFFFFF', 48, 16480, [
+        ['Johny Placide', 'GK', 38, 63, 63, 'HAI'],
+        ['Dominique Guidi', 'CB', 30, 63, 63, 'FRA'],
+        ['Anthony Roncaglia', 'CB', 29, 62, 62, 'FRA'],
+        ['Lloyd Palun', 'LB', 38, 60, 60, 'GAB'],
+        ['Christophe Vincent', 'CM', 34, 63, 63, 'FRA'],
+        ['Tom Ducrocq', 'CDM', 27, 64, 65, 'FRA'],
+        ['Sébastien Salles-Lamonge', 'CM', 30, 63, 63, 'FRA'],
+        ['Florian Bohnert', 'RM', 29, 62, 62, 'LUX'],
+        ['Félix Tomi', 'ST', 23, 63, 69, 'FRA'],
+        ['Benjamin Santelli', 'ST', 35, 61, 61, 'FRA']
+      ]],
       ['Valenciennes FC', 'VAF', '#E30613', '#FFFFFF', 41, 25172, []],
-      ['LB Châteauroux', 'LBC', '#003B79', '#FFFFFF', 40, 17072, []],
-      ['FC Martigues', 'MAR', '#E30613', '#FFFFFF', 39, 4000, []],
       ['FC Rouen', 'FCR', '#E30613', '#FFFFFF', 39, 12018, []],
       ['US Quevilly-Rouen', 'QRM', '#FFD200', '#000000', 38, 12018, []],
       ['US Orléans', 'ORL', '#C8102E', '#FFFFFF', 38, 7533, []],
@@ -597,29 +595,31 @@ COUNTRY_DATA.push({
       ['US Concarneau', 'CON', '#C8102E', '#FFFFFF', 37, 6500, []],
       ['Bourg-en-Bresse Péronnas 01', 'BOU', '#E30613', '#FFFFFF', 37, 11400, []],
       ['FC Villefranche Beaujolais', 'VIL', '#003B79', '#FFFFFF', 36, 3200, []],
-      ['Stade Briochin', 'SBR', '#E30613', '#FFFFFF', 36, 13000, []],
       ['Paris 13 Atletico', 'PAT', '#E2001A', '#FFFFFF', 36, 5000, []],
       ['Aubagne FC', 'AUB', '#003B79', '#FFFFFF', 35, 3000, []],
       ['Le Puy Foot 43', 'PUY', '#00843D', '#FFFFFF', 35, 5000, []],
-      ['FC Fleury 91', 'FLE', '#1B2A4E', '#FFFFFF', 35, 2000, []]
+      ['FC Fleury 91', 'FLE', '#1B2A4E', '#FFFFFF', 35, 2000, []],
+      ['AS Cannes', 'CAN', '#E30613', '#FFFFFF', 32, 12300, []],
+      ['US Thionville Lusitanos', 'THI', '#87CEEB', '#808080', 35, 4000, []],
+      ['VFC La Roche-sur-Yon', 'ROC', '#E30613', '#FFFFFF', 35, 9000, []]
     ]},
     { id: 'FRA4', name: 'National 2', tier: 4, clubs: [
-      ['FC Girondins de Bordeaux', 'GIR', '#002B5C', '#FFFFFF', 33, 42115, []],
+      ['LB Châteauroux', 'LBC', '#003B79', '#FFFFFF', 37, 17072, []],
+      ['Stade Briochin', 'SBR', '#E30613', '#FFFFFF', 33, 13000, []],
       ['Nîmes Olympique', 'NIM', '#E30613', '#FFFFFF', 31, 8000, []],
-      ['AS Cannes', 'CAN', '#E30613', '#FFFFFF', 29, 12300, []],
       ['US Créteil-Lusitanos', 'CRE', '#003B79', '#FFFFFF', 28, 12150, []],
       ['SC Toulon', 'TOU', '#FFD200', '#003B79', 28, 8000, []],
-      ['FC Mulhouse', 'MUL', '#003B79', '#FFFFFF', 26, 11300, []],
-      ['SO Cholet', 'CHO', '#E30613', '#FFFFFF', 27, 4000, []],
       ['SAS Épinal', 'EPI', '#E30613', '#FFFFFF', 26, 7000, []],
       ['Angoulême Charente FC', 'ANG', '#003B79', '#FFD200', 25, 8000, []],
       ['US Avranches', 'AVR', '#E30613', '#FFFFFF', 25, 2500, []],
       ['Les Herbiers VF', 'HER', '#E30613', '#000000', 25, 3000, []],
-      ['Bergerac Périgord FC', 'BER', '#00843D', '#FFFFFF', 24, 5000, []],
-      ['RC Grasse', 'GRA', '#003B79', '#FFFFFF', 24, 3000, []],
       ['Hyères FC', 'HYE', '#FFD200', '#003B79', 24, 5000, []],
       ['US Saint-Malo', 'STM', '#E30613', '#FFFFFF', 24, 4000, []],
-      ['Stade Poitevin FC', 'POI', '#00843D', '#FFFFFF', 24, 4000, []]
+      ['FC Chambly Oise', 'CHB', '#003B79', '#000000', 28, 4550, []],
+      ['Istres FC', 'IST', '#5E2C82', '#000000', 26, 12500, []],
+      ['Aviron Bayonnais FC', 'BAY', '#6CACE4', '#FFFFFF', 25, 3500, []],
+      ['Racing CFF', 'RAC', '#6CACE4', '#FFFFFF', 25, 2500, []],
+      ['US Granville', 'GRV', '#E30613', '#000000', 24, 3200, []]
     ]}
   ]
 });

@@ -347,7 +347,7 @@ function resolveEvent(uid, ci) {
   const def = eventDef(ev); if (!def) return { r: 'Sprawa nieaktualna.', fx: [] };
   if (def.ext && ctx.p && (ctx.p.tid < 0 || ctx.p.tid === S.user)) return { r: 'Sprawa nieaktualna – zawodnik zmienił już klub.', fx: [] };
   if ((ev.ctx.p != null && !ctx.p) || (ctx.p && !def.ext && ctx.p.tid !== S.user && ctx.p.tid !== -3)) return { r: 'Sprawa nieaktualna – zawodnik nie jest już w klubie.', fx: [] };
-  const ch = def.choices[ci];
+  const ch = def.choices[ci] || def.choices[0];
   let o = ch, risky = false;
   if (ch.alt && rnd() < evText(ch.alt.p, ctx)) { o = ch.alt; risky = true; }
   const fx = o.fn ? o.fn(ctx) : o.fx;

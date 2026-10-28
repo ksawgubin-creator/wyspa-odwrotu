@@ -135,7 +135,8 @@ function squadPlayer(c, pos, role) {
   else { age = ri(22, 34); target = lvl - 9 + gauss() * 3; }
   const nat = rnd() < (DOM[c.cc] || 0.6) ? S.countries[c.cc].nat : foreignNat(c.rep >= 78);
   const p = genPlayer(pos, target, nat, { age });
-  if (age <= 21 && rnd() < 0.045) { p.pot = clamp(Math.max(p.pot, Math.round(lvl + ri(10, 22))), p.ovr, 95); p.gem = 1; p.val = calcValue(p); }  // ukryty talent
+  if (age <= 21 && S.season > (S.startSeason || 2026) && !p.gem) p.pot = clamp(Math.min(p.pot, Math.round(lvl + 3 + gauss() * 4)), p.ovr, 95);   // uzupełnienia w trakcie gry: bez inflacji potencjału
+  if (age <= 21 && rnd() < (S.season > (S.startSeason || 2026) ? 0.02 : 0.045)) { p.pot = clamp(Math.max(p.pot, Math.round(lvl + ri(8, S.season > (S.startSeason || 2026) ? 14 : 22))), p.ovr, 93); p.gem = 1; p.val = calcValue(p); }  // ukryty talent
   p.wage = calcWage(p, c.rep); p.tid = c.id;
   return p;
 }
@@ -245,7 +246,7 @@ const tierOf = id => S.leagues[club(id).lg].tier;
 function buildCups() {
   S.cups = {};
   for (const cc in S.countries) {
-    const ids = S.countries[cc].leagues.flatMap(l => S.leagues[l].clubs);
+    const ids = S.countries[cc].leagues.flatMap(l => S.leagues[l].clubs).filter(id => !isReserve(club(id)));
     const R = Math.max(1, Math.ceil(Math.log2(ids.length)));
     S.cups[cc] = { cc, name: CUP_NAMES[cc] || `Puchar kraju (${S.countries[cc].name})`, R, slot0: CUP_AFTER.length - R, teams: ids, rounds: [], byes: [], champion: null };
   }
@@ -374,7 +375,7 @@ function euroZones(cc) {
 function allocateEurope() {
   const rank = countryRanking();
   const eps = rank.slice().sort((a, b) => b.last - a.last).slice(0, 2).map(r => r.cc);
-  const tableOf = cc => { const top = S.countries[cc].leagues[0]; return (S.lastTables[top] || S.leagues[top].clubs).filter(id => club(id).lg === top || S.leagues[top].clubs.includes(id)); };
+  const tableOf = cc => { const top = S.countries[cc].leagues[0]; return (S.lastTables[top] || S.leagues[top].clubs).filter(id => (club(id).lg === top || S.leagues[top].clubs.includes(id)) && !isReserve(club(id))); };
   const W = S.lastWinners || {}, used = new Set();
   const E = {}; for (const id of ['CL', 'EL', 'ECL']) E[id] = { teams: [], entry: [[], [], [], []] };
   // obrońcy tytułów: LM i LE → faza ligowa LM, LK → faza ligowa LE (ich miejsce z ligi przechodzi na kolejny klub)
@@ -894,7 +895,7 @@ function weekly(d) {
   if (d.ls === 20) msg('Zimowe okno transferowe', 'Otwiera się zimowe okno transferowe (do kolejki 24).');
   if (d.ls % 5 === 4) S.board.conf = clamp(S.board.conf + clamp(S.board.target - leaguePos(ut), -4, 4) * 1.3, 0, 100);
   if (ut.bal < 0) { S.board.conf = clamp(S.board.conf - clamp(-ut.bal / (20 * (ut.tv + ut.spons)), 0.5, 4), 0, 100); ut.tb = Math.min(ut.tb, 0); if (d.ls % 6 === 0) msg('Długi klubu', `Saldo klubu jest ujemne (${money(ut.bal)}). Zarząd zamroził budżet transferowy i traci cierpliwość.`); }
-  if (d.ls >= 10 && S.board.conf <= 12) sack();
+  if (d.ls >= 10 && S.board.conf <= 12 - legendBuf() * 0.4) sack();
 }
 
 /* ---------- skauting ---------- */
@@ -1172,7 +1173,7 @@ function refillAI(c) {
   const posFor = { GK: ['GK'], DEF: ['CB', 'LB', 'RB'], MID: ['CDM', 'CM', 'CAM'], ATT: ['ST', 'LW', 'RW'] };
   for (const [line, n] of [['GK', 3], ['DEF', 7], ['MID', 7], ['ATT', 4]]) while (cnt(line) < n) { const p = squadPlayer(c, pick(posFor[line]), 2); c.players.push(p); }
   while (c.players.length < 22) c.players.push(squadPlayer(c, pick(POSITIONS.slice(1)), 2));
-  while (c.players.length > 28) { const w = c.players.filter(p => !p.loan).sort((a, b) => a.ovr - b.ovr)[0]; if (!w) break; detach(w); w.tid = -1; S.free.push(w); }
+  while (c.players.length > 27) { const w = c.players.filter(p => !p.loan).sort((a, b) => (a.ovr - a.age * 0.3) - (b.ovr - b.age * 0.3))[0]; if (!w) break; detach(w); w.tid = -1; S.free.push(w); }
 }
 function genOffers() {
   const ut = userClub();
@@ -1310,6 +1311,16 @@ const BOARD_GOALS = {
   fans: [ut => 'Utrzymaj poparcie kibiców na poziomie co najmniej 60%', ut => (S.fans || 0) >= 60, ut => Math.round(S.fans || 0) + '%'],
   acad: [ut => 'Wypromuj co najmniej jednego wychowanka do pierwszego zespołu', ut => (S.promoted || {})[S.season] >= 1, ut => `${(S.promoted || {})[S.season] || 0}/1`],
 };
+const RES_MAP = { 'Real Madrid Castilla': 'Real Madrid', 'Barça Atlètic': 'FC Barcelona', 'Atlético Madrileño': 'Atlético Madrid', 'Betis Deportivo': 'Real Betis', 'Sevilla Atlético': 'Sevilla', 'Juventus Next Gen': 'Juventus', 'RSCA Futures': 'RSC Anderlecht' };
+function reserveParent(c) {
+  if (c._par !== undefined) return c._par;
+  let base = RES_MAP[c.name] || null;
+  if (!base && (/ (B|II|U21|U23)$/.test(c.name) || /^Jong /.test(c.name))) base = c.name.replace(/ (B|II|U21|U23)$/, '').replace(/^Jong /, '');
+  let par = null;
+  if (base) { const p = S.clubs.find(x => x !== c && x.cc === c.cc && (x.name === base || x.name.startsWith(base + ' ') || x.name.endsWith(' ' + base))); par = p ? p.id : null; }
+  return (c._par = par);
+}
+const isReserve = c => reserveParent(c) != null;
 function cupReach(ut) { const cup = S.cups && S.cups[ut.cc]; if (!cup) return 99; let best = 99; for (const T of cup.rounds) if (T && T.some(t => t.h === ut.id || t.a === ut.id)) best = Math.min(best, T.length * 2); return best; }
 function pickSideGoals() {
   const ut = userClub(), keys = shuffle(Object.keys(BOARD_GOALS)).slice(0, 2);
@@ -1324,7 +1335,9 @@ function setBoardObjective() {
   const lv = lg.clubs.map(id => ({ id, l: teamLevel(club(id)) })).sort((a, b) => b.l - a.l);
   const rank = lv.findIndex(x => x.id === ut.id) + 1, n = lg.clubs.length;
   const down = lg.tier < ls.length ? promoN(lg.cc, lg.tier) : 0, up = lg.tier > 1 ? promoN(lg.cc, lg.tier - 1) : 0;
-  let target = clamp(rank + 1, 1, Math.max(1, n - down - 1)), text;
+  let target = rank > n - down - 1 && down ? n - down : clamp(rank + 1, 1, Math.max(1, n - down - 1)), text;
+  // przejęcie w trakcie sezonu: cel uwzględnia aktualną pozycję w tabeli
+  const tbNow = table(ut.lg), me = tbNow.find(r => r.id === ut.id); if (me && me.P >= 5) target = clamp(Math.max(target, me.pos - 2), 1, n);
   const upName = lg.tier > 1 ? S.leagues[ls[lg.tier - 2]].name : '';
   if (lg.tier > 1 && target <= up) text = `Celem zarządu jest awans (do ligi: ${upName}).`;
   else if (target <= 1) text = `Zarząd oczekuje mistrzostwa (${lg.name}).`;
@@ -1482,7 +1495,7 @@ function endSeason() {
   evalSideGoals(lines);
   if (typeof seasonMeta === 'function') seasonMeta({ finals, upos, wasLg, wasTier, myEuro, myCup, lines });
   // współczynniki
-  for (const cc in S.countries) { const c = S.countries[cc], r = S.cpts[cc]; c.coef.shift(); c.coef.push(r && r.n ? Math.round(r.pts / r.n * 1000) / 1000 : 0); }
+  for (const cc in S.countries) { const c = S.countries[cc], r = S.cpts[cc]; c.coef.shift(); const raw = r && r.n ? r.pts / r.n : 0, base = avg(COEF0[cc] || [3]); c.coef.push(Math.round((raw * 0.7 + base * 0.3) * 1000) / 1000); }
   for (const id in S.ccoef) { S.ccoef[id].shift(); S.ccoef[id].push(0); }
   // reprezentacje
   if (S.ntc && S.ntc.tourn && S.ntc.tourn.champion) { S.ntHist.push({ season: S.season, name: S.ntc.tourn.name, champ: S.ntc.tourn.champion }); lines.push(`🌍 ${S.ntc.tourn.name}: zwycięża ${NAT[S.ntc.tourn.champion].flag} ${NAT[S.ntc.tourn.champion].name}.`); }
@@ -1491,7 +1504,10 @@ function endSeason() {
     const ls = S.countries[cc].leagues;
     for (let k = 0; k + 1 < ls.length; k++) {
       const l1 = ls[k], l2 = ls[k + 1], n = promoN(cc, k + 1);
-      const down = finals[l1].slice(-n).map(r => r.id), up = finals[l2].slice(0, n).map(r => r.id);
+      const down = finals[l1].slice(-n).map(r => r.id);
+      // drużyny rezerw nie mogą awansować na poziom klubu macierzystego (ani wyżej)
+      const canUp = id => { const c = club(id), par = reserveParent(c); return par == null || S.leagues[club(par).lg].tier < S.leagues[l1].tier; };
+      const up = finals[l2].map(r => r.id).filter(canUp).slice(0, n);
       const L1 = S.leagues[l1], L2 = S.leagues[l2];
       L1.clubs = L1.clubs.filter(id => !down.includes(id)).concat(up); L2.clubs = L2.clubs.filter(id => !up.includes(id)).concat(down);
       down.forEach(id => { const c = club(id); c.lg = l2; c.rep = clamp(c.rep - 3, 1, 99); setupTV(c); if (c.id !== S.user) rebalanceSpons(c); });
@@ -1510,7 +1526,9 @@ function endSeason() {
   if (S.nt && S.ntc.tourn && S.ntc.tourn.champion === S.nt) mgrGain(6);
   lines.push(`🧑‍💼 OVR trenera: ${Math.round(before)} → ${Math.round(S.mgr.ovr)}.`);
   // reputacja klubów
-  for (const id in finals) { const n = finals[id].length; finals[id].forEach(r => { const c = club(r.id); if (c.id !== ut.id) c.rep = clamp(c.rep + (r.pos <= 2 ? 1 : r.pos >= n - 1 ? -1 : 0), 5, 97); }); }
+  for (const id in finals) { const n = finals[id].length; finals[id].forEach(r => { const c = club(r.id); if (c.rep0 == null) c.rep0 = c.rep; if (c.id !== ut.id) c.rep = clamp(c.rep + (r.pos <= 2 && rnd() < (97 - c.rep) / 15 ? 1 : r.pos >= n - 1 ? -1 : 0), 5, 97); }); }
+  // powolny powrót reputacji do długoterminowego poziomu klubu (mniej wiecznych dynastii)
+  for (const c of S.clubs) { if (c.rep0 == null) c.rep0 = c.rep; if (c.id !== ut.id && rnd() < 0.25) c.rep += Math.sign(c.rep0 - c.rep); }
   if (upos.pos <= 2) ut.rep = clamp(ut.rep + 2, 1, 97);
   if (myEuro && myEuro.champion === ut.id) ut.rep = clamp(ut.rep + 3, 1, 97);
   // nagrody indywidualne
@@ -1532,11 +1550,13 @@ function endSeason() {
   for (const c of S.clubs) {
     for (const p of c.players.slice()) {
       if (p.age <= 24 && p.pot > 0) {
-        const d = clamp(Math.round((p.pt - 0.4) * 6 + (traits(p).pro - 10) * 0.25 + gauss() * 1.8 + (p.loan && p.tid !== p.loan.from ? 1 : 0)), -6, 6);
+        let d = (p.pt - 0.6) * 3 + (traits(p).pro - 10.5) * 0.2 + gauss() * 1.4 + (p.loan && p.tid !== p.loan.from ? 1 : 0);
+        if (d > 0) d *= clamp((88 - p.pot) / 12, 0.1, 1);   // im wyższy potencjał, tym trudniej o dalszy wzrost
+        d = clamp(Math.round(d), -6, 6);
         const old = p.pot; p.pot = clamp(p.pot + d, p.ovr, 95);
         if (c === ut && Math.abs(p.pot - old) >= 4) potNotes.push(`${p.n} ${p.pot > old ? '📈 zaskakuje – rośnie jego potencjał' : '📉 rozczarowuje – potencjał spada'}`);
       }
-      if (p.st.apps > 0 || c === ut) { (p.hist = p.hist || []).push({ s: S.season, c: c.short, ovr: p.ovr, m: p.st.apps, g: p.st.g, a: p.st.a }); if (p.hist.length > 12) p.hist.shift(); }
+      if (c === ut || (p.st.apps > 0 && (p.ovr >= 76 || (p.age <= 21 && p.pot >= 80) || p.hist))) { (p.hist = p.hist || []).push({ s: S.season, c: c.short, ovr: p.ovr, m: p.st.apps, g: p.st.g, a: p.st.a }); if (p.hist.length > 10) p.hist.shift(); }
       p.age++;
       if (p.age >= 30) p.pot = Math.min(p.pot, p.ovr + 1);
       p.inj = 0; p.susp = 0; p.fit = 100; p.form = 50; p.shp = 60; p.st = newStats(); p.lg = 0; p.eg = 0; p.listed = false; p.pt = 0.5;
@@ -1561,13 +1581,14 @@ function endSeason() {
   // młodzież
   for (const c of S.clubs) {
     if (c === ut) { refillAI(c); continue; }
-    const n = ri(1, 3);
+    const n = c.players.length >= 26 ? ri(0, 1) : c.players.length >= 23 ? ri(1, 2) : ri(1, 3);
     const youth = [];
     for (let i = 0; i < n; i++) {
       const pos = pick(POSITIONS);
-      const nat = rnd() < 0.8 ? S.countries[c.cc].nat : foreignNat(false), potBase = 55 + c.rep * 0.2 + (NAT[nat] ? NAT[nat].str : 50) * 0.1;
-      const y = genPlayer(pos, 0, nat, { age: ri(16, 18), adjAge: false, pot: clamp(Math.round(potBase + gauss() * 9 + (rnd() < 0.04 ? ri(8, 15) : 0)), 55, 95) });
-      const a = genAttrs(pos, ri(42, 56)); y.a = a; y.ovr = calcOvr(pos, a); y.alt = bestAlt(pos, a); y.pot = Math.max(y.pot, y.ovr + 5);
+      // potencjał wychowanków zależy od poziomu klubu (bez inflacji jakości w niższych ligach); rzadkie perełki wszędzie
+      const nat = rnd() < 0.8 ? S.countries[c.cc].nat : foreignNat(false), potBase = 52 + c.rep * 0.25 + ((NAT[nat] ? NAT[nat].str : 50) - 60) * 0.05;
+      const y = genPlayer(pos, 0, nat, { age: ri(16, 18), adjAge: false, pot: clamp(Math.round(potBase + gauss() * 6 + (rnd() < 0.03 ? ri(8, 14) : 0)), 50, 93) });
+      const a = genAttrs(pos, clamp(Math.round(34 + c.rep * 0.15 + gauss() * 3), 38, 56)); y.a = a; y.ovr = calcOvr(pos, a); y.alt = bestAlt(pos, a); y.pot = Math.max(y.pot, y.ovr + 5);
       y.con = 3; y.val = calcValue(y); y.wage = Math.round(calcWage(y, c.rep) * 0.6 / 100) * 100; attach(y, c); youth.push(y);
     }
     refillAI(c);
@@ -1580,7 +1601,11 @@ function endSeason() {
   // ekonomia AI: wydawanie pieniędzy, ratowanie zadłużonych
   for (const c of S.clubs) {
     if (c.id === ut.id) continue;
-    c.tb = Math.max(c.tb, Math.round(0.35 * c.bal));
+    // nadwyżka ponad ~80 tygodni pensji idzie na infrastrukturę i koszty (odpływ pieniędzy z gry)
+    const bill = sum(c.players.map(p => p.wage)), cap = bill * 80;
+    if (c.bal > cap) c.bal = Math.round(cap + (c.bal - cap) * 0.6);
+    c.tb = Math.min(Math.max(c.tb, Math.round(0.35 * c.bal)), Math.max(0, Math.round(c.bal * 0.7)));
+    rebalanceSpons(c);
     if (c.bal < 0) {
       const star = c.players.filter(p => !p.loan).sort((a, b) => b.wage - a.wage)[0];
       const buyer = star && S.clubs.find(b => b.id !== c.id && b.id !== ut.id && b.tb >= star.val && b.rep >= c.rep - 5 && b.players.length < 27);
@@ -1595,7 +1620,7 @@ function endSeason() {
   for (const c of S.clubs) { c.level = teamLevel(c); c.price = 5 + c.rep * 0.3; }
   ut.spons = Math.round(ut.spons * (1 + (ut.rep - 60) / 600) / 1000) * 1000;
   ut.tb += Math.max(0, Math.round((ut.fin.inc - ut.fin.exp) * 0.3));
-  if (S.board.conf <= 12) sack(); else S.board.conf = Math.round(45 + (S.board.conf - 45) * 0.5);
+  if (S.board.conf <= 12 - legendBuf() * 0.4) sack(); else S.board.conf = Math.round(Math.max(45 + legendBuf() * 0.6, 45 + (S.board.conf - 45) * 0.5));
   // nowy sezon
   S.season++; S.day = 0; S.offers = []; S.scoutMarket = Array.from({ length: 5 }, genScout);
   for (const n of NATIONS) { S.ntTeams[n.code].sq = S.ntTeams[n.code].sq.filter(id => PM.has(id)); }
@@ -1617,12 +1642,14 @@ function rebalanceSpons(c) { const bill = sum(c.players.map(p => p.wage)), gateA
 
 /* ---------- praca ---------- */
 function mgrGain(d) { if (d > 0) d *= clamp((95 - S.mgr.ovr) / 50, 0.15, 1); S.mgr.ovr = clamp(Math.round((S.mgr.ovr + d) * 10) / 10, 20, 99); S.mgr.best = Math.max(S.mgr.best || 0, S.mgr.ovr); }
-function sack() { if (S.sacked) return; S.sacked = true; mgrGain(-4); msg('Zwolnienie', 'Zarząd rozwiązał z Tobą umowę. Twoja reputacja ucierpiała.'); }
+// „status legendy”: trofea z ostatnich 5 sezonów chronią przed pochopnym zwolnieniem
+function legendBuf() { const T = (S.trophies || []).filter(t => t.club === S.user && t.season >= S.season - 4 && t.kind !== 'pre'); return Math.min(25, T.length * 6); }
+function sack() { if (S.sacked) return; S.sacked = true; mgrGain(S.mgr.ovr < 40 ? -1.5 : -4); msg('Zwolnienie', 'Zarząd rozwiązał z Tobą umowę. Twoja reputacja ucierpiała.'); }
 const mgrLabel = o => o >= 85 ? 'Legenda' : o >= 76 ? 'Światowa klasa' : o >= 67 ? 'Uznany w Europie' : o >= 58 ? 'Solidny trener krajowy' : o >= 48 ? 'Trener niższych lig' : 'Debiutant';
 const maxRepFor = ovr => ovr + 8;           // najwyższa reputacja klubu, który może zaoferować pracę
 function fitsMgr(c) { return c.rep <= maxRepFor(S.mgr.ovr) && c.rep >= S.mgr.ovr - 30; }
 function jobOffers() {
-  let l = S.clubs.filter(c => c.id !== S.user && c.rep <= S.mgr.ovr - 4 && c.rep >= S.mgr.ovr - 30);
+  let l = S.clubs.filter(c => c.id !== S.user && c.rep <= S.mgr.ovr + 2 && c.rep >= S.mgr.ovr - 25 && !isReserve(c));
   if (l.length < 3) l = S.clubs.filter(c => c.id !== S.user && fitsMgr(c));
   return l.sort(() => rnd() - 0.5).slice(0, 6).sort((a, b) => b.rep - a.rep);
 }

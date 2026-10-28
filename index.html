@@ -2,9 +2,15 @@
 <html lang="pl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#0b1220">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Kariera Menedżera</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,8 +22,11 @@
 <div id="start"></div>
 <div id="match" class="hidden"></div>
 <div id="modal" class="hidden"></div>
+<div id="busy" class="hidden"><div class="spin"></div><span>Wczytywanie…</span></div>
 <div id="toast"></div>
+<script src="data.js"></script>
 <script src="engine.js"></script>
+<script src="world.js"></script>
 <script src="ui.js"></script>
 </body>
 </html>

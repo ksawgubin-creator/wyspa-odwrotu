@@ -1,0 +1,10 @@
+{
+  "appId": "pl.kariera.menedzera",
+  "appName": "Kariera Menedżera",
+  "webDir": "www",
+  "backgroundColor": "#0b1220",
+  "android": {
+    "backgroundColor": "#0b1220",
+    "adjustMarginsForEdgeToEdge": "force"
+  }
+}

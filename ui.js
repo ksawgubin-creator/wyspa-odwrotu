@@ -73,7 +73,7 @@ let SWIPE_DIR = null;
 function render() {
   const ut = userClub(), d = curDay();
   $('#top').innerHTML = `${badge(ut)}<div class="tt"><b>${esc(ut.name)}</b><small>${d ? fmtDate(d.date) : ''} • ${SEASON_LABEL(S.season)}</small></div>
-    <div class="money">${money(ut.bal)}<small class="${windowOpen() ? 'good' : 'mut'}">${windowOpen() ? '🟢 okno otwarte' : '🔒 okno zamknięte'}</small></div>`;
+    <div class="money"><small class="mut" style="font-size:10px;display:block;line-height:1">saldo</small>${money(ut.bal)}<small class="${windowOpen() ? 'good' : 'mut'}">${windowOpen() ? '🟢 okno otwarte' : '🔒 okno zamknięte'}</small></div>`;
   const unread = S.inbox.filter(m => !m.read).length;
   const cur = navCur();
   $('#nav').innerHTML = NAV.map(([k, n]) => `<button class="${cur === k ? 'on' : ''}" data-act="nav" data-arg="${k}"><i>${navIcon(k, cur === k)}</i>${n}${k === 'home' && unread ? `<span class="dot">${unread}</span>` : ''}${k === 'market' && S.offers.length ? `<span class="dot">${S.offers.length}</span>` : ''}</button>`).join('');
@@ -131,7 +131,7 @@ function peekUser() {
 function fixtureAt(i) {
   {
     const d = S.cal[i];
-    if (d.t === 'P' && S.pre) { const T = S.pre.chosen; if (d.md === 0) return { i, d, h: userClub(), a: T ? club(T.teams[0]) : { short: '?', name: 'Turniej przedsezonowy', col: ['#334', '#fff'] }, label: `${T ? T.name : 'Turniej przedsezonowy'} • Półfinał`, pre: true }; if (i === S.day) { const x = userMatchToday(); if (x) return { i, d, h: x.h, a: x.a, label: x.opts.label, pre: true }; } }
+    if (d.t === 'P' && S.pre) { const T = S.pre.chosen; if (d.md === 0) return { i, d, h: userClub(), a: T ? club(T.teams[0]) : { short: '☀', name: 'wybierz turniej', col: ['#334', '#fff'] }, label: `${T ? T.name : 'Turniej przedsezonowy'} • Półfinał`, pre: true }; if (i === S.day) { const x = userMatchToday(); if (x) return { i, d, h: x.h, a: x.a, label: x.opts.label, pre: true }; } }
     if (d.t === 'L') { const lg = S.leagues[userClub().lg], r = lg.lsMap[d.ls]; if (r >= 0) { const f = lg.fix[r].find(f => f.h === S.user || f.a === S.user); return { i, d, h: club(f.h), a: club(f.a), label: `${lg.name} • ${r + 1}. kolejka`, sc: f.p ? [f.hg, f.ag] : null }; } }
     if (d.t === 'E' && d.st === 'Q') { for (const c of Object.values(S.euro)) { if (!c.q) continue; const T = c.q.rounds[d.r];
       const t = T && T.find(t => t.a === S.user || t.b === S.user);
@@ -163,7 +163,7 @@ function vSquadStats(t) {
   const st = S.stats || {}, res = S.results || [], lgs = topScorers(t.lg, 5), lga = S.leagues[t.lg].clubs.flatMap(id => club(id).players).filter(p => p.st.a > 0).sort((a, b) => b.st.a - a.st.a).slice(0, 5);
   const tile = (ic, l, p, v) => `<div class="card stat" ${p ? `data-act="info" data-arg="${p.id}"` : ''}><small>${ic} ${l}</small><b>${p ? esc(lastName(p)) : '–'}</b><small>${p ? v : ''}</small></div>`;
   const th = (k, n) => `<th data-act="stsort" data-arg="${k}" style="cursor:pointer">${UI.stSort === k ? '▼' : ''}${n}</th>`;
-  return `<div class="grid3">${tile('⚽', 'Strzelec', bs, bs ? bs.st.g + ' goli' : '')}${tile('🅰️', 'Asysty', ba, ba ? ba.st.a + ' asyst' : '')}${tile('⭐', 'Ocena', br, br ? (br.st.rs / br.st.apps).toFixed(2) : '')}</div>
+  return `<div class="grid3">${tile('⚽', 'Strzelec', bs, bs ? plural(bs.st.g, 'gol', 'gole', 'goli') : '')}${tile('🅰️', 'Asysty', ba, ba ? plural(ba.st.a, 'asysta', 'asysty', 'asyst') : '')}${tile('⭐', 'Ocena', br, br ? (br.st.rs / br.st.apps).toFixed(2) : '')}</div>
     <div class="card"><b>Zespół</b><div class="kv"><div><span>Mecze (kariera)</span><b>${st.games || 0}</b></div><div><span>Zwycięstwa</span><b>${st.wins || 0} (${st.games ? Math.round(st.wins / st.games * 100) : 0}%)</b></div>
       <div><span>Seria bez porażki</span><b>${st.unbeaten || 0}</b></div><div><span>Rekord serii</span><b>${st.bestUnbeaten || 0}</b></div></div>
       <div class="chips">${res.slice(-10).map(c => `<span class="chip ${c}">${c === 'W' ? 'Z' : c === 'D' ? 'R' : 'P'}</span>`).join('')}</div></div>
@@ -192,7 +192,7 @@ function vHome() {
   </div>
   ${S.pre && !S.pre.chosen && S.pre.season === S.season && S.cal[S.day] && S.cal[S.day].t === 'P' ? preCard() : ''}
   ${upcomingStrip(nx)}
-  ${S.intake && S.intake.length ? `<div class="card hl" data-act="intake"><div class="row"><span style="font-size:22px">🎓</span><b class="sp">Dzień naboru do akademii!</b><small>Poznaj juniorów ›</small></div></div>` : ''}
+  ${S.intake && S.intake.length && (!S.intakeDay || absDay() - S.intakeDay < 45) ? `<div class="card hl" data-act="intake"><div class="row"><span style="font-size:22px">🎓</span><b class="sp">Dzień naboru do akademii!</b><small>Poznaj juniorów ›</small></div></div>` : ''}
   ${S.pending.length ? `<div class="card hl" data-act="event" data-arg="${S.pending[0].uid}"><div class="row"><span style="font-size:22px">📌</span><b class="sp">Decyzje do podjęcia (${S.pending.length})</b><small>${esc(S.pending[0].title)} ›</small></div></div>` : ''}
   <div class="grid3">
     <div class="card stat"><small>🏟️ Kibice</small><b>${Math.round(S.fans)}%</b>${bar(S.fans)}</div>
@@ -204,6 +204,7 @@ function vHome() {
     <div class="card stat"><small>Prestiż klubu</small>${presStars(ut)}<small>${presOf(ut).toFixed(1)}/10 • ${presWord(presOf(ut))}</small></div>
     <div class="card stat"><small>Drużyna</small><b>${moraleLabel(mAvg)[0]} ${moraleLabel(mAvg)[1]}</b><small>Morale ${mAvg} • kondycja ${fAvg}%</small>${bar(fAvg)}</div>
   </div>
+  ${S.offers.length ? `<div class="card hl" data-act="gooffers"><div class="row"><span style="font-size:22px">💰</span><b class="sp">Oferty za Twoich zawodników (${S.offers.length})</b><small>Zobacz ›</small></div></div>` : ''}
   ${S.jobs.length ? `<div class="card hl" data-act="jobs"><div class="row"><span style="font-size:22px">📨</span><b class="sp">Oferty pracy (${S.jobs.length})</b><small>Zobacz ›</small></div></div>` : ''}
   ${ec ? `<div class="card" data-act="goeuro" data-arg="${ec.id}"><div class="row"><span class="eu ${ec.id}">${ec.id === 'CL' ? '⭐' : ec.id === 'EL' ? '🟠' : '🟢'}</span><b class="sp">${ec.name}</b><small>${euroStatus(ec)}</small></div></div>` : ''}
   <div class="card"><div class="row"><b>Zarząd</b><span class="sp"></span><span class="${conf > 55 ? 'good' : conf > 30 ? 'warn' : 'bad'}">${conf > 70 ? 'Bardzo zadowolony' : conf > 50 ? 'Zadowolony' : conf > 30 ? 'Niezadowolony' : 'Na krawędzi zwolnienia!'}</span></div>
@@ -240,6 +241,7 @@ function preCard() {
       <small>${o.teams.map(id => `${badge(club(id), 'sm')} ${esc(club(id).name)}`).join(' • ')}</small><br><small class="mut">${esc(o.desc)} Udział: <b>${money(o.fee)}</b> • zwycięstwo: <b>${money(o.win)}</b></small>
       <div class="btns"><button class="btn sm pri" data-act="choosepre" data-arg="${i}">Przyjmij</button></div></div>`).join('')}</div>`;
 }
+ACT.gooffers = () => { navPush(); UI.tab = 'market'; UI.mkTab = 'offers'; render(); window.scrollTo(0, 0); };
 ACT.choosepre = i => { choosePre(+i); saveSoon(); render(); };
 function cupAlive(cup, r) {
   if (r === 0) { if (cup.rounds[0]) return true; const m = cup.teams.length - Math.pow(2, cup.R - 1); return cup.teams.slice().sort((a, b) => tierOf(b) - tierOf(a) || club(a).rep - club(b).rep).slice(0, 2 * m).includes(S.user); }
@@ -353,7 +355,7 @@ ACT.settac = a => { const [k, v] = a.split(':'), t = ctxTeam(); t.tac = t.tac ||
 ACT.mtac = a => { const [k, v] = a.split(':'), s = uside(); s.tac[k] = +v; s.t.tac = Object.assign({}, s.t.tac || {}, { [k]: +v }); M.dirty = true; ev(M, 'info', s, `📋 ${s.t.name}: ${TAC.find(x => x[0] === k)[1].toLowerCase()} – ${TAC.find(x => x[0] === k)[2][+v + 1].toLowerCase()}.`); upd(); ACT.mtactic(); };
 function vTactic(t) {
   const sp = t.sp || {}, ps = (t.players || []).filter(p => p.pos !== 'GK').slice().sort((a, b) => b.ovr - a.ovr);
-  const spSel = (k, n, key) => `<div><span>${n}</span><select data-change="setsp" data-k="${k}"><option value="">Automatycznie</option>${ps.map(p => `<option value="${p.id}" ${sp[k] === p.id ? 'selected' : ''}>${esc(lastName(p))} (${key(p)})</option>`).join('')}</select></div>`;
+  const spSel = (k, n, key) => `<div><span>${n}</span><select data-change="setsp" data-k="${k}"><option value="">Automatycznie</option>${ps.slice().sort((a, b) => (k === 'ck' ? b.a[2] - a.a[2] : k === 'fk' ? (b.a[1] + b.a[2]) - (a.a[1] + a.a[2]) : b.a[1] - a.a[1])).slice(0, 10).map(p => `<option value="${p.id}" ${sp[k] === p.id ? 'selected' : ''}>${esc(lastName(p))} (${key(p)})</option>`).join('')}</select></div>`;
   const spCard = t._st ? '' : `<div class="card"><h2>Stałe fragmenty gry</h2><div class="kv">
       ${spSel('pen', '⚽ Rzuty karne', p => 'STR ' + Math.round(p.a[1]))}${spSel('fk', '🎯 Rzuty wolne', p => 'STR ' + Math.round(p.a[1]) + '/POD ' + Math.round(p.a[2]))}${spSel('ck', '🚩 Rzuty rożne', p => 'POD ' + Math.round(p.a[2]))}</div>
       <small class="mut">Główki po rożnych najczęściej wygrywają silni (FIZ) środkowi obrońcy i napastnicy.</small></div>
@@ -491,7 +493,14 @@ ACT.talk = a => { const [id, k] = a.split(':'); const r = talkTo(+id, k); toast(
 ACT.renew = a => { const [id, y] = a.split(':').map(Number); const r = renewContract(id, y); toast(r.msg); ACT.info(id); render(); };
 ACT.list = id => { const p = pget(+id); p.listed = !p.listed; saveSoon(); toast(p.listed ? 'Wystawiono na sprzedaż – czekaj na oferty (w oknie transferowym).' : 'Wycofano z listy.'); ACT.info(id); render(); };
 ACT.release = id => { if (!confirm('Na pewno?')) return; const r = releasePlayer(+id); toast(r.msg); if (r.ok) closeModal(); render(); };
-ACT.loanout = id => { const r = loanOut(+id); toast(r.msg); if (r.ok) closeModal(); render(); };
+ACT.loanout = id => {
+  const p = pget(+id); if (!windowOpen()) return toast('Okno transferowe jest zamknięte.', 'bad');
+  const L = loanCandidates(p); if (!L.length) return toast('Brak chętnych klubów.', 'bad');
+  modal(`<h2>🔁 Wypożyczenie: ${esc(p.n)}</h2><small class="mut">Wybierz klub. „Szansa gry” to szacowany udział w meczach – im więcej gra, tym szybciej się rozwija.</small>
+    ${L.map(x => `<div class="prow" data-act="loanto" data-arg="${p.id}:${x.c.id}">${badge(x.c, 'sm')}<div class="pn">${esc(x.c.name)}<small>${S.countries[x.c.cc].flag} ${esc(S.leagues[x.c.lg].name)} • średnia kadry ${Math.round(teamLevel(x.c))}</small></div><span class="pill ${x.play >= 60 ? 'g' : ''}">gra ~${x.play}%</span></div>`).join('')}
+    <div class="btns"><button class="btn full" data-act="info" data-arg="${p.id}">Wróć</button></div>`);
+};
+ACT.loanto = a => { const [pid, cid] = a.split(':').map(Number); const r = loanOut(pid, cid); toast(r.msg, r.ok ? 'ok' : 'bad'); if (r.ok) closeModal(); render(); };
 ACT.loanin = id => { const r = loanIn(+id); toast(r.msg); if (r.ok) closeModal(); render(); };
 ACT.short = id => { id = +id; S.short = S.short.includes(id) ? S.short.filter(x => x !== id) : [id, ...S.short]; saveSoon(); ACT.info(id); };
 ACT.callup = id => { id = +id; const st = S.ntTeams[S.nt]; if (st.sq.includes(id)) st.sq = st.sq.filter(x => x !== id); else if (st.sq.length >= 26) return toast('Maksymalnie 26 powołanych.'); else st.sq.push(id); saveSoon(); ACT.info(id); };
@@ -507,7 +516,8 @@ let NEG = null;
 ACT.nego = id => {
   const p = pget(+id);
   const free = p.tid === -1;
-  NEG = { pid: p.id, fee: free ? 0 : askPrice(p), stage: free ? 2 : 1, wage: wageDemand(p), years: p.age >= 31 ? 2 : 4 };
+  const ask0 = free ? 0 : askPrice(p), tb0 = userClub().tb, role0 = expectedRoleIn(p, userClub());
+  NEG = { pid: p.id, fee: free ? 0 : Math.max(0, Math.round(Math.min(ask0, Math.max(tb0, ask0 * 0.85)) / feeStep(ask0)) * feeStep(ask0)), stage: free ? 2 : 1, role: role0, wage: signingDemand(p, role0), years: p.age >= 31 ? 2 : 4 };
   if (!free && !windowOpen()) return toast('Okno transferowe jest zamknięte.');
   if (userClub().players.length >= 32) return toast('Kadra pełna (maks. 32) – najpierw kogoś sprzedaj lub wypożycz.', 'bad');
   const i = playerInterest(p); if (!i.ok) return toast(i.msg);
@@ -522,16 +532,18 @@ function renderNego(note) {
       ${releaseClause(p) ? `<br><small class="warn">📜 Klauzula odstępnego: <b>${money(releaseClause(p))}</b> – wpłata całości (bez rat) gwarantuje zgodę klubu.</small>` : ''}
       <div class="stepper"><button class="btn" data-act="fee" data-arg="-1">−</button><b>${money(NEG.fee)}</b><button class="btn" data-act="fee" data-arg="1">+</button></div>
       <div class="numrow"><span>Wpisz kwotę (€):</span><input class="numin" type="number" inputmode="numeric" min="0" step="10000" value="${NEG.fee}" data-change="negfeenum"></div>
-      ${(() => { const a = askPrice(p), lo = Math.round(a * 0.5), hi = Math.round(Math.max(a * 1.6, releaseClause(p) || 0)), pc = v => clamp((v - lo) / (hi - lo) * 100, 0, 100); return `<div class="slider"><input type="range" min="${lo}" max="${hi}" step="${feeStep(a)}" value="${clamp(NEG.fee, lo, hi)}" data-change="negfee"><div class="marks"><i style="left:${pc(p.val)}%" title="wartość"></i><i class="b" style="left:${pc(ut.tb)}%"></i></div><small class="mut">▮ wartość ${money(p.val)} • <span class="warn">▮</span> budżet ${money(ut.tb)} • cierpliwość klubu: ${'●'.repeat(Math.max(0, 4 - (p._bids || 0)))}${'○'.repeat(Math.min(4, p._bids || 0))}</small></div>`; })()}
+      ${(() => { const a = askPrice(p), lo = Math.round(a * 0.5), hi = Math.round(Math.max(a * 1.6, releaseClause(p) || 0)), pc = v => clamp((v - lo) / (hi - lo) * 100, 0, 100); return `<div class="slider"><input type="range" min="${lo}" max="${hi}" step="${feeStep(a)}" value="${clamp(NEG.fee, lo, hi)}" data-change="negfee"><div class="marks"><i style="left:${pc(p.val)}%" title="wartość"></i><i class="b" style="left:${pc(ut.tb)}%"></i></div><small class="mut">▮ wartość ${money(p.val)} • <span class="warn">▮</span> budżet ${money(ut.tb)} • cierpliwość klubu: ${p._noTalk > absDay() ? 'rozmowy zerwane' : '●'.repeat(Math.max(0, 4 - (p._bids || 0))) + '○'.repeat(Math.min(4, p._bids || 0))}<br>Oferta poniżej 80% ceny zabiera 2 punkty cierpliwości.</small></div>`; })()}
       <div class="seg"><button class="btn sm ${NEG.inst ? 'on' : ''}" data-act="neginst">💳 Raty</button><button class="btn sm ${NEG.sellOn ? 'on' : ''}" data-act="negsellon">🔁 Klauzula odsprzedaży 15%</button>${releaseClause(p) ? `<button class="btn sm" data-act="negrc">📜 Klauzula</button>` : ''}</div>
       <small class="mut">${NEG.inst ? `Raty: teraz ${money(upfront(NEG.fee, NEG))}, potem 2 × ${money(Math.round((Math.round(NEG.fee * INST_K) - upfront(NEG.fee, NEG)) / 2))} na koniec kolejnych sezonów (łącznie +10%).` : 'Płatność jednorazowa.'}${NEG.sellOn ? ' Odsprzedaż: klub sprzedający obniża cenę o ok. 10%, ale dostanie 15% z przyszłej sprzedaży.' : ''}</small>
       ${note ? `<p class="${note.cls}">${esc(note.t)}</p>` : ''}
       <div class="btns"><button class="btn pri sp" data-act="sendbid">Złóż ofertę</button>${NEG.counter ? `<button class="btn" data-act="acccounter">Przyjmij ${money(NEG.counter)}</button>` : ''}</div>
       <div class="btns"><button class="btn full" data-act="close">Anuluj</button></div>`);
   } else {
-    const dem = wageDemand(p);
+    const dem = signingDemand(p, NEG.role), exp = expectedRoleIn(p, ut);
     modal(`<h2>Warunki kontraktu</h2><div class="row">${posTag(p.pos)}<b class="sp">${esc(p.n)}</b>${ovrShow(p)}</div>
       <small class="mut">Agent zawodnika oczekuje ok. ${money(dem)}/tydz.${NEG.fee ? ` • kwota transferu: ${money(NEG.fee)}` : ''}</small>
+      <h3>Rola w składzie</h3><div class="seg">${ROLE_ORD.slice().reverse().filter(r => r !== 'pros' || p.age <= 21).map(r => `<button class="btn sm ${NEG.role === r ? 'on' : ''}" data-act="negrole" data-arg="${r}">${ROLES[r][0]}</button>`).join('')}</div>
+      <small class="mut">Zawodnik oczekuje roli: <b>${ROLES[exp][0].toLowerCase()}</b>.${NEG.role !== exp ? (ROLE_ORD.indexOf(NEG.role) < ROLE_ORD.indexOf(exp) ? ' Mniejsza rola = wyższe żądania (ambitni mogą odmówić).' : ' Większa rola – musisz mu dać grać.') : ''}</small>
       <h3>Pensja tygodniowa</h3><div class="stepper"><button class="btn" data-act="wage" data-arg="-1">−</button><b>${money(NEG.wage)}</b><button class="btn" data-act="wage" data-arg="1">+</button></div>
       <div class="numrow"><span>Wpisz pensję (€/tydz.):</span><input class="numin" type="number" inputmode="numeric" min="0" step="100" value="${NEG.wage}" data-change="negwagenum"></div>
       <h3>Długość umowy</h3><div class="seg">${[1, 2, 3, 4, 5].map(y => `<button class="btn sm ${NEG.years === y ? 'on' : ''}" data-act="years" data-arg="${y}">${y} l.</button>`).join('')}</div>
@@ -543,6 +555,7 @@ ACT.fee = d => { NEG.fee = Math.max(0, NEG.fee + +d * feeStep(NEG.fee)); renderN
 ACT.wage = d => { NEG.wage = Math.max(500, NEG.wage + +d * (NEG.wage >= 50000 ? 5000 : NEG.wage >= 10000 ? 1000 : 250)); renderNego(); };
 ACT.years = y => { NEG.years = +y; renderNego(); };
 CHG.negfee = v => { NEG.fee = +v; NEG.counter = null; renderNego(); };
+ACT.negrole = r => { NEG.role = r; NEG.wage = Math.max(NEG.wage, signingDemand(pget(NEG.pid), r)); renderNego(); };
 CHG.negfeenum = v => { const n = Math.max(0, Math.round(+v || 0)); NEG.fee = n; NEG.counter = null; renderNego(); };
 CHG.negwagenum = v => { const dem = wageDemand(pget(NEG.pid)); let w = Math.max(0, Math.round(+v || 0)); if (w > dem * 5) { w = dem * 5; toast('Maksymalnie 5× żądania zawodnika.', 'bad'); } NEG.wage = w; renderNego(); };
 CHG.setrole = (v, el) => { toast(setRole(+el.dataset.pid, v)); ACT.info(el.dataset.pid); render(); };
@@ -580,9 +593,9 @@ ACT.sendbid = () => {
 ACT.acccounter = () => { NEG.fee = NEG.counter; NEG.counter = null; const r = clubResponse(pget(NEG.pid), NEG.fee, NEG); if (r.res === 'accept') { NEG.stage = 2; renderNego({ cls: 'good', t: r.msg }); } else renderNego({ cls: 'bad', t: r.msg }); };
 ACT.sendterms = () => {
   const p = pget(NEG.pid);
-  if (p.tid === -1) { const r = signFree(p.id, NEG.wage, NEG.years); if (r.ok) { closeModal(); toast(r.msg); render(); } else renderNego({ cls: 'bad', t: r.msg }); return; }
+  if (p.tid === -1) { const r = signFree(p.id, NEG.wage, NEG.years); if (r.ok) { p.role = NEG.role; closeModal(); toast(r.msg); render(); } else renderNego({ cls: 'bad', t: r.msg }); return; }
   if (NEG.wage > wageDemand(p) * 1.5 && !confirm(`Pensja ${money(NEG.wage)}/tydz. to dużo więcej, niż żąda zawodnik. Na pewno?`)) return;
-  const t = personalTerms(p, NEG.wage, NEG.years);
+  const t = personalTerms(p, NEG.wage, NEG.years, NEG.role);
   if (!t.ok) { NEG.tries = (NEG.tries || 0) + 1; if (NEG.tries >= 4) { p._noTalk = absDay() + 14; closeModal(); return toast(`${p.n} kończy rozmowy – „nie traktujecie mnie poważnie”.`, 'bad'); } return renderNego({ cls: 'bad', t: t.msg + ` (cierpliwość: jeszcze ${4 - NEG.tries})` }); }
   const ut = userClub(); if (ut.players.length >= 32) return renderNego({ cls: 'bad', t: 'Kadra pełna (maks. 32).' });
   completeTransfer(p.id, NEG.fee, NEG.wage, NEG.years, NEG); closeModal(); toast(`${p.n} dołącza do klubu!`); render();
@@ -789,7 +802,7 @@ function vMarket() {
 ACT.mktab = a => { if (a !== UI.mkTab) navPush(); UI.mkTab = a; render(); };
 function dealState(p) {
   const ut = userClub();
-  if (p.tid === -1) return ut.bal < 0 ? ['bad', 'długi'] : ['g', 'wolny'];
+  if (p.tid === -1) return ut.bal < 0 ? ['bad', 'długi'] : !playerInterest(p).ok ? ['bad', 'nie chce'] : ['g', 'wolny'];
   if (p.tid < 0) return ['', ''];
   if (p.loan) return ['bad', 'wypożyczony'];
   if (p._noTalk > absDay()) return ['bad', 'zerwane rozmowy'];
@@ -915,9 +928,24 @@ function vOffers() {
   return S.offers.map(o => { const p = pget(o.pid), b = club(o.from); if (!p) return ''; return `<div class="card"><div class="row">${posTag(p.pos)}<b class="sp">${esc(p.n)}</b>${ovrTag(p.ovr)}</div>
     <div class="row" style="margin:8px 0">${badge(b, 'sm')}<span>${esc(b.name)} ${S.countries[b.cc].flag} oferuje <b class="good">${money(o.amount)}</b></span></div>
     <small class="mut">Wartość: ${money(p.val)} • morale zawodnika: ${moraleLabel(p.mor).join(' ')}</small>
-    <div class="btns"><button class="btn pri sp" data-act="accept" data-arg="${o.id}">Akceptuj</button><button class="btn" data-act="decline" data-arg="${o.id}">Odrzuć</button></div></div>`; }).join('') || `<div class="card">${empty('📭', 'Brak ofert za Twoich zawodników', 'Wystaw zawodnika na sprzedaż w jego karcie – oferty przychodzą w oknie transferowym.')}</div>`;
+    <div class="btns"><button class="btn pri sp" data-act="accept" data-arg="${o.id}">Akceptuj</button><button class="btn" data-act="ctroffer" data-arg="${o.id}">💬 Negocjuj</button><button class="btn" data-act="decline" data-arg="${o.id}">Odrzuć</button></div></div>`; }).join('') || `<div class="card">${empty('📭', 'Brak ofert za Twoich zawodników', 'Wystaw zawodnika na sprzedaż w jego karcie – oferty przychodzą w oknie transferowym.')}</div>`;
 }
-ACT.accept = id => { const r = sellTo(+id); toast(r.msg); render(); };
+ACT.ctroffer = id => { const o = S.offers.find(x => x.id === +id); if (!o) return; const p = pget(o.pid); CTR = { id: o.id, ask: Math.round(Math.max(o.amount * 1.2, p.val) / 1e4) * 1e4 }; renderCtr(); };
+let CTR = null;
+function renderCtr(note) {
+  const o = S.offers.find(x => x.id === CTR.id); if (!o) return closeModal();
+  const p = pget(o.pid), b = club(o.from);
+  modal(`<h2>💬 Negocjacje: ${esc(p.n)}</h2><small class="mut">${esc(b.name)} oferuje ${money(o.amount)} • wartość zawodnika ${money(p.val)}</small>
+    <div class="stepper"><button class="btn" data-act="ctrstep" data-arg="-1">−</button><b>${money(CTR.ask)}</b><button class="btn" data-act="ctrstep" data-arg="1">+</button></div>
+    <div class="numrow"><span>Twoja cena (€):</span><input class="numin" type="number" inputmode="numeric" min="0" step="10000" value="${CTR.ask}" data-change="ctrnum"></div>
+    ${note ? `<p class="${note.cls}">${esc(note.t)}</p>` : '<small class="mut">Klub może przyjąć Twoją cenę, podnieść ofertę albo się wycofać. Masz dwie próby.</small>'}
+    <div class="btns"><button class="btn pri sp" data-act="ctrsend">Zażądaj ${money(CTR.ask)}</button><button class="btn" data-act="accept" data-arg="${o.id}">Sprzedaj za ${money(o.amount)}</button></div>
+    <div class="btns"><button class="btn full" data-act="close">Wróć</button></div>`);
+}
+ACT.ctrstep = d => { CTR.ask = Math.max(0, CTR.ask + +d * feeStep(CTR.ask)); renderCtr(); };
+CHG.ctrnum = v => { CTR.ask = Math.max(0, Math.round(+v || 0)); renderCtr(); };
+ACT.ctrsend = () => { const r = counterOffer(CTR.id, CTR.ask); if (r.res === 'gone') { closeModal(); toast(r.msg, 'bad'); render(); return; } renderCtr({ cls: r.res === 'accept' ? 'good' : 'warn', t: r.msg }); render(); };
+ACT.accept = id => { const r = sellTo(+id); toast(r.msg); closeModal(); render(); };
 ACT.decline = id => { const o = S.offers.find(x => x.id === +id); if (o) { const p = pget(o.pid); if (p && o.amount > p.val * 1.3) p.mor = clamp(p.mor - 8, 0, 100); declineOfferMeta(o); } S.offers = S.offers.filter(x => x.id !== +id); saveSoon(); render(); };
 function vNews() { return `<div class="card">${S.news.map(n => `<div class="msg"><small>${n.d ? fmtDate(n.d) : ''}</small><p style="color:var(--txt)">${esc(n.t)}</p></div>`).join('') || '<small class="mut">Brak wieści.</small>'}</div>`; }
 
@@ -944,7 +972,7 @@ function vFin() {
     <div><span>Bilans transferów</span><b class="${ut.fin.tr < 0 ? 'bad' : 'good'}">${money(ut.fin.tr)}</b></div><div><span>Reputacja</span><b>${ut.rep}</b></div>
     <div><span>Sztab/tydz.</span><b>${money(staffCost())}</b></div><div><span>Akademia/tydz.</span><b>${money(acadCost())}</b></div>
     ${(S.debts || []).length ? `<div><span>Raty do spłaty</span><b class="warn">${money(sum(S.debts.map(d => d.amt * d.left)))}</b></div>` : ''}</div>
-    ${lf ? `<small class="mut">Ostatni tydzień: bilety ${money(lf.gate)}, TV ${money(lf.tv)}, sponsorzy ${money(lf.spons)}, pensje ${money(lf.wages)} → <b class="${lf.net >= 0 ? 'good' : 'bad'}">${money(lf.net)}</b></small>` : ''}</div>
+    ${lf ? `<small class="mut">Ostatni tydzień: bilety ${money(lf.gate)}, TV ${money(lf.tv)}, sponsorzy ${money(lf.spons)}, pensje i koszty (sztab, akademia, skauci) ${money(lf.wages)} → <b class="${lf.net >= 0 ? 'good' : 'bad'}">${money(lf.net)}</b></small>` : ''}</div>
     ${(() => { const h = (S.uhist || []).filter(x => x.s === S.season); return h.length >= 2 && typeof sparkSVG === 'function' ? `<div class="card"><b>Saldo w sezonie</b><div>${sparkSVG(h.map(x => x.bal), { w: 320, h: 60 })}</div><small class="mut">${money(h[0].bal)} → ${money(h[h.length - 1].bal)}</small></div>` : ''; })()}
     <div class="card"><h2>Zarząd</h2>${bar(S.board.conf)}<small>Zaufanie ${Math.round(S.board.conf)}%. ${esc(S.board.text)}${S.board.euro ? ' Europa: ' + esc(S.board.euro) + '.' : ''}</small>
     <div class="kv"><div><span>Menedżer</span><b>${esc(S.manager)}</b></div><div><span>OVR trenera</span><b>${Math.round(S.mgr.ovr)}</b></div></div></div>`;
@@ -973,7 +1001,7 @@ function vTroph() {
     <div class="card"><h2>📊 Statystyki</h2><div class="kv"><div><span>Mecze</span><b>${S.stats.games}</b></div><div><span>Zwycięstwa</span><b>${S.stats.wins}</b></div><div><span>Seria bez porażki</span><b>${S.stats.unbeaten}</b></div><div><span>Rekord serii</span><b>${S.stats.bestUnbeaten}</b></div></div></div>`;
 }
 function vMgr() {
-  const o = S.mgr.ovr, maxR = maxRepFor(o);
+  const o = S.mgr.ovr, maxR = Math.round(maxRepFor(o));
   const cnt = tier => S.clubs.filter(c => S.leagues[c.lg].tier === tier && c.rep <= maxR).length;
   const coaches = S.clubs.filter(c => c.id !== S.user).map(c => ({ c, o: c.coach.ovr })).sort((a, b) => b.o - a.o).slice(0, 15);
   return `<div class="card hl"><div class="row"><span class="ovr ${ovrCls(Math.round(o))}" style="font-size:22px;height:40px;min-width:48px">${Math.round(o)}</span><div class="sp"><b>${esc(S.manager)}</b><br><small class="mut">${mgrLabel(o)} • najwyższy OVR: ${Math.round(S.mgr.best || o)}</small></div></div>
@@ -1022,12 +1050,13 @@ function vFac() {
 ACT.upcomm = k => { const r = upgradeComm(k); toast(r.msg, r.ok ? 'ok' : 'bad'); render(); };
 const stadExp = c => { const add = Math.max(1000, Math.round(c.cap * 0.1 / 500) * 500); return { add, cost: Math.round(add * c.price * 90 / 1e5) * 1e5 }; };
 function stadiumCard(ut) {
-  const e = stadExp(ut), fill = clamp(0.55 + ut.rep / 250 + (S.leagues[ut.lg].tier === 1 ? 0.05 : 0) + (S.fans != null ? (S.fans - 60) / 300 : 0), 0.3, 1) * (ut.cap0 ? Math.min(1, ut.cap0 * 1.25 / ut.cap) : 1), gate = Math.round(ut.cap * fill * ut.price);
+  const e = stadExp(ut), att = attendance(ut, false), dem = Math.round(ticketDemand(ut) * (0.85 + (S.fans != null ? S.fans : 60) / 400) * (1 + commLvl('park') * 0.03)), gate = Math.round(att * ut.price * (1 + commLvl('gastro') * 0.06));
+  const full = dem >= ut.cap;
   return `<div class="card"><h2>🏟️ Stadion</h2>
-    <div class="kv"><div><span>Pojemność</span><b>${ut.cap.toLocaleString('pl-PL')}</b></div><div><span>Średnia cena biletu</span><b>${Math.round(ut.price)} €</b></div>
-    <div><span>Szacowana frekwencja</span><b>${Math.round(fill * 100)}%</b></div><div><span>Wpływy z meczu</span><b>${money(gate)}</b></div></div>
-    <small class="mut">Frekwencja zależy od renomy klubu, poziomu ligi i nastrojów kibiców. Popyt na bilety rośnie maksymalnie o ok. 25% ponad pierwotną pojemność – zbyt duży stadion będzie świecił pustkami.${ut.stadBuild ? ` Trwa rozbudowa: +${ut.stadBuild.add.toLocaleString('pl-PL')} miejsc od ${SEASON_LABEL(ut.stadBuild.season)}.` : ''}</small>
-    <div class="btns">${ut.cap0 && ut.cap >= ut.cap0 * 1.25 ? '<span class="pill">Popyt na bilety nie uzasadnia dalszej rozbudowy</span>' : ut.stadBuild ? '<span class="pill">🏗️ Budowa w toku</span>' : `<button class="btn sm pri" data-act="stadexp">Rozbuduj (+${e.add.toLocaleString('pl-PL')} miejsc) • ${money(e.cost)}</button>`}</div></div>`;
+    <div class="kv"><div><span>Pojemność</span><b>${ut.cap.toLocaleString('pl-PL')}</b></div><div><span>Popyt na bilety</span><b>${dem.toLocaleString('pl-PL')}</b></div>
+    <div><span>Średnia frekwencja</span><b>${att.toLocaleString('pl-PL')} (${Math.round(att / ut.cap * 100)}%)</b></div><div><span>Wpływy z meczu</span><b>${money(gate)}</b></div><div><span>Średnia cena biletu</span><b>${Math.round(ut.price)} €</b></div></div>
+    <small class="mut">Popyt rośnie z renomą klubu, poziomem ligi, nastrojami kibiców i parkingiem. ${full ? 'Stadion jest za mały – rozbudowa się opłaci.' : 'Na razie stadion nie zapełnia się – rozbudowa nie zwiększy wpływów.'}${ut.stadBuild ? ` Trwa rozbudowa: +${ut.stadBuild.add.toLocaleString('pl-PL')} miejsc od ${SEASON_LABEL(ut.stadBuild.season)}.` : ''}</small>
+    <div class="btns">${ut.stadBuild ? '<span class="pill">🏗️ Budowa w toku</span>' : `<button class="btn sm ${full ? 'pri' : ''}" data-act="stadexp">Rozbuduj (+${e.add.toLocaleString('pl-PL')} miejsc) • ${money(e.cost)}</button>`}</div></div>`;
 }
 ACT.stadexp = () => {
   const ut = userClub(), e = stadExp(ut);
@@ -1128,7 +1157,7 @@ ACT.startmatch = () => {
   upd(); mctl(); MT = setTimeout(tick, SPEED_MS[MS.speed]);
 };
 const talkMsg = (r, ht) => r.avg > 2 ? (ht ? 'świetna reakcja zespołu!' : 'zawodnicy są nakręceni!') : r.avg < 0 ? (ht ? 'część zawodników przyjęła to źle.' : 'w szatni widać nerwowość.') : 'spokojna reakcja.';
-const talkDetail = r => `${r.good ? ` (${r.good} zmotywowanych` : ' ('}${r.bad ? `${r.good ? ', ' : ''}${r.bad} poirytowanych)` : r.good ? ')' : 'bez wyraźnej reakcji)'}`;
+const talkDetail = r => `${r.good ? ` (${plural(r.good, 'zmotywowany', 'zmotywowanych', 'zmotywowanych')}` : ' ('}${r.bad ? `${r.good ? ', ' : ''}${plural(r.bad, 'poirytowany', 'poirytowanych', 'poirytowanych')})` : r.good ? ')' : 'bez wyraźnej reakcji)'}`;
 function doTalk() { const s = uside(), o = s === M.home ? M.away : M.home; const r = teamTalk(s, TALK, o.t.rep || 50, false, 0); ev(M, 'info', s, `🗣️ Odprawa: ${TALKS[TALK]} – ${talkMsg(r)}${talkDetail(r)}`); M.dirty = true; }
 ACT.httalk = k => { const s = uside(), o = s === M.home ? M.away : M.home; const r = teamTalk(s, k, o.t.rep || 50, true, s.goals - o.goals); M.htTalk = true; ev(M, 'info', s, `🗣️ Przerwa: ${TALKS[k]} – ${talkMsg(r, true)}${talkDetail(r)}`); M.dirty = true; upd(); mctl(); };
 function tick() {
@@ -1200,7 +1229,7 @@ ACT.finishday = () => {
   const m = M, x = MX; M = null; closeModal();
   const day = curDay(), ut0 = userClub(), pos0 = day.t === 'L' ? leaguePos(ut0) : null;
   const r = processDay(m);
-  const pos1 = pos0 != null && !r.summary && userClub() === ut0 ? leaguePos(ut0) : null;
+  const pos1 = pos0 != null && !r.summary && userClub() === ut0 && table(ut0.lg).find(x => x.id === ut0.id).P > 1 ? leaguePos(ut0) : null;
   const tchg = pos1 != null ? `<div class="card"><div class="row"><b class="sp">Tabela: ${pos0}. → ${pos1}. miejsce</b><span class="${pos1 < pos0 ? 'good' : pos1 > pos0 ? 'bad' : 'mut'}">${pos1 < pos0 ? '▲' + (pos0 - pos1) : pos1 > pos0 ? '▼' + (pos1 - pos0) : '='}</span></div></div>` : '';
   const label = x.opts.label.split(' • ')[0];
   let res = '';
@@ -1217,7 +1246,17 @@ ACT.finishday = () => {
   if (res) modal(`<h2>Wyniki: ${esc(label)}</h2>${tchg}<div class="card list">${res}</div><div class="btns"><button class="btn pri full" data-act="close">OK</button></div>`);
 };
 function showSummary(s) {
-  modal(`<h2>🏁 ${esc(s.title)}</h2>${s.lines.map(l => `<p>${esc(l)}</p>`).join('')}<div class="btns"><button class="btn pri full" data-act="aftersum">Nowy sezon</button></div>`, true);
+  const M = s.meta, G = { res: [], you: [], squad: [], world: [] };
+  for (const l of s.lines) {
+    if (/^(🏆|🏅|👟|⬆️|⬇️|Twoja pozycja|⭐ Prestiż|🇪🇺)/.test(l)) G.res.push(l);
+    else if (/^(✅|❌|🧑‍💼|🤝|🏛|Nowy sezon|📨|💳|🏟️)/.test(l)) G.you.push(l);
+    else if (/^(Powroty|Zakończyli|Wygasły|🔮|🎓|👥|Z rezerw)/.test(l)) G.squad.push(l);
+    else G.world.push(l);
+  }
+  const sec = (t, L) => L.length ? `<div class="card"><h3 style="margin-top:0">${t}</h3>${L.map(l => `<p style="margin:6px 0">${esc(l)}</p>`).join('')}</div>` : '';
+  const hero = M ? `<div class="card hl" style="text-align:center"><div style="font-size:44px;font-weight:900">${M.pos}.</div><b>${esc(M.lg)}</b><br><small class="mut">${M.pts} pkt • ${M.w}-${M.d}-${M.l} • bramki ${M.gf}:${M.ga}</small>
+    <div class="grid3" style="margin-top:10px"><div class="card stat"><small>Cel ligowy</small><b class="${M.achieved ? 'good' : 'bad'}">${M.achieved ? '✅' : '❌'}</b></div><div class="card stat"><small>OVR trenera</small><b>${M.ovr0}→${M.ovr1}</b></div><div class="card stat"><small>Prestiż</small><b>${M.pres.toFixed(1)}</b></div></div></div>` : '';
+  modal(`<h2>🏁 ${esc(s.title)}</h2>${hero}${sec('🏆 Wyniki i trofea', G.res)}${sec('🧑‍💼 Ty i zarząd', G.you)}${sec('👥 Kadra', G.squad)}${sec('🌍 Świat futbolu', G.world)}<div class="btns"><button class="btn pri full" data-act="aftersum">▶ Rozpocznij nowy sezon</button></div>`, true);
 }
 ACT.aftersum = () => { closeModal(); if (S.sacked) return showSacked(); render(); };
 function showSacked() {

@@ -203,11 +203,22 @@ function createWorld() {
   S.scouts.push(Object.assign(genScout(), { ab: 9, cost: 1500 }));
   newSeason(true);
 }
+// popyt na bilety (liczba kibiców): renoma klubu, poziom ligi, siła piłkarskiego rynku kraju
+const ATT_TIER = { 1: 1, 2: 0.6, 3: 0.45, 4: 0.35 };
+function ticketDemand(c) {
+  const tv = (TVW[c.cc] || [5e4])[0], cf = clamp(Math.sqrt(tv / 4e5), 0.4, 1.25);
+  return Math.round(c.rep * c.rep * 13 * (ATT_TIER[S.leagues[c.lg].tier] || 0.35) * cf);
+}
+function attendance(c, derby) {
+  let d = ticketDemand(c) * (derby ? 1.15 : 1);
+  if (c.id === S.user) d *= (0.85 + (S.fans != null ? S.fans : 60) / 400) * (1 + commLvl('park') * 0.03);
+  return Math.round(Math.min(c.cap, d));
+}
 function setupEconomy(c) {
   const bill = sum(c.players.map(p => p.wage));
   c.tv = tvFor(c);
   c.price = 5 + c.rep * 0.3;
-  const gateAvg = 0.5 * c.cap * 0.75 * c.price;
+  const gateAvg = 0.5 * Math.min(c.cap, ticketDemand(c)) * c.price;
   c.spons = Math.max(2000, Math.round((bill * (0.98 + c.rep / 700 + rnd() * 0.08) - c.tv - gateAvg) / 1000) * 1000);
   const sv = sum(c.players.map(p => p.val));
   c.bal = Math.round(sv * (0.08 + rnd() * 0.1) / 100000) * 100000;
@@ -604,9 +615,9 @@ function dayMatches(d) {
       const r = lg.lsMap[d.ls]; if (r == null || r < 0) continue;
       for (const f of lg.fix[r]) clubDesc(f.h, f.a, { comp: 'L', label: lg.name + (derbyName(f.h, f.a) ? ' • 🔥 ' + derbyName(f.h, f.a) : '') }, m => {
         f.hg = m.home.goals; f.ag = m.away.goals; f.p = 1;
-        const c = club(f.h), fill = clamp(0.55 + c.rep / 250 + (S.leagues[c.lg].tier === 1 ? 0.05 : 0) + (c.id === S.user && S.fans != null ? (S.fans - 60) / 300 : 0), 0.3, 1) * (c.cap0 ? Math.min(1, c.cap0 * 1.25 / c.cap) : 1) * (derbyName(f.h, f.a) ? 1.15 : 1) * (c.id === S.user ? 1 + commLvl('park') * 0.03 : 1);
-        c._att = Math.round(Math.min(c.cap, c.cap * fill));
-        const gate = Math.round(Math.min(c.cap, c.cap * fill) * c.price * (c.id === S.user ? 1 + commLvl('gastro') * 0.06 : 1)); c.bal += gate; c.fin.inc += gate; c._gate = gate;
+        const c = club(f.h), att = attendance(c, !!derbyName(f.h, f.a));
+        c._att = att;
+        const gate = Math.round(att * c.price * (c.id === S.user ? 1 + commLvl('gastro') * 0.06 : 1)); c.bal += gate; c.fin.inc += gate; c._gate = gate;
       });
     }
   } else if (d.t === 'E') {
@@ -710,6 +721,7 @@ function processDay(live) {
   if (d.t === 'E' && d.st === 'LP' && d.md === 7) for (const c of Object.values(S.euro)) lpBonus(c);
   if (d.t === 'E' && d.st === 'LP' && d.md === 5 && S.euro.ECL) lpBonus(S.euro.ECL);
   S.day++;
+  if (S.day < S.cal.length && !windowOpen()) S.offers = [];
   let summary = null;
   if (S.day >= S.cal.length) summary = endSeason();
   return { userRes, summary, day: d };
@@ -787,7 +799,7 @@ function recordsAfterMatch(m, mine, opp) {
     const a = R.all[r.p.id] = R.all[r.p.id] || { n: r.p.n, apps: 0, g: 0, a: 0 }; a.apps++; a.g += r.g; a.a += r.a;
     for (const [k, lim, t] of [['apps', [50, 100, 150, 200, 250, 300], 'występ'], ['g', [25, 50, 75, 100, 150], 'gol']]) if (lim.includes(a[k]) && (k === 'apps' || r.g > 0)) {
       r.p.mor = clamp(r.p.mor + 5, 0, 100); S.fans = clamp((S.fans || 60) + 1, 0, 100);
-      msg(`🎉 Jubileusz: ${r.p.n}`, `${r.p.n} zanotował ${a[k]}. ${t === 'gol' ? 'gola' : 'występ'} w barwach ${mine.t.name}! Kibice przygotowali oprawę na jego cześć.`);
+      msg(`🎉 Jubileusz: ${r.p.n}`, `${r.p.n} zanotował ${a[k]}. ${t === 'gol' ? 'gola' : 'występ'} w barwach klubu ${mine.t.name}! Kibice przygotowali oprawę na jego cześć.`);
     }
   }
 }
@@ -802,7 +814,7 @@ function afterUserClubMatch(m, x) {
   recordsAfterMatch(m, mine, opp);
   S.h2h = S.h2h || {}; const hr = S.h2h[opp.t.id] = S.h2h[opp.t.id] || { w: 0, d: 0, l: 0 }; if (gd > 0) hr.w++; else if (gd < 0) hr.l++; else hr.d++;
   S.board.conf = clamp(S.board.conf + d, 0, 100);
-  mgrGain(gd > 0 ? (opp.t.rep > mine.t.rep ? 0.12 : 0.05) : gd < 0 ? -0.04 : 0.01);
+  mgrGain(gd > 0 ? (opp.t.rep > mine.t.rep ? 0.25 : 0.12) : gd < 0 ? -0.06 : 0.03);
   if (typeof afterMatchMeta === 'function') afterMatchMeta(m, x, mine, opp, gd);
   for (const e of m.ev) if (e.type === 'injury' && e.side === x.user) msg('Kontuzja', e.text.replace('🚑 ', ''));
 }
@@ -824,8 +836,8 @@ function monthAwards(d) {
       const p = w.p, c = clubOf(p), mine = p.tid === S.user;
       (p.awards = p.awards || []).push({ k: 'potm', s: S.season, m: prevMo, lg: lg.name });
       (S.pawards = S.pawards || []).push({ k: 'potm', s: S.season, m: prevMo, pid: p.id, n: p.n, club: c ? c.short : '', lg: lg.id });
-      news(`🏅 Piłkarz miesiąca (${MONTHS[prevMo]}) w ${lg.name}: ${p.n} (${c ? c.name : ''}) – śr. ocena ${w.r.toFixed(2)}, ${w.g} goli, ${w.a} asyst.`);
-      if (mine) { p.mor = clamp(p.mor + 10, 0, 100); p.val = Math.round(p.val * 1.05); msg('🏅 Piłkarz miesiąca!', `${p.n} został wybrany piłkarzem miesiąca (${MONTHS[prevMo]}) w ${lg.name}! Średnia ocena ${w.r.toFixed(2)}, ${w.g} goli i ${w.a} asyst. Morale i wartość zawodnika rosną.`); }
+      news(`🏅 Piłkarz miesiąca (${MONTHS[prevMo]}) – ${lg.name}: ${p.n} (${c ? c.name : ''}) – śr. ocena ${w.r.toFixed(2)}, ${plural(w.g, 'gol', 'gole', 'goli')}, ${plural(w.a, 'asysta', 'asysty', 'asyst')}.`);
+      if (mine) { p.mor = clamp(p.mor + 10, 0, 100); p.val = Math.round(p.val * 1.05); msg('🏅 Piłkarz miesiąca!', `${p.n} został wybrany piłkarzem miesiąca (${MONTHS[prevMo]}) – liga: ${lg.name}! Średnia ocena ${w.r.toFixed(2)}, ${plural(w.g, 'gol', 'gole', 'goli')} i ${plural(w.a, 'asysta', 'asysty', 'asyst')}. Morale i wartość zawodnika rosną.`); }
       // trener miesiąca: najlepszy bilans punktowy w miesiącu (tylko gdy to Ty)
     }
   }
@@ -838,7 +850,7 @@ function seasonAwards(lgId, finals) {
   const add = (k, n, p, val) => { if (!p) return; (p.awards = p.awards || []).push({ k, s: S.season, lg: lg.name }); (S.pawards = S.pawards || []).push({ k, s: S.season, pid: p.id, n: p.n, club: clubOf(p) ? clubOf(p).short : '', lg: lgId }); out.push(`${n}: ${p.n} (${clubOf(p) ? clubOf(p).name : ''}${val ? ', ' + val : ''})`); if (p.tid === S.user) { p.mor = clamp(p.mor + 12, 0, 100); p.val = Math.round(p.val * 1.08); } };
   add('pots', '⭐ Piłkarz sezonu', best(rate, Math.round(lg.fix.length * 0.5)), null);
   add('yots', '🌱 Młodzieżowiec sezonu', best(p => p.age <= 21 ? rate(p) : -1, Math.round(lg.fix.length * 0.35)), null);
-  const gb = ps.slice().sort((a, b) => b.lg - a.lg || b.st.a - a.st.a)[0]; if (gb && gb.lg > 0) add('boot', '👟 Król strzelców', gb, `${gb.lg} goli`);
+  const gb = ps.slice().sort((a, b) => b.lg - a.lg || b.st.a - a.st.a)[0]; if (gb && gb.lg > 0) add('boot', '👟 Król strzelców', gb, plural(gb.lg, 'gol', 'gole', 'goli'));
   const ch = finals[lgId] && finals[lgId][0];
   if (ch && ch.id === S.user) { (S.pawards = S.pawards || []).push({ k: 'motm', s: S.season, n: S.manager, club: userClub().short, lg: lgId }); out.push(`🧑‍💼 Trener sezonu: ${S.manager}`); mgrGain(1); }
   return out;
@@ -970,6 +982,7 @@ function fireScout(id) { S.scouts = S.scouts.filter(s => s.id !== id); saveSoon(
 
 /* ---------- transfery ---------- */
 function playerStatus(p) {
+  if (p.tid === -3) return 'Junior (akademia)';
   const c = clubOf(p); if (!c) return 'Wolny';
   const i = c.players.slice().sort((a, b) => b.ovr - a.ovr).indexOf(p);
   return i < 5 ? 'Kluczowy' : i < 12 ? 'Podstawowy' : i < 18 ? 'Rotacyjny' : p.age <= 21 ? 'Perspektywiczny' : 'Rezerwowy';
@@ -1063,8 +1076,21 @@ function playerInterest(p) {
   if (p.ovr > teamLevel(ut) + 9 + presOf(ut) * 0.5) return { ok: false, msg: `${p.n} uważa, że Twój klub nie spełnia jego ambicji – wyższy prestiż przyciągnie lepszych piłkarzy.` };
   return { ok: true };
 }
-function personalTerms(p, wage, years) {
-  const dem = wageDemand(p);
+// rola, jakiej oczekiwałby nowy zawodnik w Twojej kadrze
+function expectedRoleIn(p, c) {
+  const i = c.players.filter(x => x !== p && x.ovr > p.ovr).length;
+  let r = i < 5 ? 'key' : i < 12 ? 'first' : i < 18 ? 'rot' : p.age <= 21 ? 'pros' : 'res';
+  if (traits(p).amb >= 15 && r !== 'key') r = ROLE_ORD[Math.min(4, ROLE_ORD.indexOf(r) + 1)];
+  return r;
+}
+function signingDemand(p, role) {
+  const exp = expectedRoleIn(p, userClub()), gap = Math.max(0, ROLE_ORD.indexOf(exp) - ROLE_ORD.indexOf(role || exp));
+  return Math.round(wageDemand(p) * ROLES[role || exp][1] / ROLES[exp][1] * (1 + 0.12 * gap) / 100) * 100;
+}
+function personalTerms(p, wage, years, role) {
+  const exp = expectedRoleIn(p, userClub());
+  if (role && ROLE_ORD.indexOf(exp) - ROLE_ORD.indexOf(role) >= 2 && traits(p).amb >= 11) return { ok: false, msg: `${p.n} nie przyjdzie do klubu jako ${ROLES[role][0].toLowerCase()} – oczekuje roli: ${ROLES[exp][0].toLowerCase()}.` };
+  const dem = role ? signingDemand(p, role) : wageDemand(p);
   if (wage >= dem || (wage >= dem * 0.95 && hashN(p.id * 17 + S.season) < 0.6) || (wage >= dem * 0.9 && hashN(p.id * 17 + S.season) < 0.2)) return { ok: true };
   return { ok: false, msg: `${p.n} odrzuca warunki – oczekuje ok. ${money(dem)}/tydz.` };
 }
@@ -1084,10 +1110,10 @@ function completeTransfer(pid, fee, wage, years, o = {}) {
   { const R = clubRec(); if (fee > 0 && (!R.buy || fee > R.buy.fee)) R.buy = { fee, n: p.n, s: S.season }; }
   if (o.inst && seller) { const rest = Math.round(fee * INST_K) - now; S.debts = S.debts || []; S.debts.push({ from: ut.id, to: seller.id, amt: Math.round(rest / 2), left: 2, pn: p.n }); }
   p.sellOn = o.sellOn && seller ? { club: seller.id, pct: 0.15 } : null;
-  attach(p, ut); p.wage = wage; p.con = years; p.mor = clamp(p.mor + 10, 0, 100); p.pt = 0.5; p.joined = absDay();
+  attach(p, ut); p.wage = wage; p.con = years; p.role = o.role || null; p.mor = clamp(p.mor + 10, 0, 100); p.pt = 0.5; p.joined = absDay();
   S.know[p.id] = 100;
   rebuildIndex(); fillBench(ut);
-  news(`${p.n} (${p.ovr}) przechodzi z ${seller ? seller.name : 'wolnego transferu'} do ${ut.name} za ${fee ? money(fee) : 'darmo'}.`);
+  news(`🔄 Transfer: ${p.n} (${p.ovr}) – ${seller ? seller.name : 'wolny zawodnik'} → ${ut.name} (${fee ? money(fee) : 'za darmo'}).`);
   msg('Transfer zakończony', `${p.n} (${POS_PL[p.pos]}, ${p.ovr}) dołącza do klubu${fee ? ' za ' + money(fee) : ''}. Kontrakt: ${years} lat, ${money(wage)}/tydz.`);
   saveSoon();
 }
@@ -1121,20 +1147,36 @@ function loanIn(pid) {
   ut.bal -= fee; ut.tb -= fee; c.bal += fee;
   detach(p); attach(p, ut); p.loan = { from: c.id, season: S.season }; S.know[p.id] = 100; refillAI(c);
   rebuildIndex(); fillBench(ut);
-  msg('Wypożyczenie', `${p.n} dołącza na wypożyczenie z ${c.name} do końca sezonu (pensja ${money(p.wage)}/tydz.).`);
+  msg('Wypożyczenie', `${p.n} dołącza na wypożyczenie do końca sezonu (klub macierzysty: ${c.name}) (pensja ${money(p.wage)}/tydz.).`);
   saveSoon(); return { ok: true, msg: `${p.n} wypożyczony do końca sezonu.` };
 }
-function loanOut(pid) {
+function loanCandidates(p) {
+  const ut = userClub();
+  return S.clubs.filter(c => c.id !== ut.id && c.rep <= ut.rep - 3 && Math.abs(teamLevel(c) - p.ovr) <= 6 && c.players.length < 27)
+    .map(c => ({ c, play: clamp(Math.round(50 + (p.ovr - teamLevel(c)) * 8), 5, 95) })).sort((a, b) => b.c.rep - a.c.rep).slice(0, 5);
+}
+function loanOut(pid, toId) {
   const p = pget(pid), ut = userClub();
   if (!windowOpen()) return { ok: false, msg: 'Okno transferowe jest zamknięte.' };
   if (ut.players.length <= 18) return { ok: false, msg: 'Kadra zbyt wąska.' };
   if (p.loan) return { ok: false, msg: 'Zawodnik już jest wypożyczony.' };
   const cands = S.clubs.filter(c => c.id !== ut.id && c.rep <= ut.rep - 3 && Math.abs(teamLevel(c) - p.ovr) <= 6);
   if (!cands.length) return { ok: false, msg: 'Brak chętnych klubów.' };
-  const c = pick(cands);
+  const c = toId != null ? (cands.find(x => x.id === toId) || club(toId)) : pick(cands);
   detach(p); attach(p, c); p.loan = { from: ut.id, season: S.season }; rebuildIndex(); fillBench(ut);
   msg('Wypożyczenie', `${p.n} odchodzi na wypożyczenie do ${c.name} (${S.countries[c.cc].flag}).`);
   saveSoon(); return { ok: true, msg: `${p.n} wypożyczony do ${c.name}.` };
+}
+// kontroferta do oferty za Twojego zawodnika
+function counterOffer(offerId, ask) {
+  const o = S.offers.find(x => x.id === offerId); if (!o) return { res: 'gone', msg: 'Oferta wygasła.' };
+  const p = pget(o.pid), b = club(o.from); if (o._ctrd >= 2) return { res: 'gone', msg: `${b.name} nie chce dalej negocjować.` };
+  o._ctrd = (o._ctrd || 0) + 1;
+  const limit = o.amount * (1.08 + 0.2 * hashN(o.id * 5 + p.id)), maxPay = Math.min(limit, b.bal);
+  if (ask <= maxPay) { o.amount = Math.round(ask / 1e4) * 1e4; saveSoon(); return { res: 'accept', msg: `${b.name} akceptuje Twoje warunki: ${money(o.amount)}. Potwierdź sprzedaż.` }; }
+  if (o._ctrd >= 2 || ask > limit * 1.35) { S.offers = S.offers.filter(x => x !== o); saveSoon(); return { res: 'gone', msg: `${b.name} wycofuje ofertę – „za drogo”.` }; }
+  o.amount = Math.round((o.amount + Math.min(maxPay, (o.amount + ask) / 2)) / 2 / 1e4) * 1e4; saveSoon();
+  return { res: 'counter', msg: `${b.name} podnosi ofertę do ${money(o.amount)} – to ich ostatnie słowo.` };
 }
 function sellTo(offerId) {
   const o = S.offers.find(x => x.id === offerId); if (!o) return { ok: false, msg: 'Oferta wygasła.' };
@@ -1149,8 +1191,8 @@ function sellTo(offerId) {
   { const R = clubRec(); if (!R.sale || o.amount > R.sale.fee) R.sale = { fee: o.amount, n: p.n, s: S.season }; }
   ut.bal += o.amount - so; ut.tb += o.amount - so; ut.fin.tr += o.amount - so; b.bal -= o.amount; b.tb -= o.amount; S.bigSale = Math.max(S.bigSale || 0, o.amount);
   rebuildIndex(); fillBench(ut);
-  news(`${p.n} (${p.ovr}) przechodzi z ${ut.name} do ${b.name} za ${money(o.amount)}.`);
-  msg('Sprzedaż', `${p.n} odchodzi do ${b.name} za ${money(o.amount)}.`);
+  news(`🔄 Transfer: ${p.n} (${p.ovr}) – ${ut.name} → ${b.name} (${money(o.amount)}).`);
+  msg('Sprzedaż', `${p.n} odchodzi z klubu. Nowy klub: ${b.name}, kwota: ${money(o.amount)}.`);
   saveSoon(); return { ok: true, msg: `Sprzedano ${p.n} za ${money(o.amount)}.` };
 }
 function releasePlayer(pid) {
@@ -1259,7 +1301,7 @@ function genOffers() {
       const b = pick(buyers);
       const amt = Math.round(p.val * (p.listed ? 0.8 + rnd() * 0.4 : 1.1 + rnd() * 0.45) / 50000) * 50000;
       S.offers.push({ id: S.nextId++, pid: p.id, from: b.id, amount: amt, exp: S.day + 6 });
-      msg('Oferta za zawodnika', `${b.name} (${S.countries[b.cc].flag}) oferuje ${money(amt)} za ${p.n}.`);
+      msg('Oferta za zawodnika', `Klub ${b.name} (${S.countries[b.cc].flag}) składa ofertę ${money(amt)} – zawodnik: ${p.n}.`);
     }
   }
 }
@@ -1283,7 +1325,16 @@ function aiTransfers() {
     const seller = club(bestP.tid), fee = Math.round(bestP.val * (1.05 + rnd() * 0.3) / 50000) * 50000;
     detach(bestP); attach(bestP, b); bestP.wage = calcWage(bestP, b.rep); bestP.con = ri(2, 5);
     b.bal -= fee; b.tb -= fee; seller.bal += fee; seller.tb += fee; refillAI(seller); refillAI(b);
-    if (fee >= 3e6 || seller.cc === userClub().cc || b.cc === userClub().cc) news(`${bestP.n} (${bestP.ovr}) przechodzi z ${seller.name} do ${b.name} za ${money(fee)}.`);
+    if (fee >= 3e6 || seller.cc === userClub().cc || b.cc === userClub().cc) news(`🔄 Transfer: ${bestP.n} (${bestP.ovr}) – ${seller.name} → ${b.name} (${money(fee)}.`);
+  }
+  // AI podpisuje lepszych wolnych agentów
+  const fa = S.free.filter(p => p.age <= 33).sort((a, b) => b.ovr - a.ovr).slice(0, 30);
+  for (let k = 0; k < 6 && fa.length; k++) {
+    const p = fa.splice(ri(0, Math.min(fa.length - 1, 9)), 1)[0];
+    const c = S.clubs.find(c => c.id !== S.user && c.players.length < 26 && Math.abs(teamLevel(c) - p.ovr) <= 4 && rnd() < 0.3);
+    if (!c) continue;
+    S.free = S.free.filter(x => x !== p); attach(p, c); p.con = ri(1, 3); p.wage = calcWage(p, c.rep); p.val = calcValue(p);
+    if (p.ovr >= 72) news(`✍️ Wolny transfer: ${p.n} (${p.ovr}) → ${c.name}.`);
   }
   rebuildIndex();
 }
@@ -1350,7 +1401,7 @@ function academyWeek(d) {
     for (let i = 0; i < n; i++) { const y = genYouth(); A.youth.push(y); list.push(y); PM.set(y.id, y); PALL.push(y); }
     const best = list.slice().sort((a, b) => b.acad.est - a.acad.est)[0];
     A.nextQ = 0;
-    S.intake = list.map(y => y.id);
+    S.intake = list.map(y => y.id); S.intakeDay = absDay();
     msg('🎓 Dzień naboru do akademii', `Do akademii dołączyło ${n} juniorów. Największy talent: ${best.n} (${POS_PL[best.pos]}, ${best.age} l.) – szacowany potencjał ok. ${best.acad.est}. Zobacz: Akademia.`);
   }
 }
@@ -1481,6 +1532,7 @@ function assistantTip(opp) {
   const gap = teamLevel(opp) - teamLevel(ut);
   if (ab < 7) return `Asystent: „Trudno coś powiedzieć o rywalu, zagrajmy swoje.”`;
   const wn = { DEF: 'obrona', MID: 'środek pola', ATT: 'atak' };
+  if (L[strong] - L[weak] < 1.5) return `Asystent: „Rywal ma wyrównany skład, bez wyraźnych słabych punktów. ${gap > 4 ? 'Są od nas lepsi – rozważ niski blok i grę z kontry.' : gap < -4 ? 'Jesteśmy faworytem – wysoki pressing powinien ich złamać.' : 'Mecz wyrównany.'}”`;
   return `Asystent: „Najsłabsza formacja rywala to ${wn[weak]}, najmocniejsza – ${wn[strong]}. ${gap > 4 ? 'Są od nas lepsi – rozważ niski blok, głęboką linię i grę z kontry.' : gap < -4 ? 'Jesteśmy faworytem – wysoki pressing i szybkie tempo powinny ich złamać.' : 'Mecz wyrównany.'}${weak === 'DEF' ? ' Ich obrona jest wolna – szeroka gra skrzydłami może dać efekty.' : ''}”${ab >= 14 ? ` Kluczowy zawodnik rywala: ${opp.players.slice().sort((a, b) => b.ovr - a.ovr)[0].n}.` : ''}`;
 }
 /* ---------- turnieje przedsezonowe ---------- */
@@ -1524,7 +1576,8 @@ function startCareer(name, clubId, nt, mgrOvr) {
   S.manager = name; S.user = clubId; S.nt = nt || null;
   const ut = userClub(); S.mgr = { ovr: mgrOvr || 50, best: mgrOvr || 50 }; clubFacilities(ut);
   S.startClub = ut.id; S.startTier = S.leagues[ut.lg].tier; if (typeof metaInit === 'function') metaInit();
-  setBoardObjective(); autoPick(ut); preOffers(); initStaff(true);
+  if (!S.acad.youth.length) for (let i = 0, n = 3 + S.acad.rec; i < n; i++) { const y = genYouth(); y.age = ri(15, 17); S.acad.youth.push(y); PM.set(y.id, y); PALL.push(y); }
+  setBoardObjective(); autoPick(ut); preOffers(); initStaff(true); rebalanceSpons(ut); ut.spons += staffCost() + acadCost();
   msg('Witaj w klubie!', `Zarząd ${ut.name} powierzył Ci stery drużyny. ${S.board.text}${S.board.euro ? ' W Europie: ' + S.board.euro + '.' : ''} Okno transferowe jest otwarte – sprawdź skład, wyślij skautów i wzmocnij zespół.`);
   if (S.nt) msg('Reprezentacja', `Zostałeś także selekcjonerem reprezentacji: ${NAT[S.nt].name}. Powołania znajdziesz w zakładce Klub → Reprezentacja.`);
   const ec = Object.values(S.euro).find(c => c.teams.includes(ut.id) && c.lp);
@@ -1546,14 +1599,14 @@ function endSeason() {
   const finals = {};
   for (const id in S.leagues) finals[id] = table(id);
   const upos = finals[ut.lg].find(r => r.id === ut.id);
-  const aw = seasonAwards(ut.lg, finals);
+  const aw = seasonAwards(ut.lg, finals), ks0 = topScorers(ut.lg, 1)[0];
   const wasLg = ut.lg, wasTier = S.leagues[ut.lg].tier;
   // nagrody pieniężne
   for (const id in finals) { const n = finals[id].length; finals[id].forEach(r => { const c = club(r.id); const pr = Math.round(c.tv * 14 * (n - r.pos + 1) / n); c.bal += pr; c.fin.inc += pr; if (c.id === S.user) { c.tb += pr; lines.push(`Premia za miejsce w lidze: ${money(pr)}.`); } }); }
   payDebts();
   for (const id in finals) { const champ = finals[id][0].id; (S.champs[id] = S.champs[id] || []).push({ s: S.season, c: champ }); }
-  lines.unshift(`Twoja pozycja: ${upos.pos}. miejsce w ${S.leagues[wasLg].name} (${upos.Pts} pkt).`);
-  lines.unshift(`🏆 Mistrz ${S.leagues[wasLg].name}: ${club(finals[wasLg][0].id).name}.`);
+  lines.unshift(`Twoja pozycja: ${upos.pos}. miejsce – ${S.leagues[wasLg].name} (${upos.Pts} pkt).`);
+  lines.unshift(`🏆 Mistrzostwo (${S.leagues[wasLg].name}): ${club(finals[wasLg][0].id).name}.`);
   if (aw.length) lines.push(`🏅 Nagrody ${S.leagues[wasLg].name}: ${aw.join(' • ')}.`);
   // puchary
   const eh = { season: S.season };
@@ -1576,7 +1629,6 @@ function endSeason() {
   const myCup = S.cups && S.cups[ut.cc];
   if (myCup && myCup.champion != null) lines.push(`🏆 ${myCup.name}: ${club(myCup.champion).name}.`);
   evalSideGoals(lines);
-  if (typeof seasonMeta === 'function') seasonMeta({ finals, upos, wasLg, wasTier, myEuro, myCup, lines });
   // współczynniki
   for (const cc in S.countries) { const c = S.countries[cc], r = S.cpts[cc]; c.coef.shift(); const raw = r && r.n ? r.pts / r.n : 0, base = avg(COEF0[cc] || [3]); c.coef.push(Math.round((raw * 0.7 + base * 0.3) * 1000) / 1000); }
   for (const id in S.ccoef) { S.ccoef[id].shift(); S.ccoef[id].push(0); }
@@ -1595,8 +1647,8 @@ function endSeason() {
       L1.clubs = L1.clubs.filter(id => !down.includes(id)).concat(up); L2.clubs = L2.clubs.filter(id => !up.includes(id)).concat(down);
       down.forEach(id => { const c = club(id); c.lg = l2; c.rep = clamp(c.rep - 3, 1, 99); setupTV(c); if (c.id !== S.user) rebalanceSpons(c); });
       up.forEach(id => { const c = club(id); c.lg = l1; c.rep = clamp(c.rep + 3, 1, 99); setupTV(c); if (c.id !== S.user) rebalanceSpons(c); });
-      if (up.includes(ut.id)) { lines.push(`⬆️ AWANS do ${L1.name}!`); S.board.conf = clamp(S.board.conf + 15, 0, 100); mgrGain(4, 'awans'); }
-      if (down.includes(ut.id)) { lines.push(`⬇️ Spadek do ${L2.name}…`); S.board.conf = clamp(S.board.conf - 25, 0, 100); mgrGain(-4); }
+      if (up.includes(ut.id)) { lines.push(`⬆️ AWANS! Nowa liga: ${L1.name}!`); S.board.conf = clamp(S.board.conf + 15, 0, 100); mgrGain(4, 'awans'); }
+      if (down.includes(ut.id)) { lines.push(`⬇️ Spadek… Nowa liga: ${L2.name}.`); S.board.conf = clamp(S.board.conf - 25, 0, 100); mgrGain(-4); }
     }
   }
   for (const id in finals) S.lastTables[id] = finals[id].map(r => r.id);
@@ -1608,6 +1660,7 @@ function endSeason() {
   if (myEuro) { const st = myEuro.champion === ut.id ? 8 : myEuro.ko.F && (myEuro.ko.F[0].a === ut.id || myEuro.ko.F[0].b === ut.id) ? 5 : myEuro.ko.SF && myEuro.ko.SF.some(t => t.a === ut.id || t.b === ut.id) ? 3 : myEuro.ko.QF && myEuro.ko.QF.some(t => t.a === ut.id || t.b === ut.id) ? 2 : myEuro.ko.R16 && myEuro.ko.R16.some(t => t.a === ut.id || t.b === ut.id) ? 1 : 0; mgrGain(st * (myEuro.id === 'CL' ? 1 : 0.6)); }
   if (S.nt && S.ntc.tourn && S.ntc.tourn.champion === S.nt) mgrGain(6);
   lines.push(`🧑‍💼 OVR trenera: ${Math.round(before)} → ${Math.round(S.mgr.ovr)}.`);
+  if (typeof seasonMeta === 'function') seasonMeta({ finals, upos, wasLg, wasTier, myEuro, myCup, lines });
   // reputacja klubów
   for (const id in finals) { const n = finals[id].length; finals[id].forEach(r => { const c = club(r.id); if (c.rep0 == null) c.rep0 = c.rep; if (c.id !== ut.id) c.rep = clamp(c.rep + (r.pos <= 2 && rnd() < (97 - c.rep) / 15 ? 1 : r.pos >= n - 1 ? -1 : 0), 5, 97); }); }
   // powolny powrót reputacji do długoterminowego poziomu klubu (mniej wiecznych dynastii)
@@ -1622,7 +1675,7 @@ function endSeason() {
   }).sort((a, b) => b.s - a.s).slice(0, 3);
   S.awards.push({ season: S.season, ballon: cand.map(x => ({ n: x.p.n, c: club(x.p.tid).name, nat: x.p.nat })) });
   lines.push(`🥇 Złota Piłka: ${cand[0].p.n} (${club(cand[0].p.tid).name}).`);
-  const ks = topScorers(wasLg, 1)[0]; if (ks) lines.push(`👟 Król strzelców ligi: ${ks.n} (${ks.lg} goli).`);
+  const ks = ks0; if (ks) lines.push(`👟 Król strzelców ligi: ${ks.n} (${plural(ks.lg, 'gol', 'gole', 'goli')}).`);
   S.history.push({ season: S.season, lg: wasLg, pos: upos.pos, pts: upos.Pts, club: ut.name, champ: club(finals[wasLg][0].id).name, scorer: ks ? `${ks.n} (${ks.lg})` : '-', achieved, euro: myEuro ? myEuro.name : '' });
 
   // zawodnicy
@@ -1716,12 +1769,12 @@ function endSeason() {
   const title = `Podsumowanie sezonu ${SEASON_LABEL(S.season - 1)}`;
   msg(title, lines.join('\n'));
   autoPick(userClub()); S.offers = []; S.moSnap = null; S.moNow = null;
-  S.summary = { title, lines };
+  S.summary = { title, lines, meta: { pos: upos.pos, pts: upos.Pts, n: finals[wasLg].length, lg: S.leagues[wasLg].name, w: upos.W, d: upos.D, l: upos.L, gf: upos.GF, ga: upos.GA, achieved, ovr0: Math.round(before), ovr1: Math.round(S.mgr.ovr), bal: userClub().bal, pres: presOf(userClub()) } };
   return S.summary;
 }
 function tvFor(c) { const t = TVW[c.cc] || [5e4, 1e4], tier = S.leagues[c.lg].tier, t2 = t[1] || t[0] * 0.15; return Math.round(tier === 1 ? t[0] : tier === 2 ? t2 : tier === 3 ? t2 * 0.3 : t2 * 0.12); }
 function setupTV(c) { c.tv = tvFor(c); }
-function rebalanceSpons(c) { const bill = sum(c.players.map(p => p.wage)), gateAvg = 0.5 * c.cap * 0.75 * c.price; c.spons = Math.max(2000, Math.round((bill * (1.0 + c.rep / 700) - c.tv - gateAvg) / 1000) * 1000); }
+function rebalanceSpons(c) { const bill = sum(c.players.map(p => p.wage)), gateAvg = 0.5 * Math.min(c.cap, ticketDemand(c)) * c.price; c.spons = Math.max(2000, Math.round((bill * (1.0 + c.rep / 700) - c.tv - gateAvg) / 1000) * 1000); }
 
 /* ---------- praca ---------- */
 function mgrGain(d) { if (d > 0) d *= clamp((95 - S.mgr.ovr) / 50, 0.15, 1); S.mgr.ovr = clamp(Math.round((S.mgr.ovr + d) * 10) / 10, 20, 99); S.mgr.best = Math.max(S.mgr.best || 0, S.mgr.ovr); }
@@ -1794,7 +1847,7 @@ function takeOver(id) {
     S.debts = (S.debts || []).filter(d => d.from != null && d.from !== old.id);
   }
   S.user = id; clubFacilities(userClub()); rebuildIndex(); S.sacked = false; S.board.conf = 60; S.offers = []; S.jobs = S.jobs.filter(j => j.club !== id);
-  S.board.side = null; setBoardObjective(); autoPick(userClub()); initStaff(true);
+  S.board.side = null; setBoardObjective(); autoPick(userClub()); initStaff(true); { const u = userClub(); rebalanceSpons(u); u.spons += staffCost() + acadCost(); }
   msg('Nowa praca', `Zostałeś trenerem ${userClub().name}. ${S.board.text}`); saveNow();
 }
 const ntAllowed = n => n.str <= S.mgr.ovr + 10;
@@ -1827,6 +1880,6 @@ async function listSlots() {
 }
 async function loadSlot(n) { if (typeof indexedDB === 'undefined') return null; try { const db = await idb(); return await idbGet(db, slotKey(n)); } catch (e) { return null; } }
 async function deleteSlot(n) { if (typeof indexedDB === 'undefined') return; try { const db = await idb(); await idbDel(db, slotKey(n)); const meta = (await idbGet(db, 'meta')) || {}; delete meta[n]; await idbPut(db, 'meta', meta); } catch (e) { } }
-function useSave(s) { if (typeof resetCaches === 'function') resetCaches(); S = s; rebuildIndex(); if (typeof metaInit === 'function') metaInit(); if (S.user >= 0) initStaff(); }
+function useSave(s) { if (typeof resetCaches === 'function') resetCaches(); S = s; rebuildIndex(); if (!S.attV) { S.attV = 1; for (const c of S.clubs) rebalanceSpons(c); } if (typeof metaInit === 'function') metaInit(); if (S.user >= 0) initStaff(); }
 
 if (typeof module !== 'undefined') module.exports = { get S() { return S; } };

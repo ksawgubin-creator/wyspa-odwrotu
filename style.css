@@ -339,3 +339,13 @@ tr.cl td,tr.el td,tr.ecl td,tr.up td,tr.dn td{background:rgba(255,255,255,.025)}
 
 .numrow{display:flex;align-items:center;gap:8px;margin:6px 0}.numrow span{font-size:13px;color:var(--mut);flex:none}
 .numin{flex:1;min-width:0;font-size:16px;font-weight:700;text-align:right}
+
+/* ekran meczu: całość przewijalna, sterowanie zawsze widoczne */
+#match{overflow-y:auto}
+#mpitch svg{max-height:24vh}
+.feed{flex:1 0 160px}
+#match .ctl{position:sticky;bottom:0;flex:none;z-index:2}
+.httalk{display:flex;flex-wrap:wrap;gap:6px;width:100%}
+.httalk small{width:100%}
+.httalk .btn{flex:1 1 30%;min-height:38px;padding:6px 4px;font-size:12px;white-space:normal}
+.mstats{padding:4px 14px;font-size:12px}

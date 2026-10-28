@@ -87,6 +87,8 @@ const MAX_SUBS = 5, BENCH = 9;
 let SHOT_BASE = 0.25, SHOT_EXP = 1.3, FIN_EXP = 2.2, HOME_ADV = 1.13, AWAY_ADV = 0.9, DAY_VAR = 0.07;
 
 /* ---------- stan zawodnika ---------- */
+// polska odmiana liczebników: 1 gol, 2 gole, 5 goli
+const plural = (n, one, few, many) => { n = Math.round(n); const a = Math.abs(n), d = a % 10, t = a % 100; return `${n} ${a === 1 ? one : d >= 2 && d <= 4 && (t < 12 || t > 14) ? few : many}`; };
 const isAvail = p => !p.inj && !p.susp;
 // rodzaje kontuzji: [nazwa, min dni, max dni, waga]
 const INJ = [['stłuczenie', 3, 10, 30], ['naciągnięcie mięśnia dwugłowego', 10, 28, 20], ['skręcenie stawu skokowego', 10, 35, 18], ['uraz pachwiny', 14, 40, 10], ['naderwanie mięśnia', 21, 49, 8], ['uraz kolana', 30, 70, 6], ['złamanie', 50, 100, 3], ['zerwanie więzadła krzyżowego', 150, 220, 1.2]];
@@ -256,8 +258,8 @@ function doShot(m, A, D) {
   const pg = penalty ? 0.76 + (shooter.p.a[1] - 70) / 400 : clamp(0.083 * Math.pow(q, FIN_EXP), 0.02, 0.4) * (kind === 'fk' ? 0.75 : kind === 'head' ? 0.85 : 1) * (kind ? 1 : (1 - 0.05 * ((A.tac && A.tac.tempo) || 0)) * (1 + 0.08 * ((D.tac && D.tac.line) || 0)));
   A.shots++;
   { const kc = c.filter(x => x !== shooter); if (kc.length && !penalty) { const k = wpick(kc, x => (LINE[x.pos] === 'MID' ? 2 : LINE[x.pos] === 'ATT' ? 1.5 : 0.6) * Math.pow(x.p.a[2] / 60, 2)); const r = A.rec[k.p.id]; if (r) r.kp = (r.kp || 0) + 1; } }
-  if (penalty) ev(m, 'info', A, `Rzut karny dla ${A.t.name}! Do piłki podchodzi ${shortName(shooter.p)}...`);
-  else if (kind === 'fk') ev(m, 'info', A, `Rzut wolny dla ${A.t.name} w dogodnej odległości. Do piłki podchodzi ${shortName(shooter.p)}...`);
+  if (penalty) ev(m, 'info', A, `Rzut karny! Wykonuje ${shortName(shooter.p)} (${A.t.name})...`);
+  else if (kind === 'fk') ev(m, 'info', A, `Rzut wolny w dogodnej odległości – do piłki podchodzi ${shortName(shooter.p)} (${A.t.name})...`);
   else if (kind === 'head') A.corners++;
   const nm = shortName(shooter.p), kn = gk ? lastName(gk.p) : 'obrońca';
   if (rnd() < pg) {
@@ -267,8 +269,8 @@ function doShot(m, A, D) {
     else if (!penalty && kind !== 'fk' && rnd() < 0.75) { const cc = A.pitch.filter(s => s !== shooter && s.pos !== 'GK'); if (cc.length) ast = wpick(cc, s => (LINE[s.pos] === 'DEF' ? 1 : 3) * (s.p.a[2] / 60)).p; }
     A.rec[shooter.p.id].g++; if (ast) A.rec[ast.id].a++;
     A.scorers.push({ min: m.minute, name: shortName(shooter.p), pen: penalty, pid: shooter.p.id });
-    const gt = kind === 'fk' ? `${nm} uderza z rzutu wolnego – piłka ląduje w okienku!` : kind === 'head' ? `${nm} wygrywa pojedynek w powietrzu po rzucie rożnym i główkuje do siatki!` : pick(GOAL_TXT).replace('{s}', nm);
-    ev(m, 'goal', A, `⚽ GOL! ${A.t.name}! ` + gt + (ast ? ` Asysta: ${shortName(ast)}.` : penalty ? ' (rzut karny)' : ''), { pid: shooter.p.id });
+    const gt = penalty ? `${nm} pewnie wykorzystuje rzut karny!` : kind === 'fk' ? `${nm} uderza z rzutu wolnego – piłka ląduje w okienku!` : kind === 'head' ? `${nm} wygrywa pojedynek w powietrzu po rzucie rożnym i główkuje do siatki!` : pick(GOAL_TXT).replace('{s}', nm);
+    ev(m, 'goal', A, `⚽ GOL! ${A.t.name}! ` + gt + (ast ? ` Asysta: ${shortName(ast)}.` : ''), { pid: shooter.p.id });
     m.dirty = true; m.alert = 'goal';
   } else if (rnd() < 0.42) {
     A.sot++; if (gk) D.rec[gk.p.id].sv++;

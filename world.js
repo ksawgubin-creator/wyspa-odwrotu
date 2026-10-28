@@ -917,7 +917,7 @@ function wageDemand(p) {
   return Math.round(base * f * (p.age > 30 ? 0.9 : 1) / 100) * 100;
 }
 /* ---------- prestiż klubu (1–10, w UI 5 gwiazdek) – rośnie powoli przy długotrwałych sukcesach ---------- */
-const presOf = c => c.pres != null ? c.pres : (c.pres = Math.round(clamp(1 + (c.rep - 25) / 7.2, 1, 10) * 10) / 10);
+const presOf = c => c.pres != null ? c.pres : (c.pres = Math.round(clamp(1 + (c.rep - 25) / 8, 1, 10) * 10) / 10);
 function prestigeSeason(finals) {
   const cupW = new Set(Object.values(S.cups || {}).map(c => c.champion).filter(x => x != null)), eu = {};
   for (const c of Object.values(S.euro || {})) {

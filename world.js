@@ -25,7 +25,7 @@ const NAT_EXTRA = [
 ];
 for (const [code, name, iso, pool, str, conf] of NAT_EXTRA) if (!NAT[code]) { const n = { code, name, flag: code === 'KOS' ? '🇽🇰' : isoFlag(iso), pool: NAME_POOLS[pool] ? pool : 'EN', str, conf }; NATIONS.push(n); NAT[code] = n; }
 const COEF0 = {"ENG":[21.428,23,17.375,29.464,25],"ESP":[18.428,16.571,16.062,19,18.5],"ITA":[15.714,22.357,21,21.875,18],"GER":[16.214,17.125,19.357,18,18],"FRA":[18.416,12.916,13.5,17.125,16],"POL":[4.625,7.5,4,13.875,10],"POR":[10.5,12,10.833,13.05,12.5],"NED":[19.2,11,13,15.25,12],"BEL":[10,13.4,12.6,13,11.5],"TUR":[6.4,10,12,10.8,10.5],"SCO":[8.375,8.25,4.9,7.15,6],"AUT":[10.5,7.1,7,6.55,7.5],"SUI":[5.875,7.775,3.7,8.975,7],"CZE":[9,9,11.7,9,9.5],"GRE":[6.5,4.7,15.25,8.625,9],"DEN":[9.375,6.375,7.375,8.7,8],"UKR":[3.3,6.4,6.5,4.925,5.5],"CRO":[6.375,4.9,7.125,6.625,6.5],"SRB":[9.125,4,5.75,5.75,6],"NOR":[11,7.375,9,11.687,9],"SWE":[4.875,6.25,6,8.75,6.5]};
-const CTRY = (COUNTRY_DATA.length || typeof COUNTRIES === 'undefined' ? COUNTRY_DATA : COUNTRIES)
+const CTRY = COUNTRY_DATA
   .map(c => Object.assign({}, c, { coef: (COEF0[c.code] || [3, 3, 3, 3, 3]).slice(), leagues: c.leagues.slice().sort((a, b) => a.tier - b.tier) }))
   .sort((a, b) => sum(b.coef) - sum(a.coef));
 const club = id => S.clubs[id];
@@ -180,6 +180,8 @@ function createWorld() {
       }
     }
   }
+  const codes = new Set();
+  for (const cl of S.clubs) { let c = cl.short, k = 1; while (codes.has(c)) c = cl.short.slice(0, 2) + (k++); cl.short = c; codes.add(c); }
   for (const cl of S.clubs) { cl.level = teamLevel(cl); setupEconomy(cl); S.ccoef[cl.id] = Array.from({ length: 5 }, () => Math.max(0, Math.round(((cl.rep - 58) * 0.75 + gauss() * 3) * 10) / 10)); }
   for (const n of NATIONS) S.ntTeams[n.code] = { formation: '4-3-3', lineup: [], bench: [], sq: [], ment: 'bal' };
   ensureNationPools();

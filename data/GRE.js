@@ -130,26 +130,26 @@ COUNTRY_DATA.push({
         ['Fabricio Pedrozo', 'RW', 34, 66, 66, 'ARG']
       ]],
       ['Kifisia', 'KIF', '#0047AB', '#FFFFFF', 44, 4000, []],
-      ['AEL Larisa', 'AEL', '#8B1E3F', '#FFFFFF', 45, 16118, []],
-      ['Panserraikos', 'PSR', '#E30613', '#FFFFFF', 43, 9500, []]
+      ['Iraklis', 'IRA', '#0047AB', '#FFFFFF', 41, 28028, []],
+      ['Kalamata', 'KAL', '#000000', '#FFFFFF', 36, 5400, []]
     ]},
     { id: 'GRE2', name: 'Super League 2', tier: 2, clubs: [
-      ['Iraklis', 'IRA', '#0047AB', '#FFFFFF', 38, 28028, []],
+      ['AEL Larisa', 'AEL', '#8B1E3F', '#FFFFFF', 42, 16118, []],
+      ['Panserraikos', 'PSR', '#E30613', '#FFFFFF', 40, 9500, []],
       ['Panionios', 'PNI', '#E30613', '#0047AB', 36, 11700, []],
-      ['PAS Giannina', 'PAS', '#0047AB', '#FFFFFF', 36, 7652, []],
-      ['Lamia', 'LAM', '#0047AB', '#FFFFFF', 35, 5500, []],
       ['Athens Kallithea', 'ATK', '#00843D', '#FFFFFF', 34, 4750, []],
-      ['Kalamata', 'KAL', '#000000', '#FFFFFF', 33, 5400, []],
       ['Niki Volou', 'NIK', '#0047AB', '#FFFFFF', 32, 9000, []],
-      ['Panachaiki', 'PCH', '#000000', '#E30613', 32, 11321, []],
-      ['AO Chania', 'CHA', '#000000', '#FFFFFF', 30, 4527, []],
-      ['Ilioupoli', 'ILI', '#0047AB', '#FFFFFF', 30, 3000, []],
+      ['Apollon Kalamarias', 'APK', '#C8102E', '#000000', 31, 6500, []],
+      ['Olympiakos Pireus B', 'OLB', '#E30613', '#FFFFFF', 30, 3000, []],
+      ['PAOK Saloniki B', 'PKB', '#000000', '#FFFFFF', 30, 3000, []],
+      ['Panthrakikos', 'PTH', '#00843D', '#FFFFFF', 30, 6000, []],
       ['Marko', 'MRK', '#FFD100', '#0047AB', 29, 2500, []],
-      ['Egaleo', 'EGA', '#0047AB', '#FFFFFF', 30, 8217, []],
-      ['Kampaniakos', 'KMP', '#E30613', '#FFFFFF', 28, 2000, []],
-      ['Makedonikos', 'MAK', '#00843D', '#FFFFFF', 28, 3000, []],
       ['Anagennisi Karditsa', 'ANK', '#0047AB', '#FFFFFF', 29, 7000, []],
-      ['Proodeftiki', 'PRO', '#E30613', '#FFFFFF', 28, 4500, []]
+      ['APS Zakynthos', 'ZAK', '#0047AB', '#FFD100', 29, 3000, []],
+      ['PAS Pyrgos', 'PYR', '#0047AB', '#FFFFFF', 29, 5000, []],
+      ['Asteras Tripolis B', 'ASB', '#FFD100', '#000000', 28, 2000, []],
+      ['Nestos Chrysoupolis', 'NES', '#0047AB', '#FFFFFF', 28, 2000, []],
+      ['Ellas Syrou', 'ELS', '#0047AB', '#FFFFFF', 28, 2000, []]
     ]}
   ]
 });

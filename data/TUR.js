@@ -209,26 +209,6 @@ COUNTRY_DATA.push({
         ['Mamadou Fall', 'ST', 34, 69, 69, 'SEN'],
         ['Cenk Tosun', 'ST', 35, 70, 70, 'TUR']
       ]],
-      ['Antalyaspor', 'ANS', '#E30613', '#FFFFFF', 56, 32537, [
-        ['Abdullah Yiğiter', 'GK', 26, 70, 72, 'TUR'],
-        ['Kağan Arıcan', 'GK', 23, 62, 67, 'TUR'],
-        ['Veysel Sarı', 'CB', 38, 68, 68, 'TUR'],
-        ['Lautaro Giannetti', 'CB', 33, 70, 70, 'ARG'],
-        ['Hüseyin Türkmen', 'CB', 28, 67, 67, 'TUR'],
-        ['Thalisson Kelven', 'CB', 24, 67, 71, 'BRA'],
-        ['Bünyamin Balcı', 'RB', 26, 71, 72, 'TUR'],
-        ['Erdoğan Yeşilyurt', 'LB', 32, 67, 67, 'TUR'],
-        ['Kenneth Paal', 'LB', 29, 70, 70, 'SUR'],
-        ['Soner Dikmen', 'CDM', 33, 67, 67, 'TUR'],
-        ['Dario Šarić', 'CM', 29, 68, 68, 'BIH'],
-        ['Jesper Ceesay', 'CM', 25, 69, 71, 'SWE'],
-        ['Sander van de Streek', 'CAM', 33, 70, 70, 'NED'],
-        ['Ramzi Safuri', 'CAM', 31, 70, 70, 'ISR'],
-        ['Samuel Ballet', 'LW', 25, 70, 72, 'SUI'],
-        ['Sam Larsson', 'LW', 33, 69, 69, 'SWE'],
-        ['Doğukan Sinik', 'RW', 27, 72, 72, 'TUR'],
-        ['Adolfo Gaich', 'ST', 27, 70, 70, 'ARG']
-      ]],
       ['Alanyaspor', 'ALN', '#FF6600', '#00843D', 57, 10128, [
         ['Ertuğrul Taşkıran', 'GK', 37, 69, 69, 'TUR'],
         ['Paulo Victor', 'GK', 39, 66, 66, 'BRA'],
@@ -300,22 +280,6 @@ COUNTRY_DATA.push({
         ['Ali Sowe', 'ST', 32, 70, 70, 'GAM'],
         ['Václav Jurečka', 'ST', 32, 70, 70, 'CZE']
       ]],
-      ['Kayserispor', 'KAY', '#FFD100', '#E30613', 54, 32864, [
-        ['Bilal Bayazıt', 'GK', 27, 72, 73, 'TUR'],
-        ['Onurcan Piri', 'GK', 32, 65, 65, 'TUR'],
-        ['Majid Hosseini', 'CB', 30, 72, 72, 'IRN'],
-        ['Stefano Denswil', 'CB', 33, 69, 69, 'SUR'],
-        ['Gideon Jung', 'CB', 32, 68, 68, 'GER'],
-        ['Joshua Brenet', 'RB', 32, 68, 68, 'NED'],
-        ['Lionel Carole', 'LB', 35, 67, 67, 'FRA'],
-        ['Ramazan Civelek', 'LB', 30, 66, 66, 'TUR'],
-        ['Dorukhan Toköz', 'CM', 30, 70, 70, 'TUR'],
-        ['László Bénes', 'CAM', 29, 73, 73, 'SVK'],
-        ['Miguel Cardoso', 'CAM', 32, 71, 71, 'POR'],
-        ['Carlos Mané', 'LW', 32, 68, 68, 'POR'],
-        ['Aaron Opoku', 'RW', 27, 69, 70, 'GHA'],
-        ['Indrit Tuci', 'ST', 26, 69, 71, 'ALB']
-      ]],
       ['Kocaelispor', 'KOC', '#00843D', '#000000', 54, 34829, [
         ['Aleksandar Jovanović', 'GK', 34, 72, 72, 'SRB'],
         ['Gökhan Değirmenci', 'GK', 37, 65, 65, 'TUR'],
@@ -349,7 +313,48 @@ COUNTRY_DATA.push({
         ['Henry Onyekuru', 'LW', 29, 69, 69, 'NGA'],
         ['M\'Baye Niang', 'ST', 31, 70, 70, 'SEN']
       ]],
-      ['Fatih Karagümrük', 'FKG', '#E30613', '#000000', 52, 15000, [
+      ['Amedspor', 'AMD', '#00843D', '#E30613', 36, 13000, []],
+      ['Erzurumspor FK', 'ERZ', '#0047AB', '#FFFFFF', 36, 21374, []],
+      ['Çorum FK', 'COR', '#E30613', '#000000', 34, 15000, []]
+    ]},
+    { id: 'TUR2', name: '1. Lig', tier: 2, clubs: [
+      ['Antalyaspor', 'ANS', '#E30613', '#FFFFFF', 53, 32537, [
+        ['Abdullah Yiğiter', 'GK', 26, 70, 72, 'TUR'],
+        ['Kağan Arıcan', 'GK', 23, 62, 67, 'TUR'],
+        ['Veysel Sarı', 'CB', 38, 68, 68, 'TUR'],
+        ['Lautaro Giannetti', 'CB', 33, 70, 70, 'ARG'],
+        ['Hüseyin Türkmen', 'CB', 28, 67, 67, 'TUR'],
+        ['Thalisson Kelven', 'CB', 24, 67, 71, 'BRA'],
+        ['Bünyamin Balcı', 'RB', 26, 71, 72, 'TUR'],
+        ['Erdoğan Yeşilyurt', 'LB', 32, 67, 67, 'TUR'],
+        ['Kenneth Paal', 'LB', 29, 70, 70, 'SUR'],
+        ['Soner Dikmen', 'CDM', 33, 67, 67, 'TUR'],
+        ['Dario Šarić', 'CM', 29, 68, 68, 'BIH'],
+        ['Jesper Ceesay', 'CM', 25, 69, 71, 'SWE'],
+        ['Sander van de Streek', 'CAM', 33, 70, 70, 'NED'],
+        ['Ramzi Safuri', 'CAM', 31, 70, 70, 'ISR'],
+        ['Samuel Ballet', 'LW', 25, 70, 72, 'SUI'],
+        ['Sam Larsson', 'LW', 33, 69, 69, 'SWE'],
+        ['Doğukan Sinik', 'RW', 27, 72, 72, 'TUR'],
+        ['Adolfo Gaich', 'ST', 27, 70, 70, 'ARG']
+      ]],
+      ['Kayserispor', 'KAY', '#FFD100', '#E30613', 51, 32864, [
+        ['Bilal Bayazıt', 'GK', 27, 72, 73, 'TUR'],
+        ['Onurcan Piri', 'GK', 32, 65, 65, 'TUR'],
+        ['Majid Hosseini', 'CB', 30, 72, 72, 'IRN'],
+        ['Stefano Denswil', 'CB', 33, 69, 69, 'SUR'],
+        ['Gideon Jung', 'CB', 32, 68, 68, 'GER'],
+        ['Joshua Brenet', 'RB', 32, 68, 68, 'NED'],
+        ['Lionel Carole', 'LB', 35, 67, 67, 'FRA'],
+        ['Ramazan Civelek', 'LB', 30, 66, 66, 'TUR'],
+        ['Dorukhan Toköz', 'CM', 30, 70, 70, 'TUR'],
+        ['László Bénes', 'CAM', 29, 73, 73, 'SVK'],
+        ['Miguel Cardoso', 'CAM', 32, 71, 71, 'POR'],
+        ['Carlos Mané', 'LW', 32, 68, 68, 'POR'],
+        ['Aaron Opoku', 'RW', 27, 69, 70, 'GHA'],
+        ['Indrit Tuci', 'ST', 26, 69, 71, 'ALB']
+      ]],
+      ['Fatih Karagümrük', 'FKG', '#E30613', '#000000', 49, 15000, [
         ['Ivo Grbić', 'GK', 30, 72, 72, 'CRO'],
         ['Furkan Bekleviç', 'GK', 27, 62, 64, 'TUR'],
         ['Davide Biraschi', 'CB', 32, 69, 69, 'ITA'],
@@ -363,9 +368,7 @@ COUNTRY_DATA.push({
         ['Daniel Johnson', 'CAM', 34, 68, 68, 'JAM'],
         ['Serginho', 'LW', 25, 69, 71, 'NED'],
         ['Tiago Çukur', 'ST', 24, 68, 72, 'TUR']
-      ]]
-    ]},
-    { id: 'TUR2', name: '1. Lig', tier: 2, clubs: [
+      ]],
       ['Sivasspor', 'SIV', '#E30613', '#FFFFFF', 40, 27532, [
         ['Ali Şaşal Vural', 'GK', 36, 67, 67, 'TUR'],
         ['Murat Paluli', 'RB', 32, 64, 64, 'TUR'],
@@ -373,24 +376,21 @@ COUNTRY_DATA.push({
         ['Charilaos Charisis', 'CDM', 31, 67, 67, 'GRE'],
         ['Rey Manaj', 'ST', 29, 69, 69, 'ALB']
       ]],
-      ['Adana Demirspor', 'ADS', '#0047AB', '#FFFFFF', 34, 33543, []],
-      ['Hatayspor', 'HTY', '#800000', '#FFFFFF', 34, 25000, []],
+      ['Bursaspor', 'BSP', '#006A4E', '#FFFFFF', 36, 43331, []],
       ['Bodrum FK', 'BDM', '#00843D', '#FFFFFF', 34, 5000, []],
-      ['Amedspor', 'AMD', '#00843D', '#E30613', 33, 13000, []],
-      ['Erzurumspor FK', 'ERZ', '#0047AB', '#FFFFFF', 33, 21374, []],
       ['Esenler Erokspor', 'ESE', '#E30613', '#0047AB', 32, 5000, []],
       ['Bandırmaspor', 'BDR', '#E30613', '#0047AB', 32, 6000, []],
       ['Pendikspor', 'PEN', '#E30613', '#FFFFFF', 32, 2500, []],
-      ['Sakaryaspor', 'SAK', '#00843D', '#000000', 32, 28154, []],
-      ['Çorum FK', 'COR', '#E30613', '#000000', 31, 15000, []],
       ['Boluspor', 'BOL', '#E30613', '#FFFFFF', 31, 8881, []],
-      ['Ümraniyespor', 'UMR', '#E30613', '#FFFFFF', 30, 3513, []],
       ['İstanbulspor', 'IST', '#FFD100', '#000000', 31, 4000, []],
+      ['Ümraniyespor', 'UMR', '#E30613', '#FFFFFF', 30, 3513, []],
       ['Manisa FK', 'MAN', '#000000', '#FFFFFF', 30, 16597, []],
       ['Iğdır FK', 'IGD', '#0047AB', '#FFD100', 30, 4000, []],
+      ['Batman Petrolspor', 'BAT', '#E30613', '#FFFFFF', 30, 10000, []],
       ['Keçiörengücü', 'KEC', '#5C2483', '#FFFFFF', 29, 4500, []],
+      ['Muğlaspor', 'MUG', '#00843D', '#FFFFFF', 29, 5000, []],
+      ['Mardin 1969 Spor', 'MRD', '#E30613', '#1B2A4A', 29, 5700, []],
       ['Sarıyer', 'SRY', '#0047AB', '#FFFFFF', 28, 4000, []],
-      ['Serik Belediyespor', 'SER', '#E30613', '#0047AB', 28, 4500, []],
       ['Van Spor FK', 'VAN', '#E30613', '#000000', 28, 12000, []]
     ]}
   ]

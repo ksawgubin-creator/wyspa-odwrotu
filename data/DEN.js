@@ -98,26 +98,26 @@ COUNTRY_DATA.push({
         ['Pelle Mattsson', 'CM', 25, 69, 71, 'DEN'],
         ['Tonni Adamsen', 'ST', 32, 69, 69, 'DEN']
       ]],
-      ['Viborg FF', 'VFF', '#00843D', '#FFFFFF', 50, 9566, []],
       ['Odense BK', 'OBK', '#0047AB', '#FFFFFF', 51, 15790, [
         ['Rasmus Falk', 'CM', 34, 68, 68, 'DEN']
       ]],
+      ['Viborg FF', 'VFF', '#00843D', '#FFFFFF', 50, 9566, []],
       ['Sønderjyske', 'SDJ', '#0047AB', '#FFFFFF', 48, 10000, []],
-      ['Vejle BK', 'VEJ', '#E30613', '#FFFFFF', 48, 10418, []],
-      ['FC Fredericia', 'FRE', '#E30613', '#FFFFFF', 44, 4000, []]
+      ['Lyngby BK', 'LBK', '#0047AB', '#FFFFFF', 40, 10000, []],
+      ['AC Horsens', 'ACH', '#FFD100', '#000000', 38, 10400, []]
     ]},
     { id: 'DEN2', name: '1. Division', tier: 2, clubs: [
+      ['Vejle BK', 'VEJ', '#E30613', '#FFFFFF', 45, 10418, []],
+      ['FC Fredericia', 'FRE', '#E30613', '#FFFFFF', 41, 4000, []],
       ['AaB Aalborg', 'AAB', '#E30613', '#FFFFFF', 40, 13797, []],
-      ['Lyngby BK', 'LBK', '#0047AB', '#FFFFFF', 37, 10000, []],
       ['Esbjerg fB', 'EFB', '#0047AB', '#FFFFFF', 35, 16032, []],
-      ['AC Horsens', 'ACH', '#FFD100', '#000000', 35, 10400, []],
       ['Hvidovre IF', 'HVI', '#E30613', '#0047AB', 33, 12000, []],
       ['HB Køge', 'HBK', '#000000', '#FFFFFF', 32, 4000, []],
       ['Kolding IF', 'KOL', '#0047AB', '#FFFFFF', 31, 10000, []],
       ['Hobro IK', 'HOB', '#FFD100', '#0047AB', 31, 10700, []],
+      ['Vendsyssel FF', 'VSF', '#FFFFFF', '#0A1F44', 31, 7500, []],
+      ['AB Gladsaxe', 'ABG', '#00843D', '#FFFFFF', 30, 13507, []],
       ['Hillerød Fodbold', 'HIL', '#E30613', '#FFFFFF', 29, 3000, []],
-      ['B.93', 'BTR', '#FFFFFF', '#000000', 29, 5000, []],
-      ['Middelfart', 'MID', '#E30613', '#FFFFFF', 28, 2500, []],
       ['Aarhus Fremad', 'FRM', '#000000', '#FFD100', 28, 5000, []]
     ]}
   ]

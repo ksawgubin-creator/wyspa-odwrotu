@@ -23,7 +23,7 @@ APK buduje się automatycznie przez GitHub Actions (`.github/workflows/android.y
 - **Reprezentacja**: równolegle z klubem (dostępność zależna od OVR trenera) – powołania, skład, eliminacje/Liga Narodów, Mistrzostwa Europy i Świata.
 - **Klub**: finanse, obiekty, trening, zarząd z celami ligowymi i europejskimi, Złota Piłka, historia.
 
-Składy i oceny odzwierciedlają stan wiedzy o sezonie 2025/26–2026/27 i mogą nie uwzględniać najnowszych transferów.
+Skład lig odpowiada sezonowi 2026/27 (awanse i spadki po sezonie 2025/26, w Norwegii i Szwecji – sezon 2026). Oceny zawodników to szacunki w stylu EA FC 26; najnowsze transfery mogą nie być uwzględnione.
 
 ## Uruchomienie w przeglądarce
 `python3 -m http.server 8080` w katalogu repozytorium i otwórz `http://localhost:8080`.

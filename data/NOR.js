@@ -24,20 +24,6 @@ COUNTRY_DATA.push({
         ['Kasper Høgh', 'ST', 26, 76, 77, 'DEN', [74, 77, 62, 72, 35, 76]],
         ['Andreas Helmersen', 'ST', 23, 69, 73, 'NOR']
       ]],
-      ['Viking FK', 'VIK', '#003A80', '#FFFFFF', 57, 15900, [
-        ['Patrik Gunnarsson', 'GK', 26, 71, 73, 'ISL'],
-        ['Arild Østbø', 'GK', 35, 63, 63, 'NOR'],
-        ['Henrik Heggheim', 'CB', 25, 70, 72, 'NOR'],
-        ['Sondre Bjørshol', 'RB', 32, 68, 68, 'NOR'],
-        ['Kristoffer Haugen', 'LB', 32, 68, 68, 'NOR'],
-        ['Gianni Stensness', 'CDM', 27, 70, 70, 'NOR'],
-        ['Joe Bell', 'CM', 27, 70, 71, 'NZL'],
-        ['Edvin Austbø', 'CM', 21, 68, 75, 'NOR'],
-        ['Zlatko Tripić', 'CAM', 34, 70, 70, 'NOR'],
-        ['Sander Svendsen', 'RW', 29, 70, 70, 'NOR'],
-        ['Lars-Jørgen Salvesen', 'ST', 30, 72, 72, 'NOR'],
-        ['Nicholas D\'Agostino', 'ST', 28, 69, 69, 'AUS']
-      ]],
       ['Molde FK', 'MOL', '#0047AB', '#FFFFFF', 60, 11249, [
         ['Jacob Karlstrøm', 'GK', 29, 70, 70, 'NOR'],
         ['Sean McDermott', 'GK', 33, 63, 63, 'IRL'],
@@ -90,11 +76,23 @@ COUNTRY_DATA.push({
         ['Ole Sæter', 'ST', 30, 70, 70, 'NOR'],
         ['Dino Islamović', 'ST', 32, 69, 69, 'NOR']
       ]],
-      ['Tromsø IL', 'TIL', '#E30613', '#FFFFFF', 50, 6859, [
-        ['Jakob Haugaard', 'GK', 34, 69, 69, 'DEN'],
-        ['Sakarias Opsahl', 'CM', 27, 69, 69, 'NOR']
+      ['Viking FK', 'VIK', '#003A80', '#FFFFFF', 57, 15900, [
+        ['Patrik Gunnarsson', 'GK', 26, 71, 73, 'ISL'],
+        ['Arild Østbø', 'GK', 35, 63, 63, 'NOR'],
+        ['Henrik Heggheim', 'CB', 25, 70, 72, 'NOR'],
+        ['Sondre Bjørshol', 'RB', 32, 68, 68, 'NOR'],
+        ['Kristoffer Haugen', 'LB', 32, 68, 68, 'NOR'],
+        ['Gianni Stensness', 'CDM', 27, 70, 70, 'NOR'],
+        ['Joe Bell', 'CM', 27, 70, 71, 'NZL'],
+        ['Edvin Austbø', 'CM', 21, 68, 75, 'NOR'],
+        ['Zlatko Tripić', 'CAM', 34, 70, 70, 'NOR'],
+        ['Sander Svendsen', 'RW', 29, 70, 70, 'NOR'],
+        ['Lars-Jørgen Salvesen', 'ST', 30, 72, 72, 'NOR'],
+        ['Nicholas D\'Agostino', 'ST', 28, 69, 69, 'AUS']
       ]],
-      ['Sandefjord', 'SFJ', '#0047AB', '#FFFFFF', 47, 6582, []],
+      ['Lillestrøm SK', 'LSK', '#FFD100', '#000000', 52, 11500, [
+        ['Thomas Lehne Olsen', 'ST', 35, 69, 69, 'NOR']
+      ]],
       ['Fredrikstad FK', 'FFK', '#E30613', '#FFFFFF', 51, 12560, []],
       ['Vålerenga', 'VIF', '#003A80', '#E30613', 51, 16555, [
         ['Elias Hagen', 'CM', 26, 69, 70, 'NOR'],
@@ -102,15 +100,17 @@ COUNTRY_DATA.push({
         ['Mohamed Ofkir', 'RW', 30, 68, 68, 'NOR'],
         ['Elias Sørensen', 'ST', 26, 69, 70, 'DEN']
       ]],
-      ['Sarpsborg 08', 'SAR', '#0047AB', '#FFFFFF', 50, 8022, []],
-      ['Lillestrøm SK', 'LSK', '#FFD100', '#000000', 52, 11500, [
-        ['Thomas Lehne Olsen', 'ST', 35, 69, 69, 'NOR']
+      ['Tromsø IL', 'TIL', '#E30613', '#FFFFFF', 50, 6859, [
+        ['Jakob Haugaard', 'GK', 34, 69, 69, 'DEN'],
+        ['Sakarias Opsahl', 'CM', 27, 69, 69, 'NOR']
       ]],
-      ['KFUM Oslo', 'KFU', '#E30613', '#000000', 44, 2000, []],
+      ['Sarpsborg 08', 'SAR', '#0047AB', '#FFFFFF', 50, 8022, []],
+      ['Sandefjord', 'SFJ', '#0047AB', '#FFFFFF', 47, 6582, []],
       ['HamKam', 'HAM', '#00843D', '#FFFFFF', 45, 7800, []],
+      ['KFUM Oslo', 'KFU', '#E30613', '#000000', 44, 2000, []],
       ['Kristiansund BK', 'KBK', '#0047AB', '#FFFFFF', 44, 4444, []],
-      ['IK Start', 'IKS', '#FFD100', '#000000', 43, 14448, []],
-      ['Aalesunds FK', 'AAF', '#F58220', '#0047AB', 44, 10778, []]
+      ['Aalesunds FK', 'AAF', '#F58220', '#0047AB', 44, 10778, []],
+      ['IK Start', 'IKS', '#FFD100', '#000000', 43, 14448, []]
     ]},
     { id: 'NOR2', name: 'OBOS-ligaen', tier: 2, clubs: [
       ['FK Haugesund', 'FKH', '#000000', '#FFFFFF', 38, 8754, []],
@@ -124,11 +124,11 @@ COUNTRY_DATA.push({
       ['Ranheim', 'RNH', '#E30613', '#FFFFFF', 32, 3000, []],
       ['Egersund', 'EGE', '#0047AB', '#FFFFFF', 31, 3000, []],
       ['Moss FK', 'MOS', '#FFD100', '#000000', 31, 3500, []],
-      ['Mjøndalen', 'MJO', '#E30613', '#FFFFFF', 31, 4200, []],
       ['Raufoss', 'RAU', '#0047AB', '#FFFFFF', 30, 3000, []],
       ['Åsane', 'ASA', '#E30613', '#000000', 30, 3500, []],
+      ['Sandnes Ulf', 'SUL', '#6CACE4', '#FFFFFF', 30, 6046, []],
       ['Hødd', 'HOD', '#0047AB', '#FFFFFF', 29, 4081, []],
-      ['Levanger', 'LEV', '#00843D', '#FFFFFF', 28, 2000, []]
+      ['Strømmen IF', 'STR', '#0047AB', '#FFFFFF', 28, 2000, []]
     ]}
   ]
 });

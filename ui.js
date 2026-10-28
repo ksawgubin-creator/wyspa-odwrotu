@@ -360,7 +360,13 @@ function vTactic(t) {
       ${spSel('pen', '⚽ Rzuty karne', p => 'STR ' + Math.round(p.a[1]))}${spSel('fk', '🎯 Rzuty wolne', p => 'STR ' + Math.round(p.a[1]) + '/POD ' + Math.round(p.a[2]))}${spSel('ck', '🚩 Rzuty rożne', p => 'POD ' + Math.round(p.a[2]))}</div>
       <small class="mut">Główki po rożnych najczęściej wygrywają silni (FIZ) środkowi obrońcy i napastnicy.</small></div>
     <div class="card"><h2>Rotacja</h2><div class="row"><span class="sp">Asystent automatycznie wstawia wypoczętych zmienników za zawodników z kondycją poniżej 70%</span><button class="btn sm ${S.settings.autoRot ? 'pri' : ''}" data-act="autorot">${S.settings.autoRot ? 'Włączona' : 'Wyłączona'}</button></div></div>`;
-  return `<div class="card"><h2>Instrukcje drużynowe</h2>${tacHtml(t.tac, 'settac')}</div>` + spCard + `<div class="card"><h2>Formacja</h2><div class="seg">${Object.keys(FORMATIONS).map(f => `<button class="btn sm ${t.formation === f ? 'on' : ''}" data-act="setform" data-arg="${f}">${f}</button>`).join('')}</div></div>
+  const dev = clamp(t.lineup.reduce((s0, id, i) => { const pos = slotsOf(t.formation)[i] && slotsOf(t.formation)[i].pos; return s0 + (pos && pos !== 'GK' && t.duty && t.duty[i] != null ? t.duty[i] - DUTY_DEF[pos] : 0); }, 0), -5, 5);
+  return `<div class="card"><h2>Styl gry</h2>${presetHtml(t, 'preset')}
+      ${(t.tpre || []).length ? `<h3>Własne taktyki</h3>${t.tpre.map((p, i) => `<div class="row"><span class="sp">📁 ${esc(p.n)} <small class="mut">${p.f} • ${MENT[p.ment]}</small></span><button class="btn sm" data-act="cpreload" data-arg="${i}">Wczytaj</button><button class="btn sm" data-act="cpredel" data-arg="${i}">✕</button></div>`).join('')}` : ''}
+      <div class="btns"><button class="btn sm full" data-act="cpresave">💾 Zapisz obecne ustawienia jako własną taktykę</button></div></div>
+    <div class="card"><h2>Instrukcje drużynowe</h2>${tacHtml(t.tac, 'settac')}</div>
+    <div class="card"><h2>Role i zadania</h2><small class="mut">Zadanie „Atak” = więcej strzałów i wsparcia z przodu kosztem obrony; „Obrona” – odwrotnie. 🎩 Rozgrywający: przez niego idzie większość podań kluczowych (najlepiej dobry podający).</small>
+      ${dutyHtml(t)}<small class="${Math.abs(dev) >= 3 ? 'warn' : 'mut'}">Bilans zadań: ${dev > 0 ? '+' + dev + ' (ofensywnie – ryzyko z tyłu)' : dev < 0 ? dev + ' (defensywnie – mniej siły w ataku)' : '0 (zrównoważony)'}</small></div>` + spCard + `<div class="card"><h2>Formacja</h2><div class="seg">${Object.keys(FORMATIONS).map(f => `<button class="btn sm ${t.formation === f ? 'on' : ''}" data-act="setform" data-arg="${f}">${f}</button>`).join('')}</div></div>
     <div class="card"><h2>Mentalność</h2><div class="seg">${Object.entries(MENT).map(([k, v]) => `<button class="btn sm ${(t.ment || 'bal') === k ? 'on' : ''}" data-act="setment" data-arg="${k}">${v}</button>`).join('')}</div>
     <small class="mut">Ofensywna: więcej strzałów, ale też więcej okazji rywala. Defensywna: mniej ryzyka.</small></div>
     ${t._st ? '' : `<div class="card"><h2>Trening</h2><select data-change="training" style="width:100%">${Object.entries({ bal: 'Zrównoważony (pomocnicy)', fit: 'Kondycja (szybsza regeneracja)', att: 'Atak (napastnicy)', def: 'Obrona (obrońcy, bramkarze)' }).map(([k, v]) => `<option value="${k}" ${t.training === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
@@ -370,7 +376,27 @@ ACT.sqnt = a => { UI.nt = a === 'nt'; UI.sel = null; render(); };
 ACT.sqtab = a => { if (a !== UI.sqTab) navPush(); UI.sqTab = a; UI.sel = null; render(); };
 CHG.lsort = v => { UI.listSort = v; render(); };
 CHG.training = v => { userClub().training = v; saveSoon(); };
-ACT.setform = f => { const t = ctxTeam(); t.formation = f; autoPick(t, f); commit(t); render(); };
+ACT.setform = f => { const t = ctxTeam(); if (t.formation !== f) { t.duty = null; t.pm = null; } t.formation = f; autoPick(t, f); commit(t); render(); };
+/* style gry: gotowe i własne (maks. 3) */
+function presetHtml(t, act) {
+  const cur = k => { const p = TAC_PRE[k]; return (t.ment || 'bal') === p[1] && Object.keys(p[2]).every(x => ((t.tac || {})[x] || 0) === p[2][x]); };
+  return `<div class="seg wrap">${Object.entries(TAC_PRE).map(([k, p]) => `<button class="btn sm ${cur(k) ? 'on' : ''}" data-act="${act}" data-arg="${k}">${p[0]}</button>`).join('')}</div>
+    <small class="mut">${(Object.entries(TAC_PRE).find(([k]) => cur(k)) || [0, [0, 0, 0, 'Własne ustawienia.']])[1][3]}</small>`;
+}
+ACT.preset = k => { const t = ctxTeam(), p = TAC_PRE[k]; t.ment = p[1]; t.tac = Object.assign({}, p[2]); commit(t); toast(`Styl gry: ${p[0]}`, 'ok'); render(); };
+ACT.cpresave = () => { const t = ctxTeam(); t.tpre = t.tpre || []; if (t.tpre.length >= 3) return toast('Maksymalnie 3 własne taktyki – usuń którąś.', 'bad'); const n = (prompt('Nazwa taktyki:', `Taktyka ${t.tpre.length + 1}`) || '').trim().slice(0, 24); if (!n) return; t.tpre.push({ n, f: t.formation, ment: t.ment || 'bal', tac: Object.assign({}, t.tac || {}), duty: t.duty ? t.duty.slice() : null, pm: t.pm }); commit(t); render(); };
+ACT.cpreload = i => { const t = ctxTeam(), p = (t.tpre || [])[+i]; if (!p) return; if (p.f !== t.formation) { t.formation = p.f; autoPick(t, p.f); } t.ment = p.ment; t.tac = Object.assign({}, p.tac); t.duty = p.duty ? p.duty.slice() : null; t.pm = p.pm; commit(t); toast(`Wczytano: ${p.n}`, 'ok'); render(); };
+ACT.cpredel = i => { const t = ctxTeam(); if (!confirm('Usunąć tę taktykę?')) return; t.tpre.splice(+i, 1); commit(t); render(); };
+/* role i zadania w wyjściowej jedenastce */
+function dutyHtml(t) {
+  const sl = slotsOf(t.formation);
+  return t.lineup.map((id, i) => { const p = pget(id), pos = sl[i] && sl[i].pos; if (!p || !pos || pos === 'GK') return '';
+    const d = t.duty && t.duty[i] != null ? t.duty[i] : DUTY_DEF[pos], nm = DUTY_NAMES[pos] || ['Obrona', 'Wsparcie', 'Atak'];
+    return `<div class="duty"><div class="row">${posTag(pos)}<b class="sp">${esc(lastName(p))}</b><small class="mut">${esc(nm[d + 1])}</small><button class="btn sm ${t.pm === i ? 'pri' : ''}" data-act="setpm" data-arg="${i}" title="Rozgrywający">🎩</button></div>
+      <div class="seg">${['🛡 Obrona', '⚖ Wsparcie', '⚔ Atak'].map((x, k) => `<button class="btn sm ${d === k - 1 ? 'on' : ''}" data-act="setduty" data-arg="${i}:${k - 1}">${x}</button>`).join('')}</div></div>`; }).join('');
+}
+ACT.setduty = a => { const [i, d] = a.split(':').map(Number), t = ctxTeam(); t.duty = t.duty || []; while (t.duty.length < 11) t.duty.push(null); t.duty[i] = d === DUTY_DEF[slotsOf(t.formation)[i].pos] ? null : d; commit(t); render(); };
+ACT.setpm = a => { const t = ctxTeam(); t.pm = t.pm === +a ? null : +a; commit(t); toast(t.pm != null ? `🎩 Rozgrywający: ${lastName(pget(t.lineup[+a]))} – przez niego idzie gra.` : 'Bez wyznaczonego rozgrywającego.', 'ok'); render(); };
 ACT.setment = k => { const t = ctxTeam(); t.ment = k; commit(t); render(); };
 ACT.autopick = () => { const t = ctxTeam(); autoPick(t); commit(t); UI.sel = null; render(); toast('Skład wybrany automatycznie.'); };
 ACT.tap = id => {
@@ -524,6 +550,22 @@ ACT.nego = id => {
   renderNego();
 };
 function feeStep(v) { return v >= 2e7 ? 1e6 : v >= 5e6 ? 5e5 : v >= 1e6 ? 1e5 : 25000; }
+/* premia za podpis + prowizja agenta (wspólne dla transferu i przedłużenia) */
+function extrasHtml(o, agDem, bDem, k) {
+  if (o.agent == null) o.agent = agDem;
+  if (o.bonus == null) o.bonus = 0;
+  const tot = o.bonus + o.agent, tb = userClub().tb;
+  return `<h3>Premia za podpis</h3><div class="numrow"><span>Jednorazowo (€):</span><input class="numin" type="number" inputmode="numeric" min="0" step="10000" value="${o.bonus}" data-change="${k}bonus"></div>
+    <small class="mut">Sugerowana: ${money(bDem)}. Premia liczy się ok. 1,3× bardziej niż ta sama kwota w pensji – możesz nią obniżyć pensję tygodniową.</small>
+    <h3>Prowizja agenta</h3><div class="numrow"><span>Jednorazowo (€):</span><input class="numin" type="number" inputmode="numeric" min="0" step="10000" value="${o.agent}" data-change="${k}agent"></div>
+    <small class="mut">Agent oczekuje ok. ${money(agDem)}. Mniej – zawodnik będzie mniej chętny (poniżej 50% agent zrywa rozmowy), więcej – nieco łatwiej o zgodę.</small>
+    <div class="row"><span class="sp mut">Koszt jednorazowy razem</span><b class="${tot > tb ? 'bad' : ''}">${money(tot)}</b></div><small class="mut">Budżet transferowy: ${money(tb)}${NEG && o === NEG && NEG.fee ? ' (płatne obok kwoty transferu)' : ''}</small>`;
+}
+const exNum = v => Math.max(0, Math.round(+v || 0));
+CHG.negbonus = v => { NEG.bonus = exNum(v); setTimeout(() => renderNego()); };
+CHG.negagent = v => { NEG.agent = exNum(v); setTimeout(() => renderNego()); };
+CHG.renbonus = v => { REN.bonus = exNum(v); setTimeout(() => renderRen()); };
+CHG.renagent = v => { REN.agent = exNum(v); setTimeout(() => renderRen()); };
 function renderNego(note) {
   const p = pget(NEG.pid), ut = userClub(), c = clubOf(p);
   if (NEG.stage === 1) {
@@ -547,6 +589,7 @@ function renderNego(note) {
       <h3>Pensja tygodniowa</h3><div class="stepper"><button class="btn" data-act="wage" data-arg="-1">−</button><b>${money(NEG.wage)}</b><button class="btn" data-act="wage" data-arg="1">+</button></div>
       <div class="numrow"><span>Wpisz pensję (€/tydz.):</span><input class="numin" type="number" inputmode="numeric" min="0" step="100" value="${NEG.wage}" data-change="negwagenum"></div>
       <h3>Długość umowy</h3><div class="seg">${[1, 2, 3, 4, 5].map(y => `<button class="btn sm ${NEG.years === y ? 'on' : ''}" data-act="years" data-arg="${y}">${y} l.</button>`).join('')}</div>
+      ${extrasHtml(NEG, agentDemand(p, NEG.fee, dem), bonusDemand(dem, NEG.years), 'neg')}
       ${note ? `<p class="${note.cls}">${esc(note.t)}</p>` : ''}
       <div class="btns"><button class="btn pri sp" data-act="sendterms">Zaproponuj kontrakt</button></div><div class="btns"><button class="btn full" data-act="close">Anuluj</button></div>`);
   }
@@ -556,8 +599,8 @@ ACT.wage = d => { NEG.wage = Math.max(500, NEG.wage + +d * (NEG.wage >= 50000 ? 
 ACT.years = y => { NEG.years = +y; renderNego(); };
 CHG.negfee = v => { NEG.fee = +v; NEG.counter = null; renderNego(); };
 ACT.negrole = r => { NEG.role = r; NEG.wage = Math.max(NEG.wage, signingDemand(pget(NEG.pid), r)); renderNego(); };
-CHG.negfeenum = v => { const n = Math.max(0, Math.round(+v || 0)); NEG.fee = n; NEG.counter = null; renderNego(); };
-CHG.negwagenum = v => { const dem = wageDemand(pget(NEG.pid)); let w = Math.max(0, Math.round(+v || 0)); if (w > dem * 5) { w = dem * 5; toast('Maksymalnie 5× żądania zawodnika.', 'bad'); } NEG.wage = w; renderNego(); };
+CHG.negfeenum = v => { const n = Math.max(0, Math.round(+v || 0)); NEG.fee = n; NEG.counter = null; setTimeout(() => renderNego()); };
+CHG.negwagenum = v => { const dem = wageDemand(pget(NEG.pid)); let w = Math.max(0, Math.round(+v || 0)); if (w > dem * 5) { w = dem * 5; toast('Maksymalnie 5× żądania zawodnika.', 'bad'); } NEG.wage = w; setTimeout(() => renderNego()); };
 CHG.setrole = (v, el) => { toast(setRole(+el.dataset.pid, v)); ACT.info(el.dataset.pid); render(); };
 let REN = null;
 ACT.rennego = id => { const p = pget(+id); const role = roleOf(p); REN = { pid: p.id, role, years: p.age >= 31 ? 1 : 3, wage: contractDemand(p, p.age >= 31 ? 1 : 3, role), counter: null }; renderRen(); };
@@ -571,6 +614,7 @@ function renderRen(note) {
     <h3>Pensja tygodniowa</h3><div class="stepper"><button class="btn" data-act="renwage" data-arg="-1">−</button><b>${money(REN.wage)}</b><button class="btn" data-act="renwage" data-arg="1">+</button></div>
     <div class="numrow"><span>Wpisz pensję (€/tydz.):</span><input class="numin" type="number" inputmode="numeric" min="0" step="100" value="${REN.wage}" data-change="renwagenum"></div>
     <small class="mut">Agent sugeruje ok. ${money(dem)}/tydz.</small>
+    ${extrasHtml(REN, agentDemand(p, 0, dem, true), bonusDemand(dem, REN.years), 'ren')}
     ${note ? `<p class="${note.cls}">${esc(note.t)}</p>` : ''}
     <div class="btns"><button class="btn pri sp" data-act="rensend">Zaproponuj</button>${REN.counter ? `<button class="btn" data-act="renacc">Zgoda na ${money(REN.counter)}</button>` : ''}</div>
     <div class="btns"><button class="btn full" data-act="info" data-arg="${p.id}">Wróć do karty</button></div>`);
@@ -578,8 +622,8 @@ function renderRen(note) {
 ACT.renrole = r => { REN.role = r; REN.counter = null; renderRen(); };
 ACT.renyears = y => { REN.years = +y; REN.counter = null; renderRen(); };
 ACT.renwage = d => { REN.wage = Math.max(500, REN.wage + +d * (REN.wage >= 50000 ? 5000 : REN.wage >= 10000 ? 1000 : 250)); renderRen(); };
-CHG.renwagenum = v => { const dem = contractDemand(pget(REN.pid), REN.years, REN.role); let w = Math.max(0, Math.round(+v || 0)); if (w > dem * 5) { w = dem * 5; toast('Maksymalnie 5× żądania zawodnika.', 'bad'); } REN.wage = w; renderRen(); };
-ACT.rensend = () => { if (REN.wage > contractDemand(pget(REN.pid), REN.years, REN.role) * 1.5 && !confirm(`Pensja ${money(REN.wage)}/tydz. to dużo więcej, niż żąda zawodnik. Na pewno?`)) return; const r = negotiateRenewal(REN.pid, REN.wage, REN.years, REN.role); if (r.res === 'accept') { toast(r.msg, 'ok'); ACT.info(REN.pid); render(); return; } if (r.res === 'counter') REN.counter = r.counter; else REN.counter = null; renderRen({ cls: r.res === 'counter' ? 'warn' : 'bad', t: r.msg }); };
+CHG.renwagenum = v => { const dem = contractDemand(pget(REN.pid), REN.years, REN.role); let w = Math.max(0, Math.round(+v || 0)); if (w > dem * 5) { w = dem * 5; toast('Maksymalnie 5× żądania zawodnika.', 'bad'); } REN.wage = w; setTimeout(() => renderRen()); };
+ACT.rensend = () => { if (REN.wage > contractDemand(pget(REN.pid), REN.years, REN.role) * 1.5 && !confirm(`Pensja ${money(REN.wage)}/tydz. to dużo więcej, niż żąda zawodnik. Na pewno?`)) return; const r = negotiateRenewal(REN.pid, REN.wage, REN.years, REN.role, REN); if (r.res === 'accept') { toast(r.msg, 'ok'); ACT.info(REN.pid); render(); return; } if (r.res === 'counter') REN.counter = r.counter; else REN.counter = null; renderRen({ cls: r.res === 'counter' ? 'warn' : 'bad', t: r.msg }); };
 ACT.renacc = () => { REN.wage = REN.counter; ACT.rensend(); };
 ACT.neginst = () => { NEG.inst = !NEG.inst; NEG.counter = null; renderNego(); };
 ACT.negsellon = () => { NEG.sellOn = !NEG.sellOn; NEG.counter = null; renderNego(); };
@@ -593,9 +637,11 @@ ACT.sendbid = () => {
 ACT.acccounter = () => { NEG.fee = NEG.counter; NEG.counter = null; const r = clubResponse(pget(NEG.pid), NEG.fee, NEG); if (r.res === 'accept') { NEG.stage = 2; renderNego({ cls: 'good', t: r.msg }); } else renderNego({ cls: 'bad', t: r.msg }); };
 ACT.sendterms = () => {
   const p = pget(NEG.pid);
-  if (p.tid === -1) { const r = signFree(p.id, NEG.wage, NEG.years); if (r.ok) { p.role = NEG.role; closeModal(); toast(r.msg); render(); } else renderNego({ cls: 'bad', t: r.msg }); return; }
+  NEG.agDem = agentDemand(p, NEG.fee, signingDemand(p, NEG.role));
+  if (p.tid === -1) { const r = signFree(p.id, NEG.wage, NEG.years, NEG); if (r.ok) { p.role = NEG.role; closeModal(); toast(r.msg); render(); } else renderNego({ cls: 'bad', t: r.msg }); return; }
   if (NEG.wage > wageDemand(p) * 1.5 && !confirm(`Pensja ${money(NEG.wage)}/tydz. to dużo więcej, niż żąda zawodnik. Na pewno?`)) return;
-  const t = personalTerms(p, NEG.wage, NEG.years, NEG.role);
+  if (upfront(NEG.fee, NEG) + NEG.bonus + NEG.agent > Math.max(0, userClub().tb) + 1) return renderNego({ cls: 'bad', t: `Kwota transferu z premią i prowizją przekracza budżet transferowy (${money(userClub().tb)}).` });
+  const t = personalTerms(p, NEG.wage, NEG.years, NEG.role, NEG);
   if (!t.ok) { NEG.tries = (NEG.tries || 0) + 1; if (NEG.tries >= 4) { p._noTalk = absDay() + 14; closeModal(); return toast(`${p.n} kończy rozmowy – „nie traktujecie mnie poważnie”.`, 'bad'); } return renderNego({ cls: 'bad', t: t.msg + ` (cierpliwość: jeszcze ${4 - NEG.tries})` }); }
   const ut = userClub(); if (ut.players.length >= 32) return renderNego({ cls: 'bad', t: 'Kadra pełna (maks. 32).' });
   completeTransfer(p.id, NEG.fee, NEG.wage, NEG.years, NEG); closeModal(); toast(`${p.n} dołącza do klubu!`); render();
@@ -943,7 +989,7 @@ function renderCtr(note) {
     <div class="btns"><button class="btn full" data-act="close">Wróć</button></div>`);
 }
 ACT.ctrstep = d => { CTR.ask = Math.max(0, CTR.ask + +d * feeStep(CTR.ask)); renderCtr(); };
-CHG.ctrnum = v => { CTR.ask = Math.max(0, Math.round(+v || 0)); renderCtr(); };
+CHG.ctrnum = v => { CTR.ask = Math.max(0, Math.round(+v || 0)); setTimeout(() => renderCtr()); };
 ACT.ctrsend = () => { const r = counterOffer(CTR.id, CTR.ask); if (r.res === 'gone') { closeModal(); toast(r.msg, 'bad'); render(); return; } renderCtr({ cls: r.res === 'accept' ? 'good' : 'warn', t: r.msg }); render(); };
 ACT.accept = id => { const r = sellTo(+id); toast(r.msg); closeModal(); render(); };
 ACT.decline = id => { const o = S.offers.find(x => x.id === +id); if (o) { const p = pget(o.pid); if (p && o.amount > p.val * 1.3) p.mor = clamp(p.mor - 8, 0, 100); declineOfferMeta(o); } S.offers = S.offers.filter(x => x.id !== +id); saveSoon(); render(); };
@@ -1123,6 +1169,8 @@ ACT.prematch = () => {
     ${MX.nt ? '' : (() => { const dn = derbyName(mine.id, opp.id), r = h2hRec(opp.id), n = r.w + r.d + r.l; return (dn ? `<div class="card hl" style="margin:8px 0"><b>🔥 ${esc(dn)}</b><br><small class="mut">Mecz z odwiecznym rywalem – wynik podwójnie wpłynie na kibiców, zarząd i morale. Stadion wypełni się po brzegi.</small></div>` : '') + (n ? `<small class="mut">Bilans Twoich meczów z tym rywalem: ${r.w} Z • ${r.d} R • ${r.l} P</small>` : ''); })()}
     ${MX.nt ? '' : `<p class="hint">🧑‍💼 ${esc(assistantTip(opp))}</p>`}
     <h3>Mentalność</h3><div class="seg">${Object.entries(MENT).map(([k, v]) => `<button class="btn sm ${(mine.ment || 'bal') === k ? 'on' : ''}" data-act="prement" data-arg="${k}">${v}</button>`).join('')}</div>
+    <h3>Styl gry</h3>${presetHtml(mine, 'prepreset')}
+    ${oppHtml(mine, opp)}
     <h3>Odprawa przedmeczowa</h3><div class="seg talk">${Object.entries(TALKS).map(([k, v]) => `<button class="btn sm ${TALK === k ? 'on' : ''}" data-act="settalk" data-arg="${k}">${v}</button>`).join('')}</div>
     ${msgs.length ? `<p class="warn">${msgs.map(esc).join('<br>')}</p>` : ''}
     ${tired.length ? `<p class="warn">😮‍💨 Zmęczeni: ${tired.map(p => esc(lastName(p)) + ' ' + Math.round(p.fit) + '%').join(', ')}</p>${MX.nt ? '' : '<div class="btns"><button class="btn sm full" data-act="rotate">🔄 Rotuj zmęczonych (wstaw wypoczętych zmienników)</button></div>'}` : ''}
@@ -1130,6 +1178,18 @@ ACT.prematch = () => {
     <div class="btns"><button class="btn full" data-act="goteam">Zmień skład</button></div>`);
 };
 let PC = null, PRE_ROT = -1;
+/* analiza rywala + instrukcje na rywala (krycie, ostry odbiór) – ważne jeden mecz */
+function oppHtml(mine, opp) {
+  const d = (MX.h.rep || 50) - (MX.a.rep || 50), st = opp.nation ? null : aiStyle(opp, MX.user === 'h' ? -d : d), oi = mine.oi || { mark: [] };
+  const thr = opp.players.filter(p => isAvail(p) && p.pos !== 'GK').sort((a, b) => (b.ovr + (LINE[b.pos] === 'ATT' ? 4 : b.pos === 'CAM' ? 2 : 0) + (b.st ? b.st.g : 0) * 0.5) - (a.ovr + (LINE[a.pos] === 'ATT' ? 4 : a.pos === 'CAM' ? 2 : 0) + (a.st ? a.st.g : 0) * 0.5)).slice(0, 4);
+  return `<h3>🔎 Analiza rywala</h3>${st ? `<small class="mut">Spodziewany styl: <b>${TAC_PRE[st][0]}</b> – ${TAC_PRE[st][3]}${st === 'counter' || st === 'gegen' ? ' Uwaga na wysoką linię obrony.' : st === 'bus' ? ' Cierpliwość i szerokość pomogą rozmontować blok.' : ''}</small>` : ''}
+    <small class="mut">Najgroźniejsi – kryj ściśle (maks. 2, więcej fauli):</small>
+    ${thr.map(p => `<div class="row">${posTag(p.pos)}<span class="sp">${esc(shortName(p))} <small class="mut">${p.ovr}${p.st && p.st.g ? ` • ${plural(p.st.g, 'gol', 'gole', 'goli')}` : ''}</small></span><button class="btn sm ${(oi.mark || []).includes(p.id) ? 'pri' : ''}" data-act="oimark" data-arg="${p.id}">🔒 Kryj</button></div>`).join('')}
+    <div class="row"><span class="sp">🦵 Ostry odbiór <small class="mut">– rywal gorzej buduje grę, ale więcej kartek</small></span><button class="btn sm ${oi.hard ? 'pri' : ''}" data-act="oihard">${oi.hard ? 'Tak' : 'Nie'}</button></div>`;
+}
+ACT.oimark = id => { const mine = MX.user === 'h' ? MX.h : MX.a; mine.oi = mine.oi || { mark: [], hard: false }; const m = mine.oi.mark, i = m.indexOf(+id); if (i >= 0) m.splice(i, 1); else { if (m.length >= 2) return toast('Możesz kryć ściśle maks. 2 zawodników.', 'bad'); m.push(+id); } if (MX.nt) syncNT(mine); ACT.prematch(); };
+ACT.oihard = () => { const mine = MX.user === 'h' ? MX.h : MX.a; mine.oi = mine.oi || { mark: [], hard: false }; mine.oi.hard = !mine.oi.hard; if (MX.nt) syncNT(mine); ACT.prematch(); };
+ACT.prepreset = k => { const mine = MX.user === 'h' ? MX.h : MX.a, p = TAC_PRE[k]; mine.ment = p[1]; mine.tac = Object.assign({}, p[2]); if (MX.nt) syncNT(mine); saveSoon(); ACT.prematch(); };
 ACT.rotate = () => { const mine = MX.user === 'h' ? MX.h : MX.a, r = rotateTired(mine, 72); saveSoon(); toast(r.length ? `Zmiany: ${r.join(', ')}` : 'Brak wypoczętych zmienników na tych pozycjach.', r.length ? 'ok' : 'bad'); ACT.prematch(); };
 function renderPress() {
   modal(`<div class="evcat">Konferencja prasowa</div><h2>🎤 ${esc(PC.q)}</h2><div class="choices">${PC.a.map((x, i) => `<button class="btn full" data-act="pressans" data-arg="${i}">${esc(x[0])}</button>`).join('')}</div>`, true);
@@ -1174,7 +1234,7 @@ function upd() {
   $('#mscr').innerHTML = `<span>${M.home.scorers.map(s => `${esc(s.name)} ${s.min}'`).join(', ')}</span><span>${M.away.scorers.map(s => `${esc(s.name)} ${s.min}'`).join(', ')}</span>`;
   const H = M.home, A = M.away, tp = H.poss + A.poss || 1, hp = Math.round(H.poss / tp * 100);
   const st = (l, a, b) => { const t = (a + b) || 1; return `<div class="st"><b>${a}</b><div><small>${l}</small><div class="l"><i style="width:${a / t * 100}%;background:${H.t.col[0]}"></i><i style="width:${b / t * 100}%;background:${A.t.col[0]};opacity:.75"></i></div></div><b>${b}</b></div>`; };
-  $('#mst').innerHTML = st('Posiadanie %', hp, 100 - hp) + st('Strzały', H.shots, A.shots) + st('Celne', H.sot, A.sot) + st('Rożne', H.corners, A.corners);
+  $('#mst').innerHTML = st('Posiadanie %', hp, 100 - hp) + st('Strzały', H.shots, A.shots) + st('Celne', H.sot, A.sot) + st('xG', +(H.xg || 0).toFixed(2), +(A.xg || 0).toFixed(2)) + st('Rożne', H.corners, A.corners);
   if (typeof matchPitchSVG === 'function') {
     $('#mpitch').innerHTML = matchPitchSVG(M, MX.user);
     const goals = [...H.scorers.map(g => ({ min: g.min, side: 'h' })), ...A.scorers.map(g => ({ min: g.min, side: 'a' }))];
@@ -1193,7 +1253,8 @@ function mctl() {
 ACT.mpause = () => { MS.paused = !MS.paused; mctl(); upd(); if (!MS.paused) { clearTimeout(MT); MT = setTimeout(tick, 50); } };
 ACT.mspeed = a => { MS.speed = +a; S.settings.speed = +a; mctl(); };
 ACT.mskip = () => { clearTimeout(MT); MS.paused = true; while (!M.over) step(M); MS.over = true; MS.skipping = true; upd(); mctl(); };
-ACT.mtactic = () => { MS.paused = true; mctl(); const s = uside(); modal(`<h2>Taktyka</h2><h3>Mentalność</h3><div class="seg">${Object.entries(MENT).map(([k, v]) => `<button class="btn ${s.ment === k ? 'on' : ''}" data-act="mment" data-arg="${k}">${v}</button>`).join('')}</div>${tacHtml(s.tac, 'mtac')}<div class="btns"><button class="btn full" data-act="close">Wróć do meczu</button></div>`); };
+ACT.mpreset = k => { const s = uside(), p = TAC_PRE[k]; s.ment = p[1]; s.tac = Object.assign({}, p[2]); s.t.ment = p[1]; s.t.tac = Object.assign({}, p[2]); M.dirty = true; ev(M, 'info', s, `📋 ${s.t.name}: zmiana stylu gry – ${p[0]}.`); upd(); ACT.mtactic(); };
+ACT.mtactic = () => { MS.paused = true; mctl(); const s = uside(); modal(`<h2>Taktyka</h2><h3>Styl gry</h3>${presetHtml({ ment: s.ment, tac: s.tac }, 'mpreset')}<h3>Mentalność</h3><div class="seg">${Object.entries(MENT).map(([k, v]) => `<button class="btn ${s.ment === k ? 'on' : ''}" data-act="mment" data-arg="${k}">${v}</button>`).join('')}</div>${tacHtml(s.tac, 'mtac')}<div class="btns"><button class="btn full" data-act="close">Wróć do meczu</button></div>`); };
 ACT.mment = k => { uside().ment = k; M.dirty = true; ev(M, 'info', uside(), `📋 ${uside().t.name}: mentalność ${MENT[k].toLowerCase()}.`); upd(); closeModal(); };
 let subOut = null;
 ACT.msubs = () => { MS.paused = true; mctl(); subOut = null; renderSubs(); };
@@ -1209,6 +1270,7 @@ ACT.subin = id => { const s = uside(); if (!subOut) return toast('Najpierw wybie
 ACT.matchdone = () => showResult();
 const rateCol = r => r >= 8 ? '#1db36b' : r >= 7 ? '#5cc46b' : r >= 6.3 ? '#b6b33a' : r >= 5.5 ? '#d98a2b' : '#d9473b';
 function showResult() {
+  document.querySelectorAll(".uk-goal").forEach(e => e.remove());
   if (typeof toastClear === 'function') toastClear();
   const H = M.home, A = M.away, mine = uside();
   const opp = mine === H ? A : H;
@@ -1220,10 +1282,16 @@ function showResult() {
     <div class="fixture"><div class="tm">${badge(H.t, 'lg')}<span>${esc(H.t.name)}</span></div><div class="vs" style="color:var(--txt)">${H.goals} : ${A.goals}${M.pens ? `<small style="display:block;font-size:13px">k. ${M.pens.h}:${M.pens.a}</small>` : M.et ? '<small style="display:block;font-size:13px">po dogrywce</small>' : ''}</div><div class="tm">${badge(A.t, 'lg')}<span>${esc(A.t.name)}</span></div></div>
     <small>⚽ ${esc(H.t.short)}: ${esc(sc(H))}<br>⚽ ${esc(A.t.short)}: ${esc(sc(A))}</small>
     ${typeof momentumSVG === 'function' ? `<div style="margin:8px 0">${momentumSVG(M.mom || [], { w: Math.min(520, window.innerWidth - 48), h: 50, colH: H.t.col[0], colA: A.t.col[0], goals: [...H.scorers.map(g => ({ min: g.min, side: 'h' })), ...A.scorers.map(g => ({ min: g.min, side: 'a' }))] })}</div>` : ''}
-    <div class="kv"><div><span>Posiadanie</span><b>${Math.round(H.poss / ((H.poss + A.poss) || 1) * 100)}–${100 - Math.round(H.poss / ((H.poss + A.poss) || 1) * 100)}%</b></div><div><span>Strzały</span><b>${H.shots}–${A.shots}</b></div><div><span>Celne</span><b>${H.sot}–${A.sot}</b></div><div><span>Rożne</span><b>${H.corners}–${A.corners}</b></div></div>
+    <div class="kv"><div><span>Posiadanie</span><b>${Math.round(H.poss / ((H.poss + A.poss) || 1) * 100)}–${100 - Math.round(H.poss / ((H.poss + A.poss) || 1) * 100)}%</b></div><div><span>Strzały</span><b>${H.shots}–${A.shots}</b></div><div><span>Celne</span><b>${H.sot}–${A.sot}</b></div><div><span>xG (gole oczekiwane)</span><b>${(H.xg || 0).toFixed(2)}–${(A.xg || 0).toFixed(2)}</b></div><div><span>Rożne</span><b>${H.corners}–${A.corners}</b></div></div>
+    ${xgNote(H, A)}
     <div class="row"><span>⭐ Zawodnik meczu:</span><b class="sp">${esc(M.motm.p.n)}</b><span class="ovr o1">${M.motm.rating.toFixed(1)}</span></div>
     <h3>Oceny</h3>${recs.map(r => `<div class="rt"><span>${posTag(r.pos)} ${esc(shortName(r.p))} ${r.g ? '⚽'.repeat(r.g) : ''}${r.a ? '🅰️'.repeat(r.a) : ''}${r.y && !r.r ? '🟨' : ''}${r.r ? '🟥' : ''}</span><span class="rchip" style="background:${rateCol(r.rating)}">${r.rating.toFixed(1)}</span></div>`).join('')}
     <div class="btns"><button class="btn pri full" data-act="finishday">Dalej</button></div>`, true);
+}
+function xgNote(H, A) {
+  const me = MX.user === 'h' ? H : A, op = me === H ? A : H, d = me.goals - (me.xg || 0), o = op.goals - (op.xg || 0);
+  const t = me.xg > op.xg + 0.6 && me.goals <= op.goals ? '📊 Stworzyliście dużo lepsze sytuacje – wynik nie oddaje przebiegu gry.' : op.xg > me.xg + 0.6 && me.goals >= op.goals ? '📊 Rywal miał lepsze okazje – tym razem dopisało Wam szczęście.' : d >= 1.5 ? '📊 Świetna skuteczność – więcej goli niż wskazywały sytuacje.' : d <= -1.5 ? '📊 Fatalna skuteczność pod bramką rywala.' : o <= -1.5 ? '📊 Bramkarz i obrona zatrzymali groźne strzały rywala.' : '';
+  return t ? `<small class="mut">${t}</small>` : '';
 }
 ACT.finishday = () => {
   const m = M, x = MX; M = null; closeModal();

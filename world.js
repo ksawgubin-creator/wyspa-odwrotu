@@ -545,9 +545,9 @@ const natLevel = n => 44 + n.str * 0.45;
 function ntTeam(code) {
   const st = S.ntTeams[code], n = NAT[code];
   if (!st.sq.length || !S.nt || code !== S.nt) st.sq = autoCallup(code);
-  return { id: 'N' + code, nation: code, name: n.name, short: code, col: ncol(code), rep: n.str, players: st.sq.map(pget).filter(Boolean), formation: st.formation, lineup: st.lineup, bench: st.bench, ment: st.ment, _st: st };
+  return { id: 'N' + code, nation: code, name: n.name, short: code, col: ncol(code), rep: n.str, players: st.sq.map(pget).filter(Boolean), formation: st.formation, lineup: st.lineup, bench: st.bench, ment: st.ment, tac: st.tac, duty: st.duty, pm: st.pm, oi: st.oi, _st: st };
 }
-function syncNT(t) { if (t && t._st) { t._st.lineup = t.lineup; t._st.bench = t.bench; t._st.formation = t.formation; t._st.ment = t.ment; } }
+function syncNT(t) { if (t && t._st) { t._st.lineup = t.lineup; t._st.bench = t.bench; t._st.formation = t.formation; t._st.ment = t.ment; t._st.tac = t.tac; t._st.duty = t.duty; t._st.pm = t.pm; t._st.oi = t.oi; } }
 function autoCallup(code) {
   const pool = (NATIDX.get(code) || []).filter(p => isAvail(p) && p.tid !== -3).sort((a, b) => b.ovr - a.ovr);
   const need = { GK: 3, DEF: 8, MID: 7, ATT: 5 }, out = [];
@@ -1087,12 +1087,31 @@ function signingDemand(p, role) {
   const exp = expectedRoleIn(p, userClub()), gap = Math.max(0, ROLE_ORD.indexOf(exp) - ROLE_ORD.indexOf(role || exp));
   return Math.round(wageDemand(p) * ROLES[role || exp][1] / ROLES[exp][1] * (1 + 0.12 * gap) / 100) * 100;
 }
-function personalTerms(p, wage, years, role) {
+/* prowizja agenta i premia za podpis: premia rozłożona na kontrakt liczy się 1,3× (zawodnicy lubią gotówkę od razu) */
+function agentDemand(p, fee, wage, renew) {
+  const base = renew ? wage * 4 : p.tid === -1 ? wage * 20 : Math.max(wage * 8, fee * 0.05);
+  return Math.round(base * (traits(p).amb >= 15 ? 1.15 : 1) / 1000) * 1000;
+}
+const bonusDemand = (wage, years) => Math.round(wage * 6 * Math.min(years, 3) / 1000) * 1000;   // sugerowana premia; nieobowiązkowa
+function effWage(wage, years, bonus, agent, agDem) {
+  let w = wage + (bonus || 0) / (Math.max(1, years) * 52) * 1.3;
+  if (agDem > 0) { const r = (agent || 0) / agDem; w += r < 1 ? -(1 - r) * wage * 0.25 : Math.min(0.05, (r - 1) * 0.1) * wage; }
+  return w;
+}
+function personalTerms(p, wage, years, role, x = {}) {
   const exp = expectedRoleIn(p, userClub());
   if (role && ROLE_ORD.indexOf(exp) - ROLE_ORD.indexOf(role) >= 2 && traits(p).amb >= 11) return { ok: false, msg: `${p.n} nie przyjdzie do klubu jako ${ROLES[role][0].toLowerCase()} – oczekuje roli: ${ROLES[exp][0].toLowerCase()}.` };
   const dem = role ? signingDemand(p, role) : wageDemand(p);
-  if (wage >= dem || (wage >= dem * 0.95 && hashN(p.id * 17 + S.season) < 0.6) || (wage >= dem * 0.9 && hashN(p.id * 17 + S.season) < 0.2)) return { ok: true };
-  return { ok: false, msg: `${p.n} odrzuca warunki – oczekuje ok. ${money(dem)}/tydz.` };
+  if (x.agDem && (x.agent || 0) < x.agDem * 0.5) return { ok: false, msg: `Agent ${p.n}: „Bez przyzwoitej prowizji nie ma o czym rozmawiać” – oczekuje ok. ${money(x.agDem)}.` };
+  const w = effWage(wage, years, x.bonus, x.agent, x.agDem);
+  if (w >= dem || (w >= dem * 0.95 && hashN(p.id * 17 + S.season) < 0.6) || (w >= dem * 0.9 && hashN(p.id * 17 + S.season) < 0.2)) return { ok: true };
+  return { ok: false, msg: `${p.n} odrzuca warunki – oczekuje ok. ${money(dem)}/tydz.${x.agDem ? ' Wyższa premia za podpis lub prowizja agenta mogą pomóc.' : ''}` };
+}
+/* jednorazowe koszty kontraktu (premia + agent) – z budżetu transferowego */
+function payExtras(ut, bonus, agent, p) {
+  const t = (bonus || 0) + (agent || 0); if (!t) return;
+  ut.bal -= t; ut.tb -= t; ut.fin.tr -= t;
+  if (bonus) p.mor = clamp(p.mor + Math.min(8, bonus / Math.max(1, p.wage) / 4), 0, 100);
 }
 function detach(p) {
   const c = clubOf(p);
@@ -1110,14 +1129,15 @@ function completeTransfer(pid, fee, wage, years, o = {}) {
   { const R = clubRec(); if (fee > 0 && (!R.buy || fee > R.buy.fee)) R.buy = { fee, n: p.n, s: S.season }; }
   if (o.inst && seller) { const rest = Math.round(fee * INST_K) - now; S.debts = S.debts || []; S.debts.push({ from: ut.id, to: seller.id, amt: Math.round(rest / 2), left: 2, pn: p.n }); }
   p.sellOn = o.sellOn && seller ? { club: seller.id, pct: 0.15 } : null;
+  payExtras(ut, o.bonus, o.agent, p);
   attach(p, ut); p.wage = wage; p.con = years; p.role = o.role || null; p.mor = clamp(p.mor + 10, 0, 100); p.pt = 0.5; p.joined = absDay();
   S.know[p.id] = 100;
   rebuildIndex(); fillBench(ut);
   news(`🔄 Transfer: ${p.n} (${p.ovr}) – ${seller ? seller.name : 'wolny zawodnik'} → ${ut.name} (${fee ? money(fee) : 'za darmo'}).`);
-  msg('Transfer zakończony', `${p.n} (${POS_PL[p.pos]}, ${p.ovr}) dołącza do klubu${fee ? ' za ' + money(fee) : ''}. Kontrakt: ${years} lat, ${money(wage)}/tydz.`);
+  msg('Transfer zakończony', `${p.n} (${POS_PL[p.pos]}, ${p.ovr}) dołącza do klubu${fee ? ' za ' + money(fee) : ''}. Kontrakt: ${plural(years, 'rok', 'lata', 'lat')}, ${money(wage)}/tydz.${o.bonus ? ` Premia za podpis: ${money(o.bonus)}.` : ''}${o.agent ? ` Prowizja agenta: ${money(o.agent)}.` : ''}`);
   saveSoon();
 }
-function signFree(pid, wage, years) {
+function signFree(pid, wage, years, x = {}) {
   const p = pget(pid), ut = userClub();
   if (!p || p.tid !== -1) return { ok: false, msg: 'Zawodnik niedostępny.' };
   if (ut.players.length >= 32) return { ok: false, msg: 'Kadra pełna (maks. 32).' };
@@ -1126,9 +1146,10 @@ function signFree(pid, wage, years) {
   if (!S.fsw || S.fsw.k !== key) S.fsw = { k: key, n: 0 };
   if (S.fsw.n >= 3) return { ok: false, msg: 'Zarząd pozwala na maks. 3 wolnych agentów na pół sezonu.' };
   const i = playerInterest(p); if (!i.ok) return i;
-  const t = personalTerms(p, wage, years); if (!t.ok) return t;
+  if ((x.bonus || 0) + (x.agent || 0) > Math.max(0, ut.tb)) return { ok: false, msg: `Premia i prowizja (${money((x.bonus || 0) + (x.agent || 0))}) przekraczają budżet transferowy.` };
+  const t = personalTerms(p, wage, years, x.role, x); if (!t.ok) return t;
   S.fsw.n++; p.val = calcValue(p); p.joined = absDay();
-  completeTransfer(pid, 0, wage, years);
+  completeTransfer(pid, 0, wage, years, x);
   return { ok: true, msg: `${p.n} podpisuje kontrakt!` };
 }
 function loanIn(pid) {
@@ -1221,7 +1242,7 @@ function contractDemand(p, years, role) {
   const gap = Math.max(0, roleGap(p, role));
   return Math.round(calcWage(p, userClub().rep) * (1.05 + years * 0.03) * ROLES[role][1] * (1 + 0.12 * gap) * (p.mor < 40 ? 1.2 : 1) * (traits(p).loy >= 15 ? 0.93 : 1) / 100) * 100;
 }
-function negotiateRenewal(pid, wage, years, role) {
+function negotiateRenewal(pid, wage, years, role, x = {}) {
   const p = pget(pid), ut = userClub(), day = absDay();
   if (p.loan) return { res: 'reject', msg: 'Nie można przedłużyć umowy wypożyczonego zawodnika.' };
   if (p._noRenew > day) return { res: 'reject', msg: `${p.n} nie chce teraz rozmawiać – spróbuj za kilka dni.` };
@@ -1232,7 +1253,10 @@ function negotiateRenewal(pid, wage, years, role) {
   if (gap >= 2 && traits(p).amb >= 11) return { res: 'reject', msg: `${p.n}: „Jako ${ROLES[role][0].toLowerCase()}? Nie ma mowy – oczekuję roli: ${ROLES[expectedRole(p)][0].toLowerCase()}.”` };
   const dem = contractDemand(p, years, role);
   if (ut.bal < 0 && wage > p.wage) return { res: 'reject', msg: 'Klub ma długi – zarząd nie zgadza się na podwyżki.' };
-  if (wage >= dem || (wage >= dem * 0.95 && hashN(p.id * 19 + S.season) < 0.5)) {
+  const agDem = agentDemand(p, 0, dem, true), w = effWage(wage, years, x.bonus, x.agent, agDem);
+  if ((x.bonus || 0) + (x.agent || 0) > Math.max(0, ut.tb)) return { res: 'reject', msg: 'Premia i prowizja przekraczają budżet transferowy.' };
+  if (w >= dem || (w >= dem * 0.95 && hashN(p.id * 19 + S.season) < 0.5)) {
+    payExtras(ut, x.bonus, x.agent, p);
     p.wage = Math.round(wage / 100) * 100; p.con = years; p.role = role; p._rb = 0;
     p.mor = clamp(p.mor + (gap > 0 ? -4 : gap < 0 ? 10 : 6), 0, 100); saveSoon();
     return { res: 'accept', msg: `${p.n} podpisuje nowy kontrakt: ${years} l., ${money(p.wage)}/tydz., rola: ${ROLES[role][0].toLowerCase()}.` };

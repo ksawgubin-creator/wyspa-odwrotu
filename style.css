@@ -349,3 +349,7 @@ tr.cl td,tr.el td,tr.ecl td,tr.up td,tr.dn td{background:rgba(255,255,255,.025)}
 .httalk small{width:100%}
 .httalk .btn{flex:1 1 30%;min-height:38px;padding:6px 4px;font-size:12px;white-space:normal}
 .mstats{padding:4px 14px;font-size:12px}
+.seg.wrap button{min-width:calc(50% - 6px);flex:1 1 calc(50% - 6px)}
+.duty{padding:8px 0;border-bottom:1px solid var(--line,#ffffff14)}
+.duty .row{gap:6px;margin-bottom:4px}
+.duty .seg button{min-width:0;font-size:12px;padding:6px 4px}

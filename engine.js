@@ -82,6 +82,32 @@ const FORMATIONS = {};
 for (const [k, v] of Object.entries(FORMS)) { const s = []; for (let i = 0; i < v.length; i += 3) s.push({ pos: v[i], x: v[i + 1], y: v[i + 2] }); FORMATIONS[k] = s; }
 const slotsOf = f => FORMATIONS[f] || FORMATIONS['4-3-3'];
 const MENT = { def: 'Defensywna', bal: 'Neutralna', att: 'Ofensywna' };
+/* gotowe style gry: [nazwa, mentalność, instrukcje, opis] */
+const TAC_PRE = {
+  bal: ['⚖️ Zrównoważony', 'bal', { press: 0, tempo: 0, line: 0, width: 0 }, 'Bez skrajności – dobry punkt wyjścia.'],
+  gegen: ['⚡ Gegenpressing', 'att', { press: 1, tempo: 1, line: 1, width: 0 }, 'Odbiór tuż po stracie i szybki atak. Męczy, wymaga szybkich obrońców.'],
+  tiki: ['🎯 Tiki-taka', 'bal', { press: 1, tempo: -1, line: 1, width: 0 }, 'Posiadanie i cierpliwe budowanie akcji. Najlepsze z technicznymi pomocnikami.'],
+  wing: ['🪽 Gra skrzydłami', 'bal', { press: 0, tempo: 0, line: 0, width: 1 }, 'Dośrodkowania, rożne i praca skrzydłowych.'],
+  counter: ['🏹 Kontratak', 'bal', { press: -1, tempo: 1, line: -1, width: 1 }, 'Niski blok i szybkie kontry – zabójcze na rywali grających wysoko.'],
+  bus: ['🚌 Autobus', 'def', { press: -1, tempo: -1, line: -1, width: -1 }, 'Murowanie bramki – na silniejszych rywali i dowożenie wyniku.'],
+};
+/* zadania zawodników: -1 obrona, 0 wsparcie, 1 atak; domyślne wg pozycji */
+const DUTY_DEF = { GK: 0, CB: -1, LB: 0, RB: 0, CDM: -1, CM: 0, LM: 0, RM: 0, CAM: 0, LW: 1, RW: 1, ST: 1 };
+const DUTY_NAMES = {
+  CB: ['Stoper', 'Wyprowadzający piłkę', 'Wysunięty stoper'], LB: ['Defensywny boczny', 'Boczny obrońca', 'Wahadłowy'], RB: ['Defensywny boczny', 'Boczny obrońca', 'Wahadłowy'],
+  CDM: ['Kotwica', 'Regista', 'Box-to-box'], CM: ['Defensywny pomocnik', 'Box-to-box', 'Wbiegający pomocnik'], CAM: ['Cofnięta „10”', 'Rozgrywająca „10”', 'Cień napastnika'],
+  LM: ['Pracowity skrzydłowy', 'Skrzydłowy', 'Odwrócony skrzydłowy'], RM: ['Pracowity skrzydłowy', 'Skrzydłowy', 'Odwrócony skrzydłowy'],
+  LW: ['Pracowity skrzydłowy', 'Skrzydłowy', 'Odwrócony skrzydłowy'], RW: ['Pracowity skrzydłowy', 'Skrzydłowy', 'Odwrócony skrzydłowy'],
+  ST: ['Fałszywa „9”', 'Target man', 'Lis pola karnego'],
+};
+const dutyOf = (side, s) => { const d = side.duty && side.duty[s.slot]; return d != null ? d : DUTY_DEF[s.pos] || 0; };
+/* styl drużyny AI: stały „charakter” klubu + dopasowanie do siły rywala */
+function aiStyle(t, d) {
+  if (d < -12) return hashN(t.id * 31) < 0.5 ? 'bus' : 'counter';
+  if (d < -5) return hashN(t.id * 37) < 0.6 ? 'counter' : 'bal';
+  const k = ['bal', 'gegen', 'tiki', 'wing', 'bal', 'counter'];
+  return k[Math.floor(hashN(t.id * 13) * k.length)];
+}
 const MAX_SUBS = 5, BENCH = 9;
 // strojenie silnika: przewaga własnego boiska i „stromość” różnic siły
 let SHOT_BASE = 0.25, SHOT_EXP = 1.3, FIN_EXP = 2.2, HOME_ADV = 1.13, AWAY_ADV = 0.9, DAY_VAR = 0.07;
@@ -202,7 +228,8 @@ function makeSide(t, isUser, quick, emergency) {
   const slots = slotsOf(t.formation);
   const side = {
     t, ment: isUser ? (t.ment || 'bal') : 'bal', ai: !isUser || quick, user: isUser, tac: Object.assign({ press: 0, tempo: 0, line: 0, width: 0 }, isUser && t.tac || {}),
-    pitch: t.lineup.map((id, i) => { const p = pget(id); return p ? { p, pos: slots[i].pos, ov: ovrAt(p, slots[i].pos) } : null; }).filter(Boolean),
+    duty: isUser && t.duty ? t.duty.slice() : null, pm: isUser && t.pm != null ? t.pm : null, oi: isUser && t.oi ? { mark: (t.oi.mark || []).slice(), hard: !!t.oi.hard } : { mark: [], hard: false }, xg: 0,
+    pitch: t.lineup.map((id, i) => { const p = pget(id); return p ? { p, pos: slots[i].pos, ov: ovrAt(p, slots[i].pos), slot: i } : null; }).filter(Boolean),
     bench: t.bench.map(pget).filter(Boolean), subs: 0, goals: 0, shots: 0, sot: 0, poss: 0, fouls: 0, yel: 0, corners: 0,
     rec: {}, str: null, scorers: [], cf: (1 + ((typeof coachOvr === 'function' ? coachOvr(t) : 60) - 60) * 0.0009) * clamp(1 + gauss() * DAY_VAR, 0.82, 1.18),
   };
@@ -219,10 +246,17 @@ function createMatch(h, a, opts = {}) {
   if (m.comp === 'C' && Math.abs(d) >= 10) (d > 0 ? m.away : m.home).cf *= 1.07; // magia pucharu: słabszy gra ambitniej
   if (m.home.ai && !m.home.user) m.home.ment = d > 10 ? 'att' : d < -12 ? 'def' : 'bal';
   if (m.away.ai && !m.away.user) m.away.ment = d < -10 ? 'att' : d > 12 ? 'def' : 'bal';
+  // AI przeciw użytkownikowi gra swoim stylem i czasem kryje najgroźniejszego zawodnika
+  for (const [S1, S2, dd] of [[m.home, m.away, d], [m.away, m.home, -d]]) {
+    if (S1.user || !S2.user || h.nation) continue;
+    const st = aiStyle(S1.t, dd); S1.style = st; S1.tac = Object.assign({}, TAC_PRE[st][2]);
+    if (st === 'bus') S1.ment = 'def';
+    if (rnd() < 0.35) { const top = S2.pitch.filter(x => LINE[x.pos] === 'ATT' || x.pos === 'CAM').sort((x, y) => y.ov - x.ov)[0]; if (top) S1.oi.mark = [top.p.id]; }
+  }
   if (m.ko && (m.ko.aggH || m.ko.aggA)) ev(m, 'info', null, `Pierwszy mecz: ${m.away.t.name} ${m.ko.aggA}:${m.ko.aggH} ${m.home.t.name}.`);
   return m;
 }
-const fitNow = (side, s, minute) => Math.max(25, s.p.fit - Math.max(0, minute - side.rec[s.p.id].on) * (s.p.pos === 'GK' ? 0.08 : 0.2));
+const fitNow = (side, s, minute) => Math.max(25, s.p.fit - Math.max(0, minute - side.rec[s.p.id].on) * (s.p.pos === 'GK' ? 0.08 : 0.2 * (1 + 0.15 * ((side.tac && side.tac.press) || 0))));
 const effNow = (side, s, minute) => s.ov * cond(s.p, fitNow(side, s, minute));
 function calcStr(side, minute) {
   const g = { GK: [], DEF: [], MID: [], ATT: [] };
@@ -230,9 +264,14 @@ function calcStr(side, minute) {
   const av = a => a.length ? avg(a) : 30;
   const miss = 1 - 0.07 * (11 - side.pitch.length);
   const am = side.ment === 'att' ? 1.04 : side.ment === 'def' ? 0.96 : 1;
-  const dm = side.ment === 'att' ? 0.97 : side.ment === 'def' ? 1.04 : 1;
+  const dm = side.ment === 'att' ? 0.95 : side.ment === 'def' ? 1.04 : 1;
   const cf = side.cf || 1;
-  side.str = { gk: av(g.GK) * miss * cf, def: av(g.DEF) * miss * dm * cf, mid: av(g.MID) * miss * cf, att: av(g.ATT.length ? g.ATT : g.MID) * miss * am * cf };
+  // zadania: odchylenie od domyślnych przesuwa siłę z obrony do ataku (lub odwrotnie)
+  let dev = 0; if (side.duty) for (const s of side.pitch) if (s.pos !== 'GK') dev += dutyOf(side, s) - (DUTY_DEF[s.pos] || 0);
+  dev = clamp(dev, -5, 5);
+  const pm = side.pm != null && side.pitch.find(s => s.slot === side.pm && s.pos !== 'GK'), pmK = pm ? 1 + clamp((pm.p.a[2] - 62) / 500, -0.02, 0.04) : 1;
+  const fw = side.pitch.filter(s => LINE[s.pos] === 'ATT'); side.pace = fw.length ? avg(fw.map(s => s.p.a[0])) : 60;
+  side.str = { gk: av(g.GK) * miss * cf, def: av(g.DEF) * miss * dm * cf * (1 - 0.014 * dev), mid: av(g.MID) * miss * cf * pmK, att: av(g.ATT.length ? g.ATT : g.MID) * miss * am * cf * (1 + 0.018 * dev) };
 }
 function ev(m, type, side, text, extra) { const e = { min: m.minute, type, side: side ? (side === m.home ? 'h' : 'a') : null, text, ...extra }; m.ev.push(e); return e; }
 const GOAL_TXT = ['{s} pakuje piłkę do siatki!', '{s} uderza przy słupku – nie do obrony!', '{s} wykańcza akcję zespołu!', '{s} pewnie wykorzystuje sytuację sam na sam!', '{s} główkuje do siatki!', '{s} uderza z dystansu – bramkarz bez szans!', '{s} dobija odbitą piłkę!', '{s} mija bramkarza i trafia do pustej bramki!'];
@@ -242,7 +281,8 @@ const SHOT_W = { ST: 5.5, LW: 4, RW: 4, CAM: 3.2, LM: 2.2, RM: 2.2, CM: 1.6, CDM
 function doShot(m, A, D) {
   const c = A.pitch.filter(s => s.pos !== 'GK'); if (!c.length) return;
   const tw = (A.tac && A.tac.width) || 0, WING = { LW: 1, RW: 1, LM: 1, RM: 1 };
-  const sh = wpick(c, s => SHOT_W[s.pos] * (WING[s.pos] ? 1 + 0.4 * tw : s.pos === 'ST' || s.pos === 'CAM' ? 1 - 0.15 * tw : 1) * Math.pow((s.p.pos === 'GK' ? 20 : s.p.a[1]) / 60, 3));
+  const mk = D.oi && D.oi.mark || [], dw = s => A.duty ? clamp(1 + 0.35 * (dutyOf(A, s) - (DUTY_DEF[s.pos] || 0)), 0.3, 1.8) : 1;
+  const sh = wpick(c, s => SHOT_W[s.pos] * (WING[s.pos] ? 1 + 0.4 * tw : s.pos === 'ST' || s.pos === 'CAM' ? 1 - 0.15 * tw : 1) * Math.pow((s.p.pos === 'GK' ? 20 : s.p.a[1]) / 60, 3) * dw(s) * (mk.includes(s.p.id) ? 0.55 : 1));
   const gk = D.pitch.find(s => s.pos === 'GK');
   const gkE = gk ? effNow(D, gk, m.minute) : 30;
   // stałe fragmenty: karny (wykonawca z taktyki), rzut wolny, główka po rożnym
@@ -254,10 +294,14 @@ function doShot(m, A, D) {
   else if (kind === 'head') { const hs = c.filter(s => ['CB', 'ST', 'CDM'].includes(s.pos)); if (hs.length) shooter = wpick(hs, s => Math.pow(s.p.a[5] / 60, 3) * (s.pos === 'ST' ? 1.5 : 1)); }
   const penalty = kind === 'pen';
   const fin = (0.65 * (shooter.p.pos === 'GK' ? 20 : kind === 'head' ? (shooter.p.a[5] + shooter.p.a[1]) / 2 : shooter.p.a[1]) + 0.35 * shooter.ov) * cond(shooter.p, fitNow(A, shooter, m.minute));
-  const q = fin / (0.5 * gkE + 0.5 * D.str.def);
-  const pg = penalty ? 0.76 + (shooter.p.a[1] - 70) / 400 : clamp(0.083 * Math.pow(q, FIN_EXP), 0.02, 0.4) * (kind === 'fk' ? 0.75 : kind === 'head' ? 0.85 : 1) * (kind ? 1 : (1 - 0.05 * ((A.tac && A.tac.tempo) || 0)) * (1 + 0.08 * ((D.tac && D.tac.line) || 0)));
-  A.shots++;
-  { const kc = c.filter(x => x !== shooter); if (kc.length && !penalty) { const k = wpick(kc, x => (LINE[x.pos] === 'MID' ? 2 : LINE[x.pos] === 'ATT' ? 1.5 : 0.6) * Math.pow(x.p.a[2] / 60, 2)); const r = A.rec[k.p.id]; if (r) r.kp = (r.kp || 0) + 1; } }
+  const q = fin / (0.5 * gkE + 0.5 * D.str.def) * (mk.includes(shooter.p.id) ? 0.92 : 1);
+  const at = A.tac || {}, dt = D.tac || {};
+  // wysoka linia rywala + szybcy napastnicy = sam na sam; kontra (szybkie tempo z niskiego bloku) na rywala grającego wysoko/ofensywnie
+  const counter = at.tempo > 0 && at.line < 0 ? 1 + 0.07 * ((dt.line || 0) > 0) + 0.06 * (D.ment === 'att') : 1;
+  const pg = penalty ? 0.76 + (shooter.p.a[1] - 70) / 400 : clamp(0.083 * Math.pow(q, FIN_EXP), 0.02, 0.4) * (kind === 'fk' ? 0.75 : kind === 'head' ? 0.85 * (1 + 0.1 * (at.width || 0)) : 1) * (kind ? 1 : (1 - 0.08 * (at.tempo || 0)) * (1 + 0.08 * (dt.line || 0) * clamp((A.pace || 60) / 65, 0.7, 1.4)) * counter);
+  A.shots++; { const x = Math.min(0.95, pg); A.xg = (A.xg || 0) + x; const r = A.rec[shooter.p.id]; if (r) r.xg = (r.xg || 0) + x; }
+  const pmW = x => A.pm != null && x.slot === A.pm ? 2.5 : 1;
+  { const kc = c.filter(x => x !== shooter); if (kc.length && !penalty) { const k = wpick(kc, x => (LINE[x.pos] === 'MID' ? 2 : LINE[x.pos] === 'ATT' ? 1.5 : 0.6) * Math.pow(x.p.a[2] / 60, 2) * pmW(x)); const r = A.rec[k.p.id]; if (r) r.kp = (r.kp || 0) + 1; } }
   if (penalty) ev(m, 'info', A, `Rzut karny! Wykonuje ${shortName(shooter.p)} (${A.t.name})...`);
   else if (kind === 'fk') ev(m, 'info', A, `Rzut wolny w dogodnej odległości – do piłki podchodzi ${shortName(shooter.p)} (${A.t.name})...`);
   else if (kind === 'head') A.corners++;
@@ -266,7 +310,7 @@ function doShot(m, A, D) {
     A.sot++; A.goals++;
     let ast = null;
     if (kind === 'head') { const tk = onP(sp.ck) || c.slice().sort((x, y) => y.p.a[2] - x.p.a[2])[0]; if (tk && tk !== shooter) ast = tk.p; }
-    else if (!penalty && kind !== 'fk' && rnd() < 0.75) { const cc = A.pitch.filter(s => s !== shooter && s.pos !== 'GK'); if (cc.length) ast = wpick(cc, s => (LINE[s.pos] === 'DEF' ? 1 : 3) * (s.p.a[2] / 60)).p; }
+    else if (!penalty && kind !== 'fk' && rnd() < 0.75) { const cc = A.pitch.filter(s => s !== shooter && s.pos !== 'GK'); if (cc.length) ast = wpick(cc, s => (LINE[s.pos] === 'DEF' ? 1 : 3) * (s.p.a[2] / 60) * pmW(s)).p; }
     A.rec[shooter.p.id].g++; if (ast) A.rec[ast.id].a++;
     A.scorers.push({ min: m.minute, name: shortName(shooter.p), pen: penalty, pid: shooter.p.id });
     const gt = penalty ? `${nm} pewnie wykorzystuje rzut karny!` : kind === 'fk' ? `${nm} uderza z rzutu wolnego – piłka ląduje w okienku!` : kind === 'head' ? `${nm} wygrywa pojedynek w powietrzu po rzucie rożnym i główkuje do siatki!` : pick(GOAL_TXT).replace('{s}', nm);
@@ -323,7 +367,9 @@ function step(m) {
   const mn = m.minute, H = m.home, A = m.away;
   if (m.dirty || mn % 6 === 0 || !H.str) { calcStr(H, mn); calcStr(A, mn); m.dirty = false; }
   const TH = H.tac || {}, TA = A.tac || {};
-  const hm = Math.pow(H.str.mid, 2) * (m.neutral ? 1 : 1.06) * (1 + 0.05 * (TH.press || 0)), am = Math.pow(A.str.mid, 2) * (1 + 0.05 * (TA.press || 0));
+  // pressing słabiej działa na cierpliwy zespół z dobrym podaniem; ostry odbiór psuje grę rywala
+  const pe = (T, O, OS) => 0.05 * (T.press || 0) * (1 - ((O.tempo || 0) < 0 ? 0.5 : 0));
+  const hm = Math.pow(H.str.mid, 2) * (m.neutral ? 1 : 1.06) * (1 + pe(TH, TA)) * (A.oi.hard ? 0.95 : 1), am = Math.pow(A.str.mid, 2) * (1 + pe(TA, TH)) * (H.oi.hard ? 0.95 : 1);
   const att = rnd() < hm / (hm + am) ? H : A, def = att === H ? A : H;
   att.poss++;
   // odbiór piłki: zasługa obrońcy/pomocnika drużyny, która przejęła posiadanie
@@ -331,16 +377,16 @@ function step(m) {
   m._last = att;
   const aS = 0.7 * att.str.att + 0.3 * att.str.mid, dS = 0.65 * def.str.def + 0.35 * def.str.mid;
   const mAtt = att.ment === 'att' ? 1.18 : att.ment === 'def' ? 0.82 : 1;
-  const mOpp = def.ment === 'att' ? 1.12 : def.ment === 'def' ? 0.88 : 1;
+  const mOpp = def.ment === 'att' ? 1.2 : def.ment === 'def' ? 0.88 : 1;
   const ha = m.neutral ? 1 : att === H ? HOME_ADV : AWAY_ADV;
   const ta = att.tac || {}, td = def.tac || {};
-  const pShot = clamp(SHOT_BASE * Math.pow(aS / dS, SHOT_EXP) * mAtt * mOpp * ha * (1 + 0.14 * (ta.tempo || 0) + 0.04 * (td.tempo || 0) + 0.03 * (ta.line || 0) - 0.04 * ((td.line || 0) < 0 ? 1 : 0)), 0.03, 0.7);
+  const pShot = clamp(SHOT_BASE * Math.pow(aS / dS, SHOT_EXP) * mAtt * mOpp * ha * (1 + 0.1 * (ta.tempo || 0) + 0.04 * (td.tempo || 0) + 0.05 * (ta.line || 0) + 0.03 * ((td.line || 0) < 0 ? 1 : 0)), 0.03, 0.7);
   const shot = rnd() < pShot; if (shot) doShot(m, att, def);
   (m.mom || (m.mom = [])).push((att === H ? 1 : -1) * (shot ? 2.5 : 0.7) * (att.ment === 'att' ? 1.2 : 1));
   const club = isClubComp(m.comp);
   for (const side of [H, A]) {
     if (!side.pitch.length) continue;
-    if (rnd() < 0.011) {
+    if (rnd() < 0.011 * (1 + (side.oi.hard ? 0.4 : 0) + 0.12 * side.oi.mark.length)) {
       const s = wpick(side.pitch, x => LINE[x.pos] === 'DEF' ? 3 : LINE[x.pos] === 'MID' ? 2 : LINE[x.pos] === 'GK' ? 0.2 : 1);
       const r = side.rec[s.p.id]; side.fouls++;
       if (r.y >= 1) {
@@ -385,6 +431,7 @@ function finishMatch(m) {
   const pen = m.pens ? ` (k. ${m.pens.h}:${m.pens.a})` : '';
   ev(m, 'ft', null, `🏁 Koniec meczu! ${m.home.t.name} ${m.home.goals}:${m.away.goals} ${m.away.t.name}${m.et ? ' po dogrywce' : ''}${pen}`);
   for (const [side, opp] of [[m.home, m.away], [m.away, m.home]]) {
+    if (side.user) { side.t.oi = null; if (side.t._st) side.t._st.oi = null; }   // instrukcje na rywala obowiązują jeden mecz
     const gd = side.goals - opp.goals;
     for (const r of Object.values(side.rec)) {
       const p = r.p, end = r.off != null ? r.off : m.minute, mins = Math.max(0, end - r.on);

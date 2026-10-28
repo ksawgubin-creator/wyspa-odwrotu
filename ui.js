@@ -325,6 +325,17 @@ function vSquadList(t) {
     <div class="card list"><div class="prow lh"><span class="pn mut">Zawodnik</span><span class="mini">Kond.</span><span class="lhc">OVR</span><span class="lhc">POT</span></div>${ps.map(p => `<div class="prow" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${esc(p.n)}<small>${flag(p.nat)} ${p.age} l. • ${money(p.val)} ${morale(p)} ${stTag(p)}</small></div>
       <span class="mini">${Math.round(p.fit)}%</span>${ovrTag(p.ovr)}<span class="potc">${p.pot}</span></div>`).join('')}</div>`;
 }
+const TAC = [['press', 'Pressing', ['Niski blok', 'Średni', 'Wysoki pressing'], 'Wysoki pressing częściej odbiera piłkę, ale szybciej męczy zawodników.'],
+  ['tempo', 'Tempo', ['Cierpliwe', 'Normalne', 'Szybkie'], 'Szybkie tempo daje więcej strzałów, ale gorszej jakości.'],
+  ['line', 'Linia obrony', ['Głęboka', 'Normalna', 'Wysoka'], 'Wysoka linia pomaga w ataku, ale zostawia rywalom miejsce na sam na sam.'],
+  ['width', 'Szerokość', ['Wąsko', 'Normalnie', 'Szeroko'], 'Gra szeroka angażuje skrzydłowych i daje więcej rożnych; wąska – napastnika i „dziesiątkę”.']];
+function tacHtml(tac, act) {
+  tac = tac || {};
+  return TAC.map(([k, n, opts, d]) => `<div style="margin:8px 0"><b>${n}</b><div class="seg">${opts.map((o, i) => `<button class="btn sm ${(tac[k] || 0) === i - 1 ? 'on' : ''}" data-act="${act}" data-arg="${k}:${i - 1}">${o}</button>`).join('')}</div><small class="mut">${d}</small></div>`).join('');
+}
+CHG.noop = () => { };
+ACT.settac = a => { const [k, v] = a.split(':'), t = ctxTeam(); t.tac = t.tac || {}; t.tac[k] = +v; commit(t); render(); };
+ACT.mtac = a => { const [k, v] = a.split(':'), s = uside(); s.tac[k] = +v; s.t.tac = Object.assign({}, s.t.tac || {}, { [k]: +v }); M.dirty = true; ev(M, 'info', s, `📋 ${s.t.name}: ${TAC.find(x => x[0] === k)[1].toLowerCase()} – ${TAC.find(x => x[0] === k)[2][+v + 1].toLowerCase()}.`); upd(); ACT.mtactic(); };
 function vTactic(t) {
   const sp = t.sp || {}, ps = (t.players || []).filter(p => p.pos !== 'GK').slice().sort((a, b) => b.ovr - a.ovr);
   const spSel = (k, n, key) => `<div><span>${n}</span><select data-change="setsp" data-k="${k}"><option value="">Automatycznie</option>${ps.map(p => `<option value="${p.id}" ${sp[k] === p.id ? 'selected' : ''}>${esc(lastName(p))} (${key(p)})</option>`).join('')}</select></div>`;
@@ -332,7 +343,7 @@ function vTactic(t) {
       ${spSel('pen', '⚽ Rzuty karne', p => 'STR ' + Math.round(p.a[1]))}${spSel('fk', '🎯 Rzuty wolne', p => 'STR ' + Math.round(p.a[1]) + '/POD ' + Math.round(p.a[2]))}${spSel('ck', '🚩 Rzuty rożne', p => 'POD ' + Math.round(p.a[2]))}</div>
       <small class="mut">Główki po rożnych najczęściej wygrywają silni (FIZ) środkowi obrońcy i napastnicy.</small></div>
     <div class="card"><h2>Rotacja</h2><div class="row"><span class="sp">Asystent automatycznie wstawia wypoczętych zmienników za zawodników z kondycją poniżej 70%</span><button class="btn sm ${S.settings.autoRot ? 'pri' : ''}" data-act="autorot">${S.settings.autoRot ? 'Włączona' : 'Wyłączona'}</button></div></div>`;
-  return spCard + `<div class="card"><h2>Formacja</h2><div class="seg">${Object.keys(FORMATIONS).map(f => `<button class="btn sm ${t.formation === f ? 'on' : ''}" data-act="setform" data-arg="${f}">${f}</button>`).join('')}</div></div>
+  return `<div class="card"><h2>Instrukcje drużynowe</h2>${tacHtml(t.tac, 'settac')}</div>` + spCard + `<div class="card"><h2>Formacja</h2><div class="seg">${Object.keys(FORMATIONS).map(f => `<button class="btn sm ${t.formation === f ? 'on' : ''}" data-act="setform" data-arg="${f}">${f}</button>`).join('')}</div></div>
     <div class="card"><h2>Mentalność</h2><div class="seg">${Object.entries(MENT).map(([k, v]) => `<button class="btn sm ${(t.ment || 'bal') === k ? 'on' : ''}" data-act="setment" data-arg="${k}">${v}</button>`).join('')}</div>
     <small class="mut">Ofensywna: więcej strzałów, ale też więcej okazji rywala. Defensywna: mniej ryzyka.</small></div>
     ${t._st ? '' : `<div class="card"><h2>Trening</h2><select data-change="training" style="width:100%">${Object.entries({ bal: 'Zrównoważony (pomocnicy)', fit: 'Kondycja (szybsza regeneracja)', att: 'Atak (napastnicy)', def: 'Obrona (obrońcy, bramkarze)' }).map(([k, v]) => `<option value="${k}" ${t.training === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
@@ -1084,7 +1095,7 @@ function mctl() {
 ACT.mpause = () => { MS.paused = !MS.paused; mctl(); upd(); if (!MS.paused) { clearTimeout(MT); MT = setTimeout(tick, 50); } };
 ACT.mspeed = a => { MS.speed = +a; S.settings.speed = +a; mctl(); };
 ACT.mskip = () => { clearTimeout(MT); MS.paused = true; while (!M.over) step(M); MS.over = true; MS.skipping = true; upd(); mctl(); };
-ACT.mtactic = () => { MS.paused = true; mctl(); const s = uside(); modal(`<h2>Taktyka</h2><div class="seg">${Object.entries(MENT).map(([k, v]) => `<button class="btn ${s.ment === k ? 'on' : ''}" data-act="mment" data-arg="${k}">${v}</button>`).join('')}</div><div class="btns"><button class="btn full" data-act="close">Wróć do meczu</button></div>`); };
+ACT.mtactic = () => { MS.paused = true; mctl(); const s = uside(); modal(`<h2>Taktyka</h2><h3>Mentalność</h3><div class="seg">${Object.entries(MENT).map(([k, v]) => `<button class="btn ${s.ment === k ? 'on' : ''}" data-act="mment" data-arg="${k}">${v}</button>`).join('')}</div>${tacHtml(s.tac, 'mtac')}<div class="btns"><button class="btn full" data-act="close">Wróć do meczu</button></div>`); };
 ACT.mment = k => { uside().ment = k; M.dirty = true; ev(M, 'info', uside(), `📋 ${uside().t.name}: mentalność ${MENT[k].toLowerCase()}.`); upd(); closeModal(); };
 let subOut = null;
 ACT.msubs = () => { MS.paused = true; mctl(); subOut = null; renderSubs(); };

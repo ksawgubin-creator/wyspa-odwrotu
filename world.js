@@ -1325,7 +1325,7 @@ function assistantTip(opp) {
   const gap = teamLevel(opp) - teamLevel(ut);
   if (ab < 7) return `Asystent: „Trudno coś powiedzieć o rywalu, zagrajmy swoje.”`;
   const wn = { DEF: 'obrona', MID: 'środek pola', ATT: 'atak' };
-  return `Asystent: „Najsłabsza formacja rywala to ${wn[weak]}, najmocniejsza – ${wn[strong]}. ${gap > 4 ? 'Są od nas lepsi – rozważ grę z kontry (defensywnie).' : gap < -4 ? 'Jesteśmy faworytem – możemy zaatakować.' : 'Mecz wyrównany.'}”${ab >= 14 ? ` Kluczowy zawodnik rywala: ${opp.players.slice().sort((a, b) => b.ovr - a.ovr)[0].n}.` : ''}`;
+  return `Asystent: „Najsłabsza formacja rywala to ${wn[weak]}, najmocniejsza – ${wn[strong]}. ${gap > 4 ? 'Są od nas lepsi – rozważ niski blok, głęboką linię i grę z kontry.' : gap < -4 ? 'Jesteśmy faworytem – wysoki pressing i szybkie tempo powinny ich złamać.' : 'Mecz wyrównany.'}${weak === 'DEF' ? ' Ich obrona jest wolna – szeroka gra skrzydłami może dać efekty.' : ''}”${ab >= 14 ? ` Kluczowy zawodnik rywala: ${opp.players.slice().sort((a, b) => b.ovr - a.ovr)[0].n}.` : ''}`;
 }
 /* ---------- turnieje przedsezonowe ---------- */
 const PRE_ELITE = ['Emirates Cup', 'Audi Cup', 'Trofeo Joan Gamper', 'Trofeo Santiago Bernabéu', 'Trofeo Teresa Herrera', 'Florida Cup', 'Asia Trophy', 'Amsterdam Tournament', 'Trofeo Ramón de Carranza', 'Copa Ciudad de Valencia'];

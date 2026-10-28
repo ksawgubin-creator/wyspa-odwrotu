@@ -188,7 +188,7 @@ function makeSide(t, isUser, quick, emergency) {
   if (!isUser) { autoPick(t); } else fixLineup(t, emergency);
   const slots = slotsOf(t.formation);
   const side = {
-    t, ment: isUser ? (t.ment || 'bal') : 'bal', ai: !isUser || quick, user: isUser,
+    t, ment: isUser ? (t.ment || 'bal') : 'bal', ai: !isUser || quick, user: isUser, tac: Object.assign({ press: 0, tempo: 0, line: 0, width: 0 }, isUser && t.tac || {}),
     pitch: t.lineup.map((id, i) => { const p = pget(id); return p ? { p, pos: slots[i].pos, ov: ovrAt(p, slots[i].pos) } : null; }).filter(Boolean),
     bench: t.bench.map(pget).filter(Boolean), subs: 0, goals: 0, shots: 0, sot: 0, poss: 0, fouls: 0, yel: 0, corners: 0,
     rec: {}, str: null, scorers: [], cf: (1 + ((typeof coachOvr === 'function' ? coachOvr(t) : 60) - 60) * 0.0009) * clamp(1 + gauss() * DAY_VAR, 0.82, 1.18),
@@ -228,12 +228,13 @@ const MISS_TXT = ['{s} strzela obok słupka.', '{s} uderza prosto w trybuny.', '
 const SHOT_W = { ST: 5.5, LW: 4, RW: 4, CAM: 3.2, LM: 2.2, RM: 2.2, CM: 1.6, CDM: 0.8, CB: 0.6, LB: 0.4, RB: 0.4, GK: 0 };
 function doShot(m, A, D) {
   const c = A.pitch.filter(s => s.pos !== 'GK'); if (!c.length) return;
-  const sh = wpick(c, s => SHOT_W[s.pos] * Math.pow((s.p.pos === 'GK' ? 20 : s.p.a[1]) / 60, 3));
+  const tw = (A.tac && A.tac.width) || 0, WING = { LW: 1, RW: 1, LM: 1, RM: 1 };
+  const sh = wpick(c, s => SHOT_W[s.pos] * (WING[s.pos] ? 1 + 0.4 * tw : s.pos === 'ST' || s.pos === 'CAM' ? 1 - 0.15 * tw : 1) * Math.pow((s.p.pos === 'GK' ? 20 : s.p.a[1]) / 60, 3));
   const gk = D.pitch.find(s => s.pos === 'GK');
   const gkE = gk ? effNow(D, gk, m.minute) : 30;
   // stałe fragmenty: karny (wykonawca z taktyki), rzut wolny, główka po rożnym
   const sp = A.t.sp || {}, onP = id => id != null && c.find(s => s.p.id === id), r0 = rnd();
-  const kind = r0 < 0.013 ? 'pen' : r0 < 0.055 ? 'fk' : r0 < 0.13 ? 'head' : '';
+  const kind = r0 < 0.013 ? 'pen' : r0 < 0.055 ? 'fk' : r0 < 0.13 + 0.03 * tw ? 'head' : '';
   let shooter = sh;
   if (kind === 'pen') shooter = onP(sp.pen) || c.slice().sort((x, y) => y.p.a[1] - x.p.a[1])[0];
   else if (kind === 'fk') shooter = onP(sp.fk) || c.slice().sort((x, y) => (y.p.a[1] * 0.6 + y.p.a[2] * 0.4) - (x.p.a[1] * 0.6 + x.p.a[2] * 0.4))[0];
@@ -241,7 +242,7 @@ function doShot(m, A, D) {
   const penalty = kind === 'pen';
   const fin = (0.65 * (shooter.p.pos === 'GK' ? 20 : kind === 'head' ? (shooter.p.a[5] + shooter.p.a[1]) / 2 : shooter.p.a[1]) + 0.35 * shooter.ov) * cond(shooter.p, fitNow(A, shooter, m.minute));
   const q = fin / (0.5 * gkE + 0.5 * D.str.def);
-  const pg = penalty ? 0.76 + (shooter.p.a[1] - 70) / 400 : clamp(0.083 * Math.pow(q, FIN_EXP), 0.02, 0.4) * (kind === 'fk' ? 0.75 : kind === 'head' ? 0.85 : 1);
+  const pg = penalty ? 0.76 + (shooter.p.a[1] - 70) / 400 : clamp(0.083 * Math.pow(q, FIN_EXP), 0.02, 0.4) * (kind === 'fk' ? 0.75 : kind === 'head' ? 0.85 : 1) * (kind ? 1 : (1 - 0.05 * ((A.tac && A.tac.tempo) || 0)) * (1 + 0.08 * ((D.tac && D.tac.line) || 0)));
   A.shots++;
   if (penalty) ev(m, 'info', A, `Rzut karny dla ${A.t.name}! Do piłki podchodzi ${shortName(shooter.p)}...`);
   else if (kind === 'fk') ev(m, 'info', A, `Rzut wolny dla ${A.t.name} w dogodnej odległości. Do piłki podchodzi ${shortName(shooter.p)}...`);
@@ -307,14 +308,16 @@ function step(m) {
   m.minute++; m.alert = null;
   const mn = m.minute, H = m.home, A = m.away;
   if (m.dirty || mn % 6 === 0 || !H.str) { calcStr(H, mn); calcStr(A, mn); m.dirty = false; }
-  const hm = Math.pow(H.str.mid, 2) * (m.neutral ? 1 : 1.06), am = Math.pow(A.str.mid, 2);
+  const TH = H.tac || {}, TA = A.tac || {};
+  const hm = Math.pow(H.str.mid, 2) * (m.neutral ? 1 : 1.06) * (1 + 0.05 * (TH.press || 0)), am = Math.pow(A.str.mid, 2) * (1 + 0.05 * (TA.press || 0));
   const att = rnd() < hm / (hm + am) ? H : A, def = att === H ? A : H;
   att.poss++;
   const aS = 0.7 * att.str.att + 0.3 * att.str.mid, dS = 0.65 * def.str.def + 0.35 * def.str.mid;
   const mAtt = att.ment === 'att' ? 1.18 : att.ment === 'def' ? 0.82 : 1;
   const mOpp = def.ment === 'att' ? 1.12 : def.ment === 'def' ? 0.88 : 1;
   const ha = m.neutral ? 1 : att === H ? HOME_ADV : AWAY_ADV;
-  const pShot = clamp(SHOT_BASE * Math.pow(aS / dS, SHOT_EXP) * mAtt * mOpp * ha, 0.03, 0.7);
+  const ta = att.tac || {}, td = def.tac || {};
+  const pShot = clamp(SHOT_BASE * Math.pow(aS / dS, SHOT_EXP) * mAtt * mOpp * ha * (1 + 0.14 * (ta.tempo || 0) + 0.04 * (td.tempo || 0) + 0.03 * (ta.line || 0) - 0.04 * ((td.line || 0) < 0 ? 1 : 0)), 0.03, 0.7);
   const shot = rnd() < pShot; if (shot) doShot(m, att, def);
   (m.mom || (m.mom = [])).push((att === H ? 1 : -1) * (shot ? 2.5 : 0.7) * (att.ment === 'att' ? 1.2 : 1));
   const club = isClubComp(m.comp);
@@ -371,7 +374,7 @@ function finishMatch(m) {
       let rating = 6.2 + gd * 0.18 + r.g * 1.1 + r.a * 0.6 - r.r * 1.6 - r.y * 0.15 + r.sv * 0.25 + gauss() * 0.5;
       if (LINE[r.pos] === 'GK' || LINE[r.pos] === 'DEF') rating += (opp.goals === 0 ? 0.5 : 0) - opp.goals * 0.2;
       r.rating = clamp(Math.round(rating * 10) / 10, 3, 10); r.mins = mins;
-      p.fit = clamp(p.fit - mins * (p.pos === 'GK' ? 0.08 : 0.19), 15, 100);
+      p.fit = clamp(p.fit - mins * (p.pos === 'GK' ? 0.08 : 0.19 * (1 + 0.12 * ((side.tac && side.tac.press) || 0))), 15, 100);
       p.form = Math.round(clamp(p.form * 0.65 + clamp((r.rating - 4) / 5 * 100, 0, 100) * 0.35, 0, 100));
       p.mor = clamp(p.mor + (gd > 0 ? 3 : gd < 0 ? -3 : 0) + (r.rating >= 7.5 ? 2 : r.rating <= 5.5 ? -2 : 0), 0, 100);
       if (club) {

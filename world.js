@@ -295,13 +295,18 @@ const fmtDate = ms => new Date(ms).toLocaleDateString('pl-PL', { day: 'numeric',
 
 /* ---------- ligi ---------- */
 function makeFixtures(ids) {
-  const n = ids.length, arr = ids.slice(), rounds = [];
+  const n = ids.length, arr = ids.slice(), rounds = [], last = {}, homes = {};
   for (let r = 0; r < n - 1; r++) {
     const rd = [];
     for (let i = 0; i < n / 2; i++) {
-      let h = arr[i], a = arr[n - 1 - i];
-      if ((r + i) % 2 === 1) [h, a] = [a, h];
-      if (i === 0 && r % 2 === 1) [h, a] = [a, h];
+      const x = arr[i], y = arr[n - 1 - i];
+      // gospodarz: ten, kto ostatnio grał na wyjeździe (naprzemienność), potem mniej meczów u siebie
+      let h;
+      if (last[x] === 'a' && last[y] !== 'a') h = x; else if (last[y] === 'a' && last[x] !== 'a') h = y;
+      else if ((homes[x] || 0) !== (homes[y] || 0)) h = (homes[x] || 0) < (homes[y] || 0) ? x : y;
+      else h = (r + i) % 2 ? y : x;
+      const a = h === x ? y : x;
+      last[h] = 'h'; last[a] = 'a'; homes[h] = (homes[h] || 0) + 1;
       rd.push({ h, a, hg: 0, ag: 0, p: 0 });
     }
     rounds.push(rd); arr.splice(1, 0, arr.pop());
@@ -598,7 +603,7 @@ function dayMatches(d) {
       const r = lg.lsMap[d.ls]; if (r == null || r < 0) continue;
       for (const f of lg.fix[r]) clubDesc(f.h, f.a, { comp: 'L', label: lg.name }, m => {
         f.hg = m.home.goals; f.ag = m.away.goals; f.p = 1;
-        const c = club(f.h), fill = clamp(0.55 + c.rep / 250 + (S.leagues[c.lg].tier === 1 ? 0.05 : 0) + (c.id === S.user && S.fans != null ? (S.fans - 60) / 300 : 0), 0.3, 1);
+        const c = club(f.h), fill = clamp(0.55 + c.rep / 250 + (S.leagues[c.lg].tier === 1 ? 0.05 : 0) + (c.id === S.user && S.fans != null ? (S.fans - 60) / 300 : 0), 0.3, 1) * (c.cap0 ? Math.min(1, c.cap0 * 1.25 / c.cap) : 1);
         const gate = Math.round(c.cap * fill * c.price); c.bal += gate; c.fin.inc += gate; c._gate = gate;
       });
     }
@@ -1276,7 +1281,7 @@ function preOffers() {
   if (t.length === 3) offers.push({ name: `${ut.name.split(' ')[0]} Cup`, kind: 'loc', teams: t, fee: Math.round(ut.tv * 0.6 / 1000) * 1000, win: Math.round(ut.tv * 1 / 1000) * 1000, fans: 2, fit: 0, desc: 'Łatwiejsi rywale z kraju, mecze blisko domu – mniejsze zmęczenie.' });
   const fcc = pick(Object.keys(PRE_TOUR).filter(k => k !== ut.cc && S.countries[k]));
   t = pickT(c => c.cc !== ut.cc && Math.abs(c.rep - (R + 4)) <= 12, 3);
-  if (t.length === 3) offers.push({ name: PRE_TOUR[fcc], kind: 'tour', teams: t, fee: Math.round(ut.tv * 1.4 / 1000) * 1000, win: Math.round(ut.tv * 1.5 / 1000) * 1000, fans: 4, fit: -6, desc: 'Tournee zagraniczne – lepsze pieniądze i marketing, ale męcząca podróż.' });
+  if (t.length === 3) offers.push({ name: PRE_TOUR[fcc], kind: 'tour', teams: t, fee: Math.round(ut.tv * 1.4 / 1000) * 1000, win: Math.round(ut.tv * 1.5 / 1000) * 1000, fans: 4, fit: -6, desc: 'Tournée zagraniczne – lepsze pieniądze i marketing, ale męcząca podróż.' });
   if (R >= 55) {
     t = pickT(c => c.rep >= Math.max(70, R), 3);
     if (t.length === 3) offers.push({ name: pick(PRE_ELITE), kind: 'elite', teams: t, fee: Math.round(ut.tv * 2.2 / 1000) * 1000, win: Math.round(ut.tv * 2.5 / 1000) * 1000, fans: 6, fit: -3, desc: 'Prestiżowy turniej z czołowymi klubami Europy – wysoka stawka i prestiż.' });
@@ -1339,6 +1344,7 @@ function endSeason() {
   const eh = { season: S.season };
   for (const c of Object.values(S.euro)) { eh[c.id] = c.champion; if (c.champion != null) lines.push(`🏆 ${c.name}: ${club(c.champion).name}.`); }
   S.euroHist.push(eh);
+  if (ut.stadBuild) { ut.cap += ut.stadBuild.add; lines.push(`🏟️ Rozbudowa stadionu zakończona: ${ut.cap.toLocaleString('pl-PL')} miejsc.`); ut.stadBuild = null; }
   const presOld = prestigeSeason(finals);
   { const o = presOld[ut.id], n = presOf(ut); lines.push(`⭐ Prestiż klubu: ${o.toFixed(1)} → ${n.toFixed(1)} / 10 (${presWord(n)}).`); }
   S.lastWinners = { CL: S.euro.CL && S.euro.CL.champion, EL: S.euro.EL && S.euro.EL.champion, ECL: S.euro.ECL && S.euro.ECL.champion };
@@ -1503,7 +1509,10 @@ function jobOffers() {
 function offerJob(c, why) {
   if (S.jobs.some(j => j.club === c.id) || c.id === S.user) return;
   S.jobs.push({ id: S.nextId++, club: c.id, exp: absDay() + 12, why });
-  msg('Oferta pracy', `${c.name} (${S.countries[c.cc].flag} ${S.leagues[c.lg].name}) ${why}. Szczegóły: Pulpit → Oferty pracy.`);
+  const d = curDay() ? curDay().date : 0, m0 = S.inbox.find(m => m.title.startsWith('📨 Oferty pracy') && m.date === d && !m.read);
+  const line = `• ${c.name} (${S.countries[c.cc].flag} ${S.leagues[c.lg].name}) ${why}.`;
+  if (m0) { m0.n = (m0.n || 1) + 1; m0.title = `📨 Oferty pracy (${m0.n})`; m0.body += '\n' + line; }
+  else { msg('📨 Oferty pracy (1)', line + '\nSzczegóły: Pulpit → Oferty pracy.'); S.inbox[0].n = 1; }
 }
 function coachMarket(d) {
   S.jobs = S.jobs.filter(j => j.exp >= absDay() && j.club !== S.user);

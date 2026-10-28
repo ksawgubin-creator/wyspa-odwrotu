@@ -81,7 +81,7 @@ const FORMS = {
 const FORMATIONS = {};
 for (const [k, v] of Object.entries(FORMS)) { const s = []; for (let i = 0; i < v.length; i += 3) s.push({ pos: v[i], x: v[i + 1], y: v[i + 2] }); FORMATIONS[k] = s; }
 const slotsOf = f => FORMATIONS[f] || FORMATIONS['4-3-3'];
-const MENT = { def: 'Defensywna', bal: 'Zrównoważona', att: 'Ofensywna' };
+const MENT = { def: 'Defensywna', bal: 'Neutralna', att: 'Ofensywna' };
 const MAX_SUBS = 5, BENCH = 9;
 // strojenie silnika: przewaga własnego boiska i „stromość” różnic siły
 let SHOT_BASE = 0.25, SHOT_EXP = 1.3, FIN_EXP = 2.2, HOME_ADV = 1.13, AWAY_ADV = 0.9, DAY_VAR = 0.07;
@@ -209,7 +209,7 @@ function calcStr(side, minute) {
 }
 function ev(m, type, side, text, extra) { const e = { min: m.minute, type, side: side ? (side === m.home ? 'h' : 'a') : null, text, ...extra }; m.ev.push(e); return e; }
 const GOAL_TXT = ['{s} pakuje piłkę do siatki!', '{s} uderza przy słupku – nie do obrony!', '{s} wykańcza akcję zespołu!', '{s} pewnie wykorzystuje sytuację sam na sam!', '{s} główkuje do siatki!', '{s} uderza z dystansu – bramkarz bez szans!', '{s} dobija odbitą piłkę!', '{s} mija bramkarza i trafia do pustej bramki!'];
-const SAVE_TXT = ['{s} uderza, ale {k} broni!', 'Świetna interwencja {k} po strzale {s}!', '{k} wyciąga się jak struna i odbija strzał {s}.', '{s} próbuje przelobować – {k} łapie piłkę.'];
+const SAVE_TXT = ['{s} uderza, ale {k} broni!', 'Strzela {s} – świetna interwencja, broni {k}!', '{k} wyciąga się jak struna i odbija strzał {s}.', '{s} próbuje przelobować – {k} łapie piłkę.'];
 const MISS_TXT = ['{s} strzela obok słupka.', '{s} uderza prosto w trybuny.', '{s} nie trafia czysto w piłkę.', 'Strzał {s} zablokowany przez obrońcę.', '{s} uderza w poprzeczkę!', '{s} trafia w słupek!'];
 const SHOT_W = { ST: 5.5, LW: 4, RW: 4, CAM: 3.2, LM: 2.2, RM: 2.2, CM: 1.6, CDM: 0.8, CB: 0.6, LB: 0.4, RB: 0.4, GK: 0 };
 function doShot(m, A, D) {

@@ -30,7 +30,8 @@ const PERS_DESC = {
   Lojalny: 'Przywiązany do klubu, łatwiej przedłuża umowy.', Temperamentny: 'Emocjonalny – źle znosi krytykę i ławkę.',
   Wyluzowany: 'Spokojny, mało co go rusza.', Zrównoważony: 'Bez skrajności – reakcje trudne do przewidzenia.',
 };
-const traitWord = v => v >= 16 ? 'bardzo wysoki' : v >= 12 ? 'wysoki' : v >= 8 ? 'przeciętny' : v >= 5 ? 'niski' : 'bardzo niski';
+const TRAIT_FEM = { amb: true, loy: true, pre: true };
+const traitWord = (v, fem) => { const w = v >= 16 ? 'bardzo wysok' : v >= 12 ? 'wysok' : v >= 8 ? 'przeciętn' : v >= 5 ? 'nisk' : 'bardzo nisk'; return w + (fem ? 'a' : (w.endsWith('k') ? 'i' : 'y')); };
 
 function metaInit() {
   if (!S) return;
@@ -202,7 +203,7 @@ const EVENTS = [
       { t: '„To dopiero początek”', hint: 'zobowiązuje', fx: { fans: 6, press: 2, boast: true }, r: 'Oczekiwania rosną…' },
       { t: 'Studź emocje', fx: { board: 3, fans: -2 }, r: 'Rozsądnie – choć kibice chcieli świętować.' }] },
   { id: 'captainask', cat: 'Szatnia', w: 2, ctx: () => S.captain == null && uPlayers().length > 11 ? { p: uPlayers().slice().sort((a, b) => (b.age + b.ovr / 2) - (a.age + a.ovr / 2))[0] } : null,
-    title: 'Wybór kapitana', text: c => `Drużyna nie ma kapitana. Starszyzna szatni sugeruje ${c.p.n}.`,
+    title: 'Wybór kapitana', text: c => `Drużyna nie ma kapitana. Kandydat starszyzny szatni: ${c.p.n}.`,
     choices: [{ t: 'Mianuj go kapitanem', fx: { captain: true, player: 10, team: 2 }, r: 'Opaska ma właściciela.' },
       { t: 'Wybiorę sam później (karta zawodnika)', fx: { team: -1 }, r: 'Decyzja odłożona – szatnia czeka.' }] },
   /* --- wydarzenia wynikające ze stanu gry --- */
@@ -514,7 +515,7 @@ function playerChat(p, topic) {
     if (t.amb >= 14 && bigger) { txt = '„Marzę o Lidze Mistrzów. Jeśli tu się nie uda, poszukam nowego wyzwania.”'; fx = { player: R(-3, 0) }; }
     else if (t.loy >= 14) { txt = '„Kocham ten klub. Chcę tu zostać jak najdłużej.”'; fx = { player: R(2, 5) }; }
     else { txt = `„Skupiam się na kolejnych meczach. Kontrakt mam na ${p.con} ${p.con === 1 ? 'rok' : 'lata'}.”`; fx = { player: R(0, 3) }; }
-    txt += ` (Ambicja: ${traitWord(t.amb)}, lojalność: ${traitWord(t.loy)})`;
+    txt += ` (ambicja: ${traitWord(t.amb, true)}, lojalność: ${traitWord(t.loy, true)})`;
   } else if (topic === 'promise') {
     if (S.promises.some(x => x.pid === p.id)) { txt = '„Pamiętam o obietnicy, trenerze.”'; fx = {}; }
     else if (S.mem.liar >= 2 && rnd() < 0.5) { txt = '„Słyszałem, że rzadko dotrzymuje Pan słowa…”'; fx = { player: R(-3, 1) }; }

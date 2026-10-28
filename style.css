@@ -134,7 +134,7 @@ td .tn{display:flex;align-items:center;gap:6px}
 .fe.red,.fe.injury{color:var(--bad)}
 .fe.ht,.fe.ft{color:var(--warn);font-weight:700}
 .ctl{display:flex;gap:6px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:#0e1830;flex-wrap:wrap}
-.ctl .btn{flex:1 1 22%;padding:10px 4px;font-size:13px;white-space:nowrap}
+.ctl .btn{flex:1 1 15%;padding:8px 4px;font-size:14px;white-space:nowrap;min-height:40px}
 .ctl .btn.on{border-color:var(--acc);color:var(--acc)}
 .rt{display:flex;justify-content:space-between;padding:5px 0;border-top:1px solid var(--line);font-size:14px}
 

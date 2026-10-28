@@ -129,7 +129,7 @@ function aiStyle(t, d) {
 }
 const MAX_SUBS = 5, BENCH = 9;
 // strojenie silnika: przewaga własnego boiska i „stromość” różnic siły
-let SHOT_BASE = 0.285, SHOT_EXP = 1.3, FIN_EXP = 2.2, HOME_ADV = 1.13, AWAY_ADV = 0.9, DAY_VAR = 0.07;
+let FIN_K = 0.1, SHOT_BASE = 0.25, SHOT_EXP = 1.3, FIN_EXP = 2.2, HOME_ADV = 1.13, AWAY_ADV = 0.9, DAY_VAR = 0.07;
 
 /* ---------- stan zawodnika ---------- */
 // polska odmiana liczebników: 1 gol, 2 gole, 5 goli
@@ -171,19 +171,32 @@ const lastName = p => { const s = p.n.split(' '); return s.length > 1 ? s.slice(
 /* ---------- wybór składu ---------- */
 let PM = new Map();
 const pget = id => PM.get(id);
-function pickScore(p, pos) { return ovrAt(p, pos) * (0.55 + 0.45 * clamp(p.fit, 0, 100) / 100) * (p.fit < 55 ? 0.85 : 1); }
-function autoPick(t, formation) {
-  const f = formation || t.formation || '4-3-3';
-  const slots = slotsOf(f);
-  const pool = t.players.filter(isAvail);
-  const n = slots.length, lineup = Array(n).fill(null), usedP = new Uint8Array(pool.length);
+function pickScore(p, pos) { return (typeof S !== 'undefined' && S && S.promises && p.tid === S.user && S.promises.some(x => x.pid === p.id) ? 1.12 : 1) * ovrAt(p, pos) * (0.55 + 0.45 * clamp(p.fit, 0, 100) / 100) * (p.fit < 55 ? 0.85 : 1); }
+/* najlepsza jedenastka dla formacji: zachłanny przydział + poprawki zamianami (także z ławką) */
+function pickLineup(t, f) {
+  const slots = slotsOf(f), pool = t.players.filter(isAvail);
+  const n = slots.length, idx = Array(n).fill(-1), usedP = new Uint8Array(pool.length);
   const M = slots.map(sl => pool.map(p => pickScore(p, sl.pos)));
   for (let k = 0; k < n; k++) {
     let bs = -1, bi = -1, bj = -1;
-    for (let i = 0; i < n; i++) { if (lineup[i] != null) continue; const row = M[i]; for (let j = 0; j < pool.length; j++) if (!usedP[j] && row[j] > bs) { bs = row[j]; bi = i; bj = j; } }
+    for (let i = 0; i < n; i++) { if (idx[i] >= 0) continue; const row = M[i]; for (let j = 0; j < pool.length; j++) if (!usedP[j] && row[j] > bs) { bs = row[j]; bi = i; bj = j; } }
     if (bj < 0) break;
-    lineup[bi] = pool[bj].id; usedP[bj] = 1;
+    idx[bi] = bj; usedP[bj] = 1;
   }
+  for (let it = 0, imp = true; imp && it < 6; it++) {
+    imp = false;
+    for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) { const x = idx[a], y = idx[b]; if (x < 0 || y < 0) continue; if (M[a][y] + M[b][x] > M[a][x] + M[b][y] + 0.01) { idx[a] = y; idx[b] = x; imp = true; } }
+    for (let a = 0; a < n; a++) for (let j = 0; j < pool.length; j++) if (!usedP[j] && idx[a] >= 0 && M[a][j] > M[a][idx[a]] + 0.01) { usedP[idx[a]] = 0; idx[a] = j; usedP[j] = 1; imp = true; }
+  }
+  const score = idx.reduce((s0, j, i) => s0 + (j >= 0 ? ovrAt(pool[j], slots[i].pos) : 0), 0) / n;
+  return { lineup: idx.map(j => j >= 0 ? pool[j].id : null), avg: score };
+}
+/* asystent: formacja najlepiej pasująca do kadry */
+function bestFormation(t) { let best = null; for (const f of Object.keys(FORMATIONS)) { const r = pickLineup(t, f); if (!best || r.avg > best.avg + 0.05) best = { f, avg: r.avg }; } return best; }
+function autoPick(t, formation) {
+  const f = formation || t.formation || '4-3-3';
+  const slots = slotsOf(f), n = slots.length;
+  const lineup = pickLineup(t, f).lineup;
   if (lineup.some(x => x == null)) { // za mało zdrowych – grają awaryjnie niedostępni
     const used = new Set(lineup.filter(x => x != null)), rest = t.players.filter(p => !used.has(p.id));
     for (let i = 0; i < n; i++) if (lineup[i] == null && rest.length) lineup[i] = rest.shift().id;
@@ -317,7 +330,7 @@ function doShot(m, A, D) {
   const at = A.tac || {}, dt = D.tac || {};
   // wysoka linia rywala + szybcy napastnicy = sam na sam; kontra (szybkie tempo z niskiego bloku) na rywala grającego wysoko/ofensywnie
   const counter = at.tempo > 0 && at.line < 0 ? 1 + 0.07 * ((dt.line || 0) > 0) + 0.06 * (D.ment === 'att') : 1;
-  const pg = penalty ? 0.76 + (shooter.p.a[1] - 70) / 400 : clamp(0.083 * Math.pow(q, FIN_EXP), 0.02, 0.4) * (kind === 'fk' ? 0.75 : kind === 'head' ? 0.85 * (1 + 0.1 * (at.width || 0)) : 1) * (kind ? 1 : (1 - 0.08 * (at.tempo || 0)) * (1 + 0.08 * (dt.line || 0) * clamp((A.pace || 60) / 65, 0.7, 1.4)) * counter);
+  const pg = penalty ? 0.76 + (shooter.p.a[1] - 70) / 400 : clamp(FIN_K * Math.pow(q, FIN_EXP), 0.02, 0.45) * (kind === 'fk' ? 0.75 : kind === 'head' ? 0.85 * (1 + 0.1 * (at.width || 0)) : 1) * (kind ? 1 : (1 - 0.08 * (at.tempo || 0)) * (1 + 0.08 * (dt.line || 0) * clamp((A.pace || 60) / 65, 0.7, 1.4)) * counter);
   A.shots++; { const x = Math.min(0.95, pg); A.xg = (A.xg || 0) + x; const r = A.rec[shooter.p.id]; if (r) r.xg = (r.xg || 0) + x; }
   const pmW = x => A.pm != null && x.slot === A.pm ? 2.5 : 1;
   { const kc = c.filter(x => x !== shooter); if (kc.length && !penalty) { const k = wpick(kc, x => (LINE[x.pos] === 'MID' ? 2 : LINE[x.pos] === 'ATT' ? 1.5 : 0.6) * Math.pow(x.p.a[2] / 60, 2) * pmW(x)); const r = A.rec[k.p.id]; if (r) r.kp = (r.kp || 0) + 1; } }
@@ -335,7 +348,7 @@ function doShot(m, A, D) {
     const gt = penalty ? `${nm} pewnie wykorzystuje rzut karny!` : kind === 'fk' ? `${nm} uderza z rzutu wolnego – piłka ląduje w okienku!` : kind === 'head' ? `${nm} wygrywa pojedynek w powietrzu po rzucie rożnym i główkuje do siatki!` : pick(GOAL_TXT).replace('{s}', nm);
     ev(m, 'goal', A, `⚽ GOL! ${A.t.name}! ` + gt + (ast ? ` Asysta: ${shortName(ast)}.` : ''), { pid: shooter.p.id });
     m.dirty = true; m.alert = 'goal';
-  } else if (rnd() < 0.42) {
+  } else if (rnd() < 0.3) {
     A.sot++; if (gk) D.rec[gk.p.id].sv++;
     if (rnd() < 0.3) A.corners++;
     if (rnd() < 0.6) ev(m, 'chance', A, pick(SAVE_TXT).replace('{s}', nm).replace('{k}', kn));
@@ -400,7 +413,7 @@ function step(m) {
   const ha = m.neutral ? 1 : att === H ? HOME_ADV : AWAY_ADV;
   const ta = att.tac || {}, td = def.tac || {};
   const pShot = clamp(SHOT_BASE * Math.pow(aS / dS, SHOT_EXP) * mAtt * mOpp * ha * (1 + 0.1 * (ta.tempo || 0) + 0.04 * (td.tempo || 0) + 0.05 * (ta.line || 0) + 0.03 * ((td.line || 0) < 0 ? 1 : 0)), 0.03, 0.7);
-  const shot = rnd() < pShot; if (shot) doShot(m, att, def);
+  const shot = rnd() < pShot * (att.goals - def.goals >= 3 ? 0.7 : 1); if (shot) doShot(m, att, def);   // przy wysokim prowadzeniu drużyna zwalnia
   (m.mom || (m.mom = [])).push((att === H ? 1 : -1) * (shot ? 2.5 : 0.7) * (att.ment === 'att' ? 1.2 : 1));
   const club = isClubComp(m.comp);
   for (const side of [H, A]) {
@@ -480,7 +493,7 @@ function finishMatch(m) {
 }
 
 /* szybka symulacja (mecze AI): ten sam model siły, wynik losowany z rozkładu Poissona */
-let FAST_K = 1.11, FAST_BLEND = 0.22;
+let FAST_K = 1.055, FAST_BLEND = 0.22;
 function poisson(l) { let L = Math.exp(-l), k = 0, p = 1; do { k++; p *= rnd(); } while (p > L); return k - 1; }
 function fastSim(h, a, opts = {}) {
   const m = createMatch(h, a, { ...opts, quick: true });
@@ -494,7 +507,7 @@ function fastSim(h, a, opts = {}) {
     const mA = S1.ment === 'att' ? 1.18 : S1.ment === 'def' ? 0.82 : 1, mO = S2.ment === 'att' ? 1.12 : S2.ment === 'def' ? 0.88 : 1;
     const shots = 90 * poss * clamp(SHOT_BASE * Math.pow(aS / dS, SHOT_EXP) * mA * mO, 0.03, 0.7);
     const q = S1.str.att * 0.97 / (0.5 * S2.str.gk + 0.5 * S2.str.def);
-    return { shots, g: shots * clamp(0.083 * Math.pow(q, FIN_EXP), 0.02, 0.4) * FAST_K };
+    return { shots, g: shots * clamp(FIN_K * Math.pow(q, FIN_EXP), 0.02, 0.45) * FAST_K };
   };
   const xh = xg(H, A, ph), xa = xg(A, H, 1 - ph);
   if (!m.neutral) { xh.g *= HOME_ADV; xa.g *= AWAY_ADV; }

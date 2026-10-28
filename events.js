@@ -451,11 +451,18 @@ function pressConference(x) {
   if (losing) qs.push({ q: 'Seria słabych wyników. Czy czuje się Pan zagrożony?', a: [['„Wierzę w ten zespół w 100%.”', 'calm', { team: 3, board: -1 }], ['„Zawodnicy zawodzą – czas na zmiany.”', 'harsh', { team: -5, fans: 3, board: 2 }], ['„Nie będę komentował plotek.”', 'evasive', { press: -4 }]] });
   if (winning) qs.push({ q: 'Seria zwycięstw – czy to drużyna na mistrzostwo?', a: [['„Krok po kroku.”', 'calm', { board: 2 }], ['„Tak, celujemy w tytuł!”', 'bold', { fans: 6, boast: true }], ['„Najpierw utrzymajmy formę.”', 'calm', { team: 1, press: 1 }]] });
   if (star) qs.push({ q: `Czy ${star.n} jest kluczem do sukcesu?`, p: star.id, a: [['„To lider, ale wygrywa drużyna.”', 'calm', { team: 2, player: 2 }], ['„Bez niego bylibyśmy innym zespołem.”', 'bold', { player: 8, team: -3 }], ['„Oczekuję od niego więcej.”', 'harsh', traits(star).pro >= 12 ? { player: 3, form: 4 } : { player: -9 }]] });
-  if (inj) qs.push({ q: `Jak bardzo zabraknie kontuzjowanego ${inj.n}?`, p: inj.id, a: [['„Mamy szeroką kadrę.”', 'calm', { team: 2, player: -2 }], ['„To ogromna strata.”', 'calm', { player: 4, team: -1 }], ['„Nie szukamy wymówek.”', 'harsh', { board: 2, fans: 1 }]] });
+  if (inj) qs.push({ q: `Kontuzja wyklucza z gry zawodnika ${inj.n}. Jak bardzo go zabraknie?`, p: inj.id, a: [['„Mamy szeroką kadrę.”', 'calm', { team: 2, player: -2 }], ['„To ogromna strata.”', 'calm', { player: 4, team: -1 }], ['„Nie szukamy wymówek.”', 'harsh', { board: 2, fans: 1 }]] });
   if (listed) qs.push({ q: `Czy ${listed.n} odejdzie z klubu?`, p: listed.id, a: [['„Wszystko jest możliwe.”', 'evasive', { player: -3 }], ['„Chcę, żeby został.”', 'calm', { player: 6, fans: 2 }], ['„Nie jest już częścią moich planów.”', 'harsh', { player: -12, team: -2 }]] });
-  if (young) qs.push({ q: `Kibice zachwycają się ${young.n}. Czy to przyszła gwiazda?`, p: young.id, a: [['„Ma ogromny potencjał.”', 'bold', { player: 6, fans: 3 }], ['„Musi jeszcze dużo pracować.”', 'harsh', traits(young).pro >= 12 ? { player: 2, form: 3 } : { player: -5 }], ['„Nie nakładajmy na niego presji.”', 'calm', { player: 2, press: 1 }]] });
-  const q = pick(qs);
+  if (young) qs.push({ q: `Kibice są zachwyceni grą zawodnika ${young.n}. Czy to przyszła gwiazda?`, p: young.id, a: [['„Ma ogromny potencjał.”', 'bold', { player: 6, fans: 3 }], ['„Musi jeszcze dużo pracować.”', 'harsh', traits(young).pro >= 12 ? { player: 2, form: 3 } : { player: -5 }], ['„Nie nakładajmy na niego presji.”', 'calm', { player: 2, press: 1 }]] });
+  const q = pickFresh(qs);
   return { q: q.q, star: q.p || null, a: q.a.map(([t, tone, fx]) => [t, fx, tone]) };
+}
+/* unikanie powtarzania tych samych pytań (pamięć 40 dni) */
+function pickFresh(qs) {
+  S.pqSeen = S.pqSeen || {}; const now = absDay(), key = q => q.q.replace(/[0-9:]+/g, '').slice(0, 40);
+  const fresh = qs.filter(q => !(S.pqSeen[key(q)] > now - 40)), q = pick(fresh.length ? fresh : qs); S.pqSeen[key(q)] = now;
+  for (const k in S.pqSeen) if (S.pqSeen[k] < now - 60) delete S.pqSeen[k];
+  return q;
 }
 /* konferencja po meczu – pytanie zależne od przebiegu spotkania */
 function postMatchPress(m, user) {
@@ -471,11 +478,11 @@ function postMatchPress(m, user) {
   if (gd > 0 && worst <= -1) qs.push({ q: 'Wielki powrót! Co powiedział Pan zawodnikom, gdy przegrywaliście?', a: [['„Że wierzę w nich do ostatniej minuty.”', 'calm', { team: 4 }], ['„Kilka mocnych słów – i zadziałało.”', 'harsh', { team: 1, fans: 2, press: 2 }], ['„To zostaje w szatni.”', 'evasive', { press: -1, team: 2 }]] });
   if (gd < 0) qs.push({ q: `Porażka ${me.goals}:${op.goals}. Co poszło nie tak?`, a: [['„Biorę odpowiedzialność na siebie.”', 'calm', { team: 3, board: 1, press: 1 }], ['„Zawodnicy nie zrealizowali założeń.”', 'harsh', { team: -4, fans: 2, press: 2 }], ['„Sędzia zdecydował o wyniku.”', 'bold', { fans: 3, press: -3, board: -1 }]] });
   if (gd <= 0 && (me.xg || 0) > (op.xg || 0) + 0.8) qs.push({ q: 'Mieliście dużo więcej sytuacji. Brakuje skuteczności?', a: [['„Gramy dobrze – gole przyjdą.”', 'calm', { team: 2 }], ['„Napastnicy muszą to poprawić.”', 'harsh', { team: -2, press: 1 }], ['„Piłka bywa niesprawiedliwa.”', 'evasive', { press: 1 }]] });
-  if (red) qs.push({ q: `Czerwona kartka dla ${red.p.n}. Czy to zaważyło na meczu?`, p: red.p.id, a: [['„Bronię zawodnika – to była walka.”', 'calm', { player: 5, team: 2, press: -1 }], ['„To było nieodpowiedzialne.”', 'harsh', { player: -6, board: 1, press: 2 }], ['„Wyjaśnimy to wewnętrznie.”', 'evasive', { player: 1 }]] });
+  if (red && gd <= 0) qs.push({ q: `Czerwona kartka dla zawodnika ${red.p.n}. Czy to zaważyło na meczu?`, p: red.p.id, a: [['„Bronię zawodnika – to była walka.”', 'calm', { player: 5, team: 2, press: -1 }], ['„To było nieodpowiedzialne.”', 'harsh', { player: -6, board: 1, press: 2 }], ['„Wyjaśnimy to wewnętrznie.”', 'evasive', { player: 1 }]] });
   if (dn) qs.push({ q: gd > 0 ? `Wygrane ${dn}! Co to znaczy dla kibiców?` : gd < 0 ? `Przegrane ${dn}. Jak przeprosi Pan kibiców?` : `Remis w ${dn}. Zadowolony?`, a: [['„Ten wynik jest dla kibiców.”', 'calm', { fans: gd >= 0 ? 4 : 1, team: 1 }], [gd >= 0 ? '„To miasto jest nasze.”' : '„Rewanż będzie inny – obiecuję.”', 'bold', { fans: gd >= 0 ? 6 : 3, boast: gd < 0 }], ['„To tylko trzy punkty.”', 'evasive', { fans: -3, press: 1 }]] });
-  if (motm && gd >= 0) qs.push({ q: `${motm.n} zawodnikiem meczu. Jak go Pan oceni?`, p: motm.id, a: [['„Wielki występ – zasłużył.”', 'calm', { player: 5, team: 1 }], ['„To dopiero początek jego możliwości.”', 'bold', { player: 7, team: -1 }], ['„Wygrała drużyna, nie jeden zawodnik.”', 'evasive', { team: 2, player: -2 }]] });
+  if (motm && gd >= 0) qs.push({ q: `${motm.n} zawodnikiem meczu. Jak go Pan oceni?`, p: motm.id, a: [['„Wielki występ – zasłużył.”', 'calm', { player: 5, team: 1 }], ['„To dopiero początek jego możliwości.”', 'bold', { player: 7, team: -1 }], [gd > 0 ? '„Wygrała drużyna, nie jeden zawodnik.”' : '„To zasługa całej drużyny, nie jednego zawodnika.”', 'evasive', { team: 2, player: -2 }]] });
   if (!qs.length) qs.push({ q: `Wynik ${me.goals}:${op.goals}. Jak ocenia Pan ten mecz?`, a: [['„Solidny występ, idziemy dalej.”', 'calm', { team: 1, press: 1 }], ['„Stać nas na dużo więcej.”', 'harsh', { team: -1, board: 1 }], ['„Bez komentarza.”', 'evasive', { press: -2 }]] });
-  const q = pick(qs);
+  const q = pickFresh(qs);
   return { q: q.q, star: q.p || null, a: q.a.map(([t, tone, fx]) => [t, fx, tone]) };
 }
 function answerPress(pc, i) {

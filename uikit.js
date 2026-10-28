@@ -510,7 +510,7 @@ function matchPitchSVG(m, userSide) {
     var bf = uk_clamp((bx - X0) / L, 0, 1), bfy = uk_clamp((by - Y0) / Wd, 0, 1);
     var dots = function (side, list, col, sec, isH) {
       var mine = userSide === side, s = '', T = (isH ? H : A).t || {};
-      var FS = typeof FORMATIONS !== 'undefined' && FORMATIONS[T.formation], fb = uk_formation(list);
+      var FS = typeof FORMATIONS !== "undefined" && FORMATIONS[(isH ? H : A).form || T.formation], fb = uk_formation(list);
       var strokeC = uk_lum(col) > 0.5 ? 'rgba(0,0,0,.55)' : 'rgba(255,255,255,.85)', txtC = uk_lum(col) > 0.5 ? '#0b1220' : '#fff';
       (list || []).forEach(function (pl, n) {
         if (!pl) return;

@@ -334,11 +334,14 @@ function sqRow(p) {
     <div class="fitb">${bar(p.fit)}</div>${ovrTag(p.ovr)}<button class="ibtn" data-act="info" data-arg="${p.id}">i</button></div>`;
 }
 const devArrow = p => { const d = p.ovrS != null && p.tid === S.user ? p.ovr - p.ovrS : 0; return d ? `<span class="dev ${d > 0 ? 'good' : 'bad'}">${d > 0 ? '▲' : '▼'}${Math.abs(d)}</span>` : '<span class="dev"></span>'; };
+ACT.sqf = k => { UI.sqF = k; render(); };
 function vSquadList(t) {
   const s = UI.listSort;
-  const ps = t.players.slice().sort((a, b) => s === 'ovr' ? b.ovr - a.ovr : s === 'age' ? a.age - b.age : s === 'fit' ? a.fit - b.fit : s === 'mor' ? a.mor - b.mor : s === 'val' ? b.val - a.val : POSITIONS.indexOf(a.pos) - POSITIONS.indexOf(b.pos) || b.ovr - a.ovr);
+  const SF = { all: ['Wszyscy', () => true], inj: ['🚑 Niedostępni', p => p.inj > 0 || p.susp > 0], con: ['📝 Kończące się umowy', p => p.con <= 1 && !p.loan], list: ['🏷️ Na sprzedaż', p => p.listed], young: ['🌱 Do 21 lat', p => p.age <= 21] }, fk = t._st ? 'all' : (UI.sqF || 'all');
+  const ps = t.players.filter(p => SF[fk][1](p)).sort((a, b) => s === 'ovr' ? b.ovr - a.ovr : s === 'age' ? a.age - b.age : s === 'fit' ? a.fit - b.fit : s === 'mor' ? a.mor - b.mor : s === 'val' ? b.val - a.val : POSITIONS.indexOf(a.pos) - POSITIONS.indexOf(b.pos) || b.ovr - a.ovr);
   const tot = sum(t.players.map(p => p.val || 0)), wages = sum(t.players.map(p => p.wage || 0));
   return `<div class="flt"><select data-change="lsort">${[['pos', 'wg pozycji'], ['ovr', 'wg ogólnej'], ['age', 'wg wieku'], ['fit', 'wg kondycji'], ['mor', 'wg morale'], ['val', 'wg wartości']].map(([k, n]) => `<option value="${k}" ${s === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+    ${t._st ? '' : `<div class="chipsrow">${Object.entries(SF).map(([k, v]) => `<button class="fchip ${fk === k ? 'on' : ''}" data-act="sqf" data-arg="${k}">${v[0]}</button>`).join('')}</div>`}
     ${t._st ? '' : `<small class="mut">Wartość kadry: ${money(tot)} • pensje: ${money(wages)}/tydz.</small>`}
     <div class="card list"><div class="prow lh"><span class="pn mut">Zawodnik</span><span class="mini">Kond.</span><span class="lhc">OVR</span><span class="dev"></span><span class="lhc">POT</span></div>${ps.map(p => `<div class="prow" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${esc(p.n)}<small>${flag(p.nat)} ${p.age} l. • ${p.tid === S.user ? ROLES[roleOf(p)][0].replace(' zawodnik', '') : money(p.val)} ${morale(p)} ${stTag(p)}</small></div>
       <span class="mini">${Math.round(p.fit)}%</span>${ovrTag(p.ovr)}${devArrow(p)}<span class="potc">${p.pot}</span></div>`).join('')}</div>`;
@@ -1014,7 +1017,10 @@ CHG.ctrnum = v => { CTR.ask = Math.max(0, Math.round(+v || 0)); setTimeout(() =>
 ACT.ctrsend = () => { const r = counterOffer(CTR.id, CTR.ask); if (r.res === 'gone') { closeModal(); toast(r.msg, 'bad'); render(); return; } renderCtr({ cls: r.res === 'accept' ? 'good' : 'warn', t: r.msg }); render(); };
 ACT.accept = id => { const r = sellTo(+id); toast(r.msg); closeModal(); render(); };
 ACT.decline = id => { const o = S.offers.find(x => x.id === +id); if (o) { const p = pget(o.pid); if (p && o.amount > p.val * 1.3) p.mor = clamp(p.mor - 8, 0, 100); declineOfferMeta(o); } S.offers = S.offers.filter(x => x.id !== +id); saveSoon(); render(); };
-function vNews() { return `<div class="card">${S.news.map(n => `<div class="msg"><small>${n.d ? fmtDate(n.d) : ''}</small><p style="color:var(--txt)">${esc(n.t)}</p></div>`).join('') || '<small class="mut">Brak wieści.</small>'}</div>`; }
+const NEWS_F = { all: ['Wszystkie', () => true], mine: ['Moja liga', t => S.leagues[userClub().lg].clubs.some(id => t.includes(club(id).name))], tr: ['Transfery', t => /Transfer|odchodzi|przechodzi|kupuje|podpisuje/i.test(t)], co: ['Trenerzy', t => /trener/i.test(t)] };
+ACT.nwf = k => { UI.nwf = k; render(); };
+function vNews() { const k = UI.nwf || 'all', L = S.news.filter(n => NEWS_F[k][1](n.t));
+  return `<div class="chipsrow">${Object.entries(NEWS_F).map(([x, v]) => `<button class="fchip ${k === x ? 'on' : ''}" data-act="nwf" data-arg="${x}">${v[0]}</button>`).join('')}</div><div class="card">${L.map(n => `<div class="msg"><small>${n.d ? fmtDate(n.d) : ''}</small><p style="color:var(--txt)">${esc(n.t)}</p></div>`).join('') || '<small class="mut">Brak wieści.</small>'}</div>`; }
 
 /* ---------- KLUB ---------- */
 function vClub() {
@@ -1339,17 +1345,18 @@ ACT.finishday = () => {
   if (res) modal(`<h2>Wyniki: ${esc(label)}</h2>${tchg}<div class="card list">${res}</div><div class="btns"><button class="btn pri full" data-act="close">OK</button></div>`);
 };
 function showSummary(s) {
-  const M = s.meta, G = { res: [], you: [], squad: [], world: [] };
+  const M = s.meta, G = { res: [], you: [], squad: [], fin: [], world: [] };
   for (const l of s.lines) {
-    if (/^(🏆|🏅|👟|⬆️|⬇️|Twoja pozycja|⭐ Prestiż|🇪🇺)/.test(l)) G.res.push(l);
+    if (/^💰/.test(l)) G.fin.push(l);
+    else if (/^(🏆|🏅|👟|⬆️|⬇️|Twoja pozycja|⭐ Prestiż|🇪🇺)/.test(l)) G.res.push(l);
     else if (/^(✅|❌|🧑‍💼|🤝|🏛|Nowy sezon|📨|💳|🏟️)/.test(l)) G.you.push(l);
-    else if (/^(Powroty|Zakończyli|Wygasły|🔮|🎓|👥|Z rezerw)/.test(l)) G.squad.push(l);
+    else if (/^(Powroty|Zakończyli|Wygasły|🔮|🎓|👥|Z rezerw|📊)/.test(l)) G.squad.push(l);
     else G.world.push(l);
   }
   const sec = (t, L) => L.length ? `<div class="card"><h3 style="margin-top:0">${t}</h3>${L.map(l => `<p style="margin:6px 0">${esc(l)}</p>`).join('')}</div>` : '';
   const hero = M ? `<div class="card hl" style="text-align:center"><div style="font-size:44px;font-weight:900">${M.pos}.</div><b>${esc(M.lg)}</b><br><small class="mut">${M.pts} pkt • ${M.w}-${M.d}-${M.l} • bramki ${M.gf}:${M.ga}</small>
     <div class="grid3" style="margin-top:10px"><div class="card stat"><small>Cel ligowy</small><b class="${M.achieved ? 'good' : 'bad'}">${M.achieved ? '✅' : '❌'}</b></div><div class="card stat"><small>OVR trenera</small><b>${M.ovr0}→${M.ovr1}</b></div><div class="card stat"><small>Prestiż</small><b>${M.pres.toFixed(1)}</b></div></div></div>` : '';
-  modal(`<h2>🏁 ${esc(s.title)}</h2>${hero}${sec('🏆 Wyniki i trofea', G.res)}${sec('🧑‍💼 Ty i zarząd', G.you)}${sec('👥 Kadra', G.squad)}${sec('🌍 Świat futbolu', G.world)}<div class="btns"><button class="btn pri full" data-act="aftersum">▶ Rozpocznij nowy sezon</button></div>`, true);
+  modal(`<h2>🏁 ${esc(s.title)}</h2>${hero}${sec('🏆 Wyniki i trofea', G.res)}${sec('🧑‍💼 Ty i zarząd', G.you)}${sec('👥 Kadra', G.squad)}${sec('💰 Finanse', G.fin)}${sec('🌍 Świat futbolu', G.world)}<div class="btns"><button class="btn pri full" data-act="aftersum">▶ Rozpocznij nowy sezon</button></div>`, true);
 }
 ACT.aftersum = () => { closeModal(); if (S.sacked) return showSacked(); render(); };
 function showSacked() {

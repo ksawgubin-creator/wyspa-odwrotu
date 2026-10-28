@@ -1400,7 +1400,7 @@ function aiTransfers() {
   }
   rebuildIndex();
 }
-function news(t) { S.news.unshift({ d: curDay() ? curDay().date : 0, t }); if (S.news.length > 60) S.news.length = 60; }
+function news(t) { S.news.unshift({ d: curDay() ? curDay().date : 0, t }); if (S.news.length > 100) S.news.length = 100; }
 function msg(title, body) { S.inbox.unshift({ id: S.nextId++, season: S.season, date: curDay() ? curDay().date : 0, title, body, read: false }); if (S.inbox.length > 80) S.inbox.length = 80; }
 
 /* ---------- obiekty ---------- */
@@ -1666,7 +1666,7 @@ function endSeason() {
   const aw = seasonAwards(ut.lg, finals), ks0 = topScorers(ut.lg, 1)[0];
   const wasLg = ut.lg, wasTier = S.leagues[ut.lg].tier;
   // nagrody pieniężne
-  for (const id in finals) { const n = finals[id].length; finals[id].forEach(r => { const c = club(r.id); const pr = Math.round(c.tv * 14 * (n - r.pos + 1) / n); c.bal += pr; c.fin.inc += pr; if (c.id === S.user) { c.tb += pr; lines.push(`Premia za miejsce w lidze: ${money(pr)}.`); } }); }
+  for (const id in finals) { const n = finals[id].length; finals[id].forEach(r => { const c = club(r.id); const pr = Math.round(c.tv * 14 * (n - r.pos + 1) / n); c.bal += pr; c.fin.inc += pr; if (c.id === S.user) { c.tb += pr; lines.push(`💰 Premia za miejsce w lidze: ${money(pr)} (trafia też do budżetu transferowego).`); } }); }
   payDebts();
   for (const id in finals) { const champ = finals[id][0].id; (S.champs[id] = S.champs[id] || []).push({ s: S.season, c: champ }); }
   lines.unshift(`Twoja pozycja: ${upos.pos}. miejsce – ${S.leagues[wasLg].name} (${upos.Pts} pkt).`);
@@ -1742,6 +1742,16 @@ function endSeason() {
   const ks = ks0; if (ks) lines.push(`👟 Król strzelców ligi: ${ks.n} (${plural(ks.lg, 'gol', 'gole', 'goli')}).`);
   S.history.push({ season: S.season, lg: wasLg, pos: upos.pos, pts: upos.Pts, club: ut.name, champ: club(finals[wasLg][0].id).name, scorer: ks ? `${ks.n} (${ks.lg})` : '-', achieved, euro: myEuro ? myEuro.name : '' });
 
+  // statystyki kadry i finanse sezonu (przed resetem statystyk)
+  { const sq = ut.players.filter(p => p.st && p.st.apps > 0), top = (k, f) => sq.slice().sort((a, b) => f(b) - f(a))[0];
+    const g = top('g', p => p.st.g), a = top('a', p => p.st.a), ap = top('m', p => p.st.apps), rt = sq.filter(p => p.st.apps >= 8).sort((x, y) => y.st.rs / y.st.apps - x.st.rs / x.st.apps)[0];
+    const grow = ut.players.filter(p => p.ovrS != null).map(p => ({ p, d: p.ovr - p.ovrS })).sort((x, y) => y.d - x.d)[0];
+    if (g && g.st.g) lines.push(`📊 Najlepszy strzelec: ${g.n} (${plural(g.st.g, 'gol', 'gole', 'goli')}).`);
+    if (a && a.st.a) lines.push(`📊 Najwięcej asyst: ${a.n} (${a.st.a}).`);
+    if (rt) lines.push(`📊 Najwyższa średnia ocen: ${rt.n} (${(rt.st.rs / rt.st.apps).toFixed(2)} w ${plural(rt.st.apps, 'meczu', 'meczach', 'meczach')}).`);
+    if (ap) lines.push(`📊 Najwięcej występów: ${ap.n} (${ap.st.apps}).`);
+    if (grow && grow.d > 0) lines.push(`📊 Największy postęp: ${grow.p.n} (OVR ${grow.p.ovrS} → ${grow.p.ovr}).`);
+    const F = ut.fin; lines.push(`💰 Finanse sezonu: przychody ${money(F.inc)}, koszty ${money(F.exp)}, transfery ${F.tr >= 0 ? '+' : ''}${money(F.tr)} • wynik ${money(F.inc - F.exp + F.tr)} • saldo ${money(ut.bal)}.`); }
   // zawodnicy
   const left = [], retired = [], back = [], potNotes = [];
   for (const c of S.clubs) for (const p of c.players.slice()) {

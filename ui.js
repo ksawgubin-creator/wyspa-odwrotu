@@ -1227,8 +1227,7 @@ ACT.prematch = () => {
     ${MX.nt ? '' : (() => { const dn = derbyName(mine.id, opp.id), r = h2hRec(opp.id), n = r.w + r.d + r.l; return (dn ? `<div class="card hl" style="margin:8px 0"><b>🔥 ${esc(dn)}</b><br><small class="mut">Mecz z odwiecznym rywalem – wynik podwójnie wpłynie na kibiców, zarząd i morale. Stadion wypełni się po brzegi.</small></div>` : '') + (n ? `<small class="mut">Bilans Twoich meczów z tym rywalem: ${r.w} Z • ${r.d} R • ${r.l} P</small>` : ''); })()}
     ${MX.nt ? '' : `<p class="hint">🧑‍💼 ${esc(assistantTip(opp))}</p>`}
     <h3>Mentalność</h3><div class="seg">${Object.entries(MENT).map(([k, v]) => `<button class="btn sm ${(mine.ment || 'bal') === k ? 'on' : ''}" data-act="prement" data-arg="${k}">${v}</button>`).join('')}</div>
-    <h3>Styl gry</h3>${presetHtml(mine, 'prepreset')}
-    ${oppHtml(mine, opp)}
+    ${MX.nt ? '' : `<div class="btns"><button class="btn sm full" data-act="oppmodal">🔎 Rywal, styl gry i krycie (opcjonalnie)</button></div>`}
     <h3>Odprawa przedmeczowa</h3><div class="seg talk">${Object.entries(TALKS).map(([k, v]) => `<button class="btn sm ${TALK === k ? 'on' : ''}" data-act="settalk" data-arg="${k}">${v}</button>`).join('')}</div>
     ${msgs.length ? `<p class="warn">${msgs.map(esc).join('<br>')}</p>` : ''}
     ${tired.length ? `<p class="warn">😮‍💨 Zmęczeni: ${tired.map(p => esc(lastName(p)) + ' ' + Math.round(p.fit) + '%').join(', ')}</p>${MX.nt ? '' : '<div class="btns"><button class="btn sm full" data-act="rotate">🔄 Rotuj zmęczonych (wstaw wypoczętych zmienników)</button></div>'}` : ''}
@@ -1245,9 +1244,10 @@ function oppHtml(mine, opp) {
     ${thr.map(p => `<div class="row">${posTag(p.pos)}<span class="sp">${esc(shortName(p))} <small class="mut">${p.ovr}${p.st && p.st.g ? ` • ${plural(p.st.g, 'gol', 'gole', 'goli')}` : ''}</small></span><button class="btn sm ${(oi.mark || []).includes(p.id) ? 'pri' : ''}" data-act="oimark" data-arg="${p.id}">🔒 Kryj</button></div>`).join('')}
     <div class="row"><span class="sp">🦵 Ostry odbiór <small class="mut">– rywal gorzej buduje grę, ale więcej kartek</small></span><button class="btn sm ${oi.hard ? 'pri' : ''}" data-act="oihard">${oi.hard ? 'Tak' : 'Nie'}</button></div>`;
 }
-ACT.oimark = id => { const mine = MX.user === 'h' ? MX.h : MX.a; mine.oi = mine.oi || { mark: [], hard: false }; const m = mine.oi.mark, i = m.indexOf(+id); if (i >= 0) m.splice(i, 1); else { if (m.length >= 2) return toast('Możesz kryć ściśle maks. 2 zawodników.', 'bad'); m.push(+id); } if (MX.nt) syncNT(mine); ACT.prematch(); };
-ACT.oihard = () => { const mine = MX.user === 'h' ? MX.h : MX.a; mine.oi = mine.oi || { mark: [], hard: false }; mine.oi.hard = !mine.oi.hard; if (MX.nt) syncNT(mine); ACT.prematch(); };
-ACT.prepreset = k => { const mine = MX.user === 'h' ? MX.h : MX.a, p = TAC_PRE[k]; mine.ment = p[1]; mine.tac = Object.assign({}, p[2]); if (MX.nt) syncNT(mine); saveSoon(); ACT.prematch(); };
+ACT.oppmodal = () => { const mine = MX.user === 'h' ? MX.h : MX.a, opp = MX.user === 'h' ? MX.a : MX.h; modal(`<h2>🔎 Przed meczem – opcjonalnie</h2><h3>Styl gry</h3>${presetHtml(mine, 'prepreset')}${oppHtml(mine, opp)}<div class="btns"><button class="btn pri full" data-act="prematch">Wróć</button></div>`); };
+ACT.oimark = id => { const mine = MX.user === 'h' ? MX.h : MX.a; mine.oi = mine.oi || { mark: [], hard: false }; const m = mine.oi.mark, i = m.indexOf(+id); if (i >= 0) m.splice(i, 1); else { if (m.length >= 2) return toast('Możesz kryć ściśle maks. 2 zawodników.', 'bad'); m.push(+id); } if (MX.nt) syncNT(mine); ACT.oppmodal(); };
+ACT.oihard = () => { const mine = MX.user === 'h' ? MX.h : MX.a; mine.oi = mine.oi || { mark: [], hard: false }; mine.oi.hard = !mine.oi.hard; if (MX.nt) syncNT(mine); ACT.oppmodal(); };
+ACT.prepreset = k => { const mine = MX.user === 'h' ? MX.h : MX.a, p = TAC_PRE[k]; mine.ment = p[1]; mine.tac = Object.assign({}, p[2]); if (MX.nt) syncNT(mine); saveSoon(); ACT.oppmodal(); };
 ACT.rotate = () => { const mine = MX.user === 'h' ? MX.h : MX.a, r = rotateTired(mine, 72); saveSoon(); toast(r.length ? `Zmiany: ${r.join(', ')}` : 'Brak wypoczętych zmienników na tych pozycjach.', r.length ? 'ok' : 'bad'); ACT.prematch(); };
 function renderPress() {
   modal(`<div class="evcat">Konferencja prasowa</div><h2>🎤 ${esc(PC.q)}</h2><div class="choices">${PC.a.map((x, i) => `<button class="btn full" data-act="pressans" data-arg="${i}">${esc(x[0])}</button>`).join('')}</div>`, true);

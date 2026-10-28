@@ -839,9 +839,18 @@ function seasonAwards(lgId, finals) {
   if (ch && ch.id === S.user) { (S.awards = S.awards || []).push({ k: 'motm', s: S.season, n: S.manager, club: userClub().short, lg: lgId }); out.push(`🧑‍💼 Trener sezonu: ${S.manager}`); mgrGain(1); }
   return out;
 }
+function boardMeeting(d) {
+  if (![12, 24, 36].includes(d.ls)) return;
+  const ut = userClub(), c = S.board.conf, g = c >= 80 ? 'A' : c >= 65 ? 'B' : c >= 50 ? 'C' : c >= 35 ? 'D' : 'F';
+  const side = (S.board.side || []).filter(x => x.season === S.season).map(x => `• ${x.t}: ${BOARD_GOALS[x.k][2](ut, x)}`).join('\n');
+  let extra = '';
+  if (g === 'A') { const b = Math.round(Math.max(ut.tb, 0) * 0.1 / 1e4) * 1e4 + Math.round(ut.tv * 2); ut.tb += b; extra = ` Zarząd jest zachwycony i zwiększa budżet transferowy o ${money(b)}.`; }
+  else if (g === 'F') extra = ' Zarząd ostrzega: bez szybkiej poprawy wyników dojdzie do zmiany trenera.';
+  msg(`🏛️ Spotkanie z zarządem – ocena ${g}`, `${S.board.text}${extra}\nCele dodatkowe:\n${side || '• brak'}`);
+}
 function weekly(d) {
   const ut = userClub();
-  monthAwards(d);
+  monthAwards(d); boardMeeting(d);
   S.uhist = S.uhist || []; S.uhist.push({ s: S.season, ls: d.ls, elo: eloOf(ut), pos: leaguePos(ut), bal: ut.bal }); if (S.uhist.length > 400) S.uhist.splice(0, S.uhist.length - 400);
   for (const c of S.clubs) {
     const wages = sum(c.players.map(p => p.wage)) + (c.id === S.user ? sum(S.scouts.map(s => s.cost)) + acadCost() + staffCost() : 0);
@@ -1261,6 +1270,7 @@ function academyWeek(d) {
     msg('🎓 Dzień naboru do akademii', `Do akademii dołączyło ${n} juniorów. Największy talent: ${best.n} (${POS_PL[best.pos]}, ${best.age} l.) – szacowany potencjał ok. ${best.acad.est}. Zobacz: Klub → Akademia.`);
   }
 }
+function promoteYouthCount() { S.promoted = S.promoted || {}; S.promoted[S.season] = (S.promoted[S.season] || 0) + 1; }
 function promoteYouth(pid) {
   const y = S.acad.youth.find(p => p.id === pid), ut = userClub();
   if (!y) return { ok: false, msg: 'Brak zawodnika.' };
@@ -1268,6 +1278,7 @@ function promoteYouth(pid) {
   S.acad.youth = S.acad.youth.filter(p => p !== y);
   y.acad = null; y.homegrown = true; y.con = 3; y.wage = Math.round(calcWage(y, ut.rep) * 0.5 / 100) * 100; attach(y, ut); y.mor = 75;
   S.know[y.id] = 100; rebuildIndex(); fillBench(ut); saveSoon();
+  promoteYouthCount();
   return { ok: true, msg: `${y.n} awansował do pierwszego zespołu!` };
 }
 function setMentor(pupilId, mentorId) {
@@ -1290,6 +1301,24 @@ function academySeasonEnd() {
 }
 
 /* ---------- zarząd ---------- */
+/* ---------- dodatkowe cele zarządu (2 na sezon) ---------- */
+const BOARD_GOALS = {
+  u21: [ut => 'Daj młodzieżowcom (do 21 lat) łącznie co najmniej 25 występów', ut => sum(ut.players.filter(p => p.age <= 21).map(p => p.st.apps)) >= 25, ut => `${sum(ut.players.filter(p => p.age <= 21).map(p => p.st.apps))}/25`],
+  wage: [ut => `Utrzymaj tygodniowe pensje poniżej ${money(Math.round(sum(ut.players.map(p => p.wage)) * 1.12 / 1000) * 1000)}`, (ut, g) => sum(ut.players.map(p => p.wage)) <= g.v, (ut, g) => `${money(sum(ut.players.map(p => p.wage)))} / ${money(g.v)}`, ut => Math.round(sum(ut.players.map(p => p.wage)) * 1.12 / 1000) * 1000],
+  trans: [ut => 'Zakończ sezon z nieujemnym bilansem transferów', ut => ut.fin.tr >= 0, ut => money(ut.fin.tr)],
+  cup: [ut => 'Dojdź co najmniej do ćwierćfinału pucharu kraju', ut => cupReach(ut) <= 8, ut => { const r = cupReach(ut); return r <= 2 ? 'finał' : r <= 8 ? 'ćwierćfinał+' : 'jeszcze nie'; }],
+  fans: [ut => 'Utrzymaj poparcie kibiców na poziomie co najmniej 60%', ut => (S.fans || 0) >= 60, ut => Math.round(S.fans || 0) + '%'],
+  acad: [ut => 'Wypromuj co najmniej jednego wychowanka do pierwszego zespołu', ut => (S.promoted || {})[S.season] >= 1, ut => `${(S.promoted || {})[S.season] || 0}/1`],
+};
+function cupReach(ut) { const cup = S.cups && S.cups[ut.cc]; if (!cup) return 99; let best = 99; for (const T of cup.rounds) if (T && T.some(t => t.h === ut.id || t.a === ut.id)) best = Math.min(best, T.length * 2); return best; }
+function pickSideGoals() {
+  const ut = userClub(), keys = shuffle(Object.keys(BOARD_GOALS)).slice(0, 2);
+  S.board.side = keys.map(k => ({ k, v: BOARD_GOALS[k][3] ? BOARD_GOALS[k][3](ut) : null, t: BOARD_GOALS[k][0](ut), season: S.season }));
+}
+function evalSideGoals(lines) {
+  const ut = userClub(); if (!S.board.side) return;
+  for (const g of S.board.side) { if (g.season !== S.season) continue; const ok = BOARD_GOALS[g.k][1](ut, g); S.board.conf = clamp(S.board.conf + (ok ? 5 : -4), 0, 100); if (ok) mgrGain(0.5); lines.push(`${ok ? '✅' : '❌'} Cel dodatkowy: ${g.t}.`); }
+}
 function setBoardObjective() {
   const ut = userClub(), lg = S.leagues[ut.lg], ls = S.countries[lg.cc].leagues;
   const lv = lg.clubs.map(id => ({ id, l: teamLevel(club(id)) })).sort((a, b) => b.l - a.l);
@@ -1302,6 +1331,7 @@ function setBoardObjective() {
   else if (down && target >= n - down - 2) text = `Celem zarządu jest utrzymanie (${lg.name}).`;
   else text = `Celem zarządu jest miejsce w czołowej ${target} (${lg.name}).`;
   S.board.target = target; S.board.text = text;
+  if (!S.board.side || !S.board.side.length || S.board.side[0].season !== S.season) pickSideGoals();
   const ec = euroOf(ut.id);
   S.board.euro = ec ? (ec.teams.includes(ut.id) ? euroGoal(ec) : `awans do fazy ligowej: ${ec.name}`) : '';
 }
@@ -1449,6 +1479,7 @@ function endSeason() {
   S.lastCups = {}; for (const cup of Object.values(S.cups || {})) if (cup.champion != null) S.lastCups[cup.cc] = cup.champion;
   const myCup = S.cups && S.cups[ut.cc];
   if (myCup && myCup.champion != null) lines.push(`🏆 ${myCup.name}: ${club(myCup.champion).name}.`);
+  evalSideGoals(lines);
   if (typeof seasonMeta === 'function') seasonMeta({ finals, upos, wasLg, wasTier, myEuro, myCup, lines });
   // współczynniki
   for (const cc in S.countries) { const c = S.countries[cc], r = S.cpts[cc]; c.coef.shift(); c.coef.push(r && r.n ? Math.round(r.pts / r.n * 1000) / 1000 : 0); }

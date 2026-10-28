@@ -207,7 +207,8 @@ function vHome() {
   ${S.jobs.length ? `<div class="card hl" data-act="jobs"><div class="row"><span style="font-size:22px">📨</span><b class="sp">Oferty pracy (${S.jobs.length})</b><small>Zobacz ›</small></div></div>` : ''}
   ${ec ? `<div class="card" data-act="goeuro" data-arg="${ec.id}"><div class="row"><span class="eu ${ec.id}">${ec.id === 'CL' ? '⭐' : ec.id === 'EL' ? '🟠' : '🟢'}</span><b class="sp">${ec.name}</b><small>${euroStatus(ec)}</small></div></div>` : ''}
   <div class="card"><div class="row"><b>Zarząd</b><span class="sp"></span><span class="${conf > 55 ? 'good' : conf > 30 ? 'warn' : 'bad'}">${conf > 70 ? 'Bardzo zadowolony' : conf > 50 ? 'Zadowolony' : conf > 30 ? 'Niezadowolony' : 'Na krawędzi zwolnienia!'}</span></div>
-    ${bar(conf)}<small>${esc(S.board.text)}${S.board.euro ? ' Europa: ' + esc(S.board.euro) + '.' : ''}</small></div>
+    ${bar(conf)}<small>${esc(S.board.text)}${S.board.euro ? ' Europa: ' + esc(S.board.euro) + '.' : ''}</small>
+    ${(S.board.side || []).filter(g => g.season === S.season).map(g => `<div class="rt"><small>🎯 ${esc(g.t)}</small><small class="${BOARD_GOALS[g.k][1](ut, g) ? 'good' : 'mut'}">${esc(BOARD_GOALS[g.k][2](ut, g))}</small></div>`).join('')}</div>
   ${S.nt ? `<div class="card" data-act="gont"><div class="row"><span style="font-size:22px">${flag(S.nt)}</span><b class="sp">Reprezentacja: ${esc(NAT[S.nt].name)}</b><small>Powołania ›</small></div></div>` : ''}
   ${out.length ? `<div class="card"><b>Niedostępni</b>${out.map(p => `<div class="row" style="margin-top:6px" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<span class="sp">${esc(p.n)}</span>${stTag(p)}</div>`).join('')}</div>` : ''}
   <div class="card"><div class="row"><b>Wiadomości</b><span class="sp"></span><button class="btn sm" data-act="inbox">Wszystkie</button></div>

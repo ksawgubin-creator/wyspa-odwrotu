@@ -326,3 +326,5 @@ tr.cl td,tr.el td,tr.ecl td,tr.up td,tr.dn td{background:rgba(255,255,255,.025)}
 #nav.fl.fr{-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
 
 .seg button{font-size:12px;padding:6px 4px}
+
+.fut .attrs>div{cursor:pointer}

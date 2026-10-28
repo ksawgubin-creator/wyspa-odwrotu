@@ -1,0 +1,233 @@
+// Meksyk – Liga MX (sezon 2026/27, Apertura 2026)
+// GRACZ: [imię i nazwisko, pozycja, wiek (X 2026), ogólna, potencjał, narodowość]
+COUNTRY_DATA.push({
+  code: 'MEX', name: 'Meksyk', flag: '🇲🇽', nat: 'MEX', conf: 'CONCACAF',
+  leagues: [
+    { id: 'MEX1', name: 'Liga MX', tier: 1, clubs: [
+      ['Club América', 'AME', '#FFD700', '#002D72', 70, 83264, [
+        ['Luis Ángel Malagón', 'GK', 29, 76, 76, 'MEX'],
+        ['Rodolfo Cota', 'GK', 39, 68, 68, 'MEX'],
+        ['Sebastián Cáceres', 'CB', 27, 73, 74, 'URU'],
+        ['Igor Lichnovsky', 'CB', 32, 72, 72, 'CHI'],
+        ['Ramón Juárez', 'CB', 25, 72, 75, 'MEX'],
+        ['Néstor Araujo', 'CB', 35, 70, 70, 'MEX'],
+        ['Miguel Vázquez', 'CB', 22, 68, 75, 'MEX'],
+        ['Cristian Borja', 'LB', 33, 71, 71, 'COL'],
+        ['Kevin Álvarez', 'RB', 27, 72, 73, 'MEX'],
+        ['Israel Reyes', 'RB', 26, 73, 75, 'MEX'],
+        ['Erick Sánchez', 'CM', 27, 73, 74, 'MEX'],
+        ['Jonathan dos Santos', 'CM', 36, 70, 70, 'MEX'],
+        ['Raphael Veiga', 'CAM', 31, 78, 78, 'BRA'],
+        ['Alejandro Zendejas', 'RW', 28, 74, 74, 'USA'],
+        ['Isaías Violante', 'RW', 22, 70, 76, 'MEX'],
+        ['Brian Rodríguez', 'LW', 26, 75, 77, 'URU'],
+        ['Henry Martín', 'ST', 33, 72, 72, 'MEX'],
+        ['Víctor Dávila', 'ST', 29, 73, 73, 'CHI'],
+        ['Rodrigo Aguirre', 'ST', 32, 72, 72, 'URU']
+      ]],
+      ['CF Monterrey', 'MTY', '#002D62', '#FFFFFF', 69, 53500, [
+        ['Luis Cárdenas', 'GK', 33, 70, 70, 'MEX'],
+        ['Stefan Medina', 'CB', 34, 71, 71, 'COL'],
+        ['Víctor Guzmán', 'CB', 24, 71, 76, 'MEX'],
+        ['Tony Leone', 'CB', 22, 67, 74, 'USA'],
+        ['Gerardo Arteaga', 'LB', 28, 72, 72, 'MEX'],
+        ['Erick Aguirre', 'RB', 29, 69, 69, 'MEX'],
+        ['Jorge Rodríguez', 'CDM', 30, 72, 72, 'ARG'],
+        ['Fidel Ambríz', 'CM', 23, 71, 76, 'MEX'],
+        ['Iker Fimbres', 'CM', 21, 66, 75, 'MEX'],
+        ['Óliver Torres', 'CM', 31, 75, 75, 'ESP'],
+        ['Sergio Canales', 'CAM', 35, 78, 78, 'ESP'],
+        ['Lucas Ocampos', 'RW', 32, 76, 76, 'ARG'],
+        ['Jesús Corona', 'RW', 33, 72, 72, 'MEX'],
+        ['Anthony Martial', 'ST', 30, 76, 76, 'FRA'],
+        ['Roberto de la Rosa', 'ST', 26, 69, 71, 'MEX']
+      ]],
+      ['Tigres UANL', 'TIG', '#FDB913', '#005BAC', 69, 41615, [
+        ['Nahuel Guzmán', 'GK', 40, 72, 72, 'ARG'],
+        ['Joaquim', 'CB', 29, 73, 73, 'BRA'],
+        ['Diego Reyes', 'CB', 34, 70, 70, 'MEX'],
+        ['Jesús Angulo', 'CB', 28, 71, 72, 'MEX'],
+        ['Vladimir Loroña', 'LB', 28, 69, 69, 'MEX'],
+        ['Jesús Garza', 'RB', 25, 69, 72, 'MEX'],
+        ['Javier Aquino', 'RB', 36, 67, 67, 'MEX'],
+        ['Juan Pablo Vigón', 'CDM', 35, 71, 71, 'MEX'],
+        ['Rafael Carioca', 'CDM', 37, 70, 70, 'BRA'],
+        ['Fernando Gorriarán', 'CM', 32, 74, 74, 'URU'],
+        ['Juan Brunetta', 'CAM', 29, 76, 76, 'ARG'],
+        ['Marcelo Flores', 'LW', 23, 69, 74, 'MEX'],
+        ['Diego Lainez', 'RW', 26, 73, 75, 'MEX'],
+        ['Ozziel Herrera', 'RW', 25, 72, 75, 'MEX'],
+        ['Uriel Antuna', 'RW', 29, 72, 72, 'MEX'],
+        ['Ángel Correa', 'ST', 31, 78, 78, 'ARG'],
+        ['Nicolás Ibáñez', 'ST', 31, 73, 73, 'ARG']
+      ]],
+      ['Cruz Azul', 'CAZ', '#0047AB', '#FFFFFF', 67, 58445, [
+        ['Kevin Mier', 'GK', 26, 75, 78, 'COL'],
+        ['Andrés Gudiño', 'GK', 30, 69, 69, 'MEX'],
+        ['Willer Ditta', 'CB', 29, 73, 73, 'COL'],
+        ['Gonzalo Piovi', 'CB', 32, 72, 72, 'ARG'],
+        ['Omar Campos', 'LB', 24, 71, 75, 'MEX'],
+        ['Camilo Cándido', 'LB', 31, 69, 69, 'URU'],
+        ['Ignacio Rivero', 'RB', 34, 72, 72, 'URU'],
+        ['Erik Lira', 'CDM', 26, 73, 75, 'MEX'],
+        ['Charly Rodríguez', 'CM', 29, 73, 73, 'MEX'],
+        ['Lorenzo Faravelli', 'CM', 33, 73, 73, 'ARG'],
+        ['José Paradela', 'CAM', 28, 75, 75, 'ARG'],
+        ['Mateusz Bogusz', 'CAM', 25, 74, 77, 'POL'],
+        ['Carlos Rotondi', 'RW', 29, 74, 74, 'ARG'],
+        ['Amaury García', 'LW', 26, 68, 70, 'MEX'],
+        ['Gabriel Fernández', 'ST', 32, 72, 72, 'URU'],
+        ['Christian Ebere', 'ST', 28, 68, 68, 'NGA']
+      ]],
+      ['Toluca', 'TOL', '#D2001F', '#FFFFFF', 64, 30000, [
+        ['Hugo González', 'GK', 35, 70, 70, 'MEX'],
+        ['Bruno Méndez', 'CB', 26, 72, 74, 'URU'],
+        ['Federico Pereira', 'CB', 37, 68, 68, 'URU'],
+        ['Luan', 'CB', 30, 70, 70, 'BRA'],
+        ['Antonio Briseño', 'CB', 32, 70, 70, 'MEX'],
+        ['Everardo López', 'CB', 23, 69, 75, 'MEX'],
+        ['Jesús Gallardo', 'LB', 32, 71, 71, 'MEX'],
+        ['Diego Barbosa', 'RB', 29, 69, 69, 'MEX'],
+        ['Claudio Baeza', 'CDM', 33, 71, 71, 'CHI'],
+        ['Marcel Ruiz', 'CM', 25, 74, 77, 'MEX'],
+        ['Franco Romero', 'CM', 30, 70, 70, 'ARG'],
+        ['Erick Gutiérrez', 'CM', 31, 70, 70, 'MEX'],
+        ['Nicolás Castro', 'CAM', 26, 74, 76, 'ARG'],
+        ['Víctor Guzmán', 'CAM', 31, 70, 70, 'MEX'],
+        ['Alexis Vega', 'LW', 28, 76, 76, 'MEX'],
+        ['Helinho', 'RW', 26, 76, 77, 'BRA'],
+        ['Paulinho', 'ST', 26, 78, 79, 'POR'],
+        ['Robert Morales', 'ST', 32, 70, 70, 'PAR']
+      ]],
+      ['Guadalajara', 'GDL', '#C8102E', '#FFFFFF', 63, 46232, [
+        ['Raúl Rangel', 'GK', 26, 72, 75, 'MEX'],
+        ['Gilberto Sepúlveda', 'CB', 27, 70, 71, 'MEX'],
+        ['Luis Olivas', 'CB', 26, 68, 70, 'MEX'],
+        ['José Castillo', 'CB', 25, 68, 71, 'MEX'],
+        ['Diego Ochoa', 'CB', 22, 68, 74, 'MEX'],
+        ['Bryan González', 'LB', 23, 68, 74, 'MEX'],
+        ['Alan Mozo', 'RB', 29, 69, 69, 'MEX'],
+        ['Fernando González', 'CDM', 32, 69, 69, 'MEX'],
+        ['Omar Govea', 'CM', 30, 70, 70, 'MEX'],
+        ['Richard Ledezma', 'CM', 26, 69, 71, 'USA'],
+        ['Brian Gutiérrez', 'CAM', 23, 70, 76, 'MEX'],
+        ['Efraín Álvarez', 'CAM', 24, 68, 72, 'MEX'],
+        ['Kevin Castañeda', 'CAM', 27, 71, 72, 'MEX'],
+        ['Roberto Alvarado', 'RW', 28, 74, 74, 'MEX'],
+        ['Jordan Carrillo', 'RW', 24, 69, 73, 'MEX'],
+        ['Cade Cowell', 'LW', 22, 70, 76, 'USA'],
+        ['Armando González', 'ST', 23, 72, 78, 'MEX'],
+        ['Alan Pulido', 'ST', 35, 68, 68, 'MEX']
+      ]],
+      ['Pumas UNAM', 'PUM', '#002B5C', '#C5A253', 61, 58445, [
+        ['Keylor Navas', 'GK', 39, 75, 75, 'CRC'],
+        ['Nathan Silva', 'CB', 29, 70, 70, 'BRA'],
+        ['Rubén Duarte', 'LB', 30, 70, 70, 'ESP'],
+        ['Álvaro Angulo', 'LB', 29, 69, 69, 'COL'],
+        ['Cristian Calderón', 'LB', 29, 68, 68, 'MEX'],
+        ['Pablo Bennevendo', 'RB', 26, 66, 68, 'MEX'],
+        ['Adalberto Carrasquilla', 'CM', 27, 74, 74, 'PAN'],
+        ['Ulises Rivas', 'CM', 30, 67, 67, 'MEX'],
+        ['Santiago Trigos', 'CM', 24, 67, 71, 'MEX'],
+        ['Sebastián Córdova', 'CAM', 29, 72, 72, 'MEX'],
+        ['Jorge Ruvalcaba', 'LW', 25, 69, 72, 'MEX'],
+        ['Guillermo Martínez', 'ST', 31, 70, 70, 'MEX'],
+        ['José Juan Macías', 'ST', 27, 68, 69, 'MEX']
+      ]],
+      ['Pachuca', 'PAC', '#0B2A5B', '#FFFFFF', 58, 27512, [
+        ['Carlos Moreno', 'GK', 28, 71, 72, 'MEX'],
+        ['Sergio Barreto', 'CB', 26, 72, 74, 'ARG'],
+        ['Eduardo Bauermann', 'CB', 30, 71, 71, 'BRA'],
+        ['Elías Montiel', 'CM', 20, 70, 79, 'MEX'],
+        ['Kenedy', 'LW', 30, 72, 72, 'BRA'],
+        ['Oussama Idrissi', 'LW', 30, 73, 73, 'MAR'],
+        ['Alexéi Domínguez', 'RW', 21, 66, 74, 'MEX'],
+        ['Salomón Rondón', 'ST', 37, 74, 74, 'VEN'],
+        ['Enner Valencia', 'ST', 37, 72, 72, 'ECU']
+      ]],
+      ['León', 'LEO', '#006847', '#FFFFFF', 56, 31297, [
+        ['Stiven Barreiro', 'CB', 31, 70, 70, 'COL'],
+        ['Adonis Frías', 'CB', 28, 70, 70, 'MEX'],
+        ['Iván Rodríguez', 'RB', 28, 68, 68, 'MEX'],
+        ['Rodrigo Echeverría', 'CM', 31, 69, 69, 'CHI'],
+        ['Nicolás Fonseca', 'CM', 27, 70, 71, 'URU'],
+        ['Ismael Díaz', 'ST', 29, 70, 70, 'PAN'],
+        ['Federico Viñas', 'ST', 28, 70, 70, 'URU'],
+        ['Alfonso Alvarado', 'ST', 28, 66, 66, 'MEX']
+      ]],
+      ['Atlas', 'ATS', '#B0001E', '#000000', 54, 55020, [
+        ['Camilo Vargas', 'GK', 37, 74, 74, 'COL'],
+        ['Matheus Dória', 'CB', 31, 71, 71, 'BRA'],
+        ['Adrián Mora', 'CB', 29, 68, 68, 'MEX'],
+        ['Milton Valenzuela', 'LB', 28, 69, 69, 'ARG'],
+        ['Jorge Sánchez', 'RB', 29, 71, 71, 'MEX'],
+        ['Víctor Ríos', 'RB', 25, 66, 69, 'MEX'],
+        ['Aldo Rocha', 'CM', 34, 70, 70, 'MEX'],
+        ['Mateo García', 'LW', 30, 68, 68, 'ARG'],
+        ['Rivaldo Lozano', 'RW', 23, 67, 72, 'MEX'],
+        ['Gustavo Ferrareis', 'RW', 30, 67, 67, 'BRA'],
+        ['Duk', 'ST', 27, 70, 71, 'CPV'],
+        ['Ryan Mmaee', 'ST', 29, 70, 70, 'MAR'],
+        ['Eduardo Aguirre', 'ST', 28, 70, 70, 'MEX'],
+        ['Uroš Đurđević', 'ST', 32, 69, 69, 'SRB']
+      ]],
+      ['Santos Laguna', 'SAN', '#00704A', '#FFFFFF', 54, 29237, [
+        ['Carlos Acevedo', 'GK', 30, 72, 72, 'MEX'],
+        ['Bruno Amione', 'CB', 24, 68, 72, 'ARG'],
+        ['Ismael Govea', 'CB', 29, 66, 66, 'MEX'],
+        ['Salvador Mariscal', 'CDM', 22, 66, 73, 'MEX'],
+        ['Ezequiel Bullaude', 'CAM', 26, 69, 71, 'ARG'],
+        ['Santiago Muñoz', 'ST', 24, 68, 72, 'MEX'],
+        ['Stephano Carrillo', 'ST', 22, 65, 72, 'MEX']
+      ]],
+      ['Club Tijuana', 'TIJ', '#C8102E', '#000000', 54, 27333, [
+        ['José Antonio Rodríguez', 'GK', 33, 69, 69, 'MEX'],
+        ['Unai Bilbao', 'CB', 32, 70, 70, 'ESP'],
+        ['Jackson Porozo', 'CB', 26, 70, 72, 'ECU'],
+        ['Iván Tona', 'CDM', 23, 68, 73, 'MEX'],
+        ['Gilberto Mora', 'CM', 17, 70, 85, 'MEX'],
+        ['Adonis Preciado', 'RW', 29, 70, 70, 'ECU'],
+        ['Ramiro Árciga', 'RW', 21, 67, 74, 'MEX'],
+        ['Yael Padilla', 'ST', 22, 67, 73, 'MEX']
+      ]],
+      ['Atlético San Luis', 'ASL', '#E30613', '#FFFFFF', 52, 25709, [
+        ['Andrés Sánchez', 'GK', 29, 69, 69, 'MEX'],
+        ['Eduardo Águila', 'CB', 26, 65, 67, 'MEX'],
+        ['Ricardo Chávez', 'RB', 32, 68, 68, 'MEX'],
+        ['Rodrigo Dourado', 'CDM', 32, 68, 68, 'BRA'],
+        ['Sébastien Salles-Lamonge', 'CM', 30, 68, 68, 'FRA'],
+        ['Javier Güémez', 'CM', 34, 66, 66, 'MEX'],
+        ['Mateo Klimowicz', 'CAM', 26, 70, 71, 'ARG'],
+        ['João Pedro', 'ST', 34, 69, 69, 'ITA']
+      ]],
+      ['Atlante', 'ATE', '#003DA5', '#C8102E', 52, 36681, [
+        ['David Ospina', 'GK', 38, 70, 70, 'COL'],
+        ['Óscar Jiménez', 'GK', 38, 68, 68, 'MEX']
+      ]],
+      ['FC Juárez', 'JUA', '#78BE20', '#000000', 51, 19703, [
+        ['Sebastián Jurado', 'GK', 29, 69, 69, 'MEX'],
+        ['Moisés Mosquera', 'CB', 26, 67, 69, 'COL'],
+        ['Denzell García', 'CM', 23, 67, 72, 'MEX'],
+        ['Jairo Torres', 'CAM', 26, 68, 70, 'MEX'],
+        ['Diego Valoyes', 'RW', 30, 69, 69, 'COL'],
+        ['Óscar Estupiñán', 'ST', 29, 70, 70, 'COL'],
+        ['Ángel Sepúlveda', 'ST', 35, 70, 70, 'MEX'],
+        ['Ángel Zaldívar', 'ST', 32, 66, 66, 'MEX']
+      ]],
+      ['Necaxa', 'NEC', '#D71920', '#FFFFFF', 51, 23851, [
+        ['Ezequiel Unsain', 'GK', 31, 70, 70, 'ARG'],
+        ['Agustín Oliveros', 'LB', 28, 67, 67, 'URU'],
+        ['Agustín Palavecino', 'CM', 29, 70, 70, 'ARG'],
+        ['Ricardo Monreal', 'ST', 26, 68, 70, 'MEX'],
+        ['Diber Cambindo', 'ST', 26, 70, 72, 'COL']
+      ]],
+      ['Querétaro', 'QRO', '#0C2340', '#FFFFFF', 50, 33162, [
+        ['Guillermo Allison', 'GK', 36, 67, 67, 'MEX'],
+        ['Federico Lértora', 'CDM', 36, 67, 67, 'ARG']
+      ]],
+      ['Puebla', 'PUE', '#FFFFFF', '#0047AB', 50, 51726, [
+        ['Ricardo Marín', 'ST', 28, 66, 66, 'MEX']
+      ]]
+    ]}
+  ]
+});

@@ -83,6 +83,8 @@ for (const [k, v] of Object.entries(FORMS)) { const s = []; for (let i = 0; i < 
 const slotsOf = f => FORMATIONS[f] || FORMATIONS['4-3-3'];
 const MENT = { def: 'Defensywna', bal: 'Zrównoważona', att: 'Ofensywna' };
 const MAX_SUBS = 5, BENCH = 9;
+// strojenie silnika: przewaga własnego boiska i „stromość” różnic siły
+let SHOT_BASE = 0.25, SHOT_EXP = 1.3, FIN_EXP = 2.2, HOME_ADV = 1.13, AWAY_ADV = 0.9, DAY_VAR = 0.07;
 
 /* ---------- stan zawodnika ---------- */
 const isAvail = p => !p.inj && !p.susp;
@@ -174,7 +176,7 @@ function makeSide(t, isUser, quick, emergency) {
     t, ment: isUser ? (t.ment || 'bal') : 'bal', ai: !isUser || quick, user: isUser,
     pitch: t.lineup.map((id, i) => { const p = pget(id); return p ? { p, pos: slots[i].pos, ov: ovrAt(p, slots[i].pos) } : null; }).filter(Boolean),
     bench: t.bench.map(pget).filter(Boolean), subs: 0, goals: 0, shots: 0, sot: 0, poss: 0, fouls: 0, yel: 0, corners: 0,
-    rec: {}, str: null, scorers: [], cf: 1 + ((typeof coachOvr === 'function' ? coachOvr(t) : 60) - 60) * 0.0009,
+    rec: {}, str: null, scorers: [], cf: (1 + ((typeof coachOvr === 'function' ? coachOvr(t) : 60) - 60) * 0.0009) * clamp(1 + gauss() * DAY_VAR, 0.82, 1.18),
   };
   for (const s of side.pitch) side.rec[s.p.id] = { p: s.p, on: 0, off: null, g: 0, a: 0, y: 0, r: 0, sv: 0, pos: s.pos };
   return side;
@@ -186,6 +188,7 @@ function createMatch(h, a, opts = {}) {
     minute: 0, end: 90 + ri(1, 4), over: false, htDone: false, et: false, pens: null, ev: [], dirty: true, alert: null,
   };
   const d = (h.rep || 50) - (a.rep || 50);
+  if (m.comp === 'C' && Math.abs(d) >= 10) (d > 0 ? m.away : m.home).cf *= 1.07; // magia pucharu: słabszy gra ambitniej
   if (m.home.ai && !m.home.user) m.home.ment = d > 10 ? 'att' : d < -12 ? 'def' : 'bal';
   if (m.away.ai && !m.away.user) m.away.ment = d < -10 ? 'att' : d > 12 ? 'def' : 'bal';
   if (m.ko && (m.ko.aggH || m.ko.aggA)) ev(m, 'info', null, `Pierwszy mecz: ${m.away.t.name} ${m.ko.aggA}:${m.ko.aggH} ${m.home.t.name}.`);
@@ -216,7 +219,7 @@ function doShot(m, A, D) {
   const fin = (0.65 * (sh.p.pos === 'GK' ? 20 : sh.p.a[1]) + 0.35 * sh.ov) * cond(sh.p, fitNow(A, sh, m.minute));
   const penalty = rnd() < 0.025;
   const q = fin / (0.5 * gkE + 0.5 * D.str.def);
-  const pg = penalty ? 0.78 : clamp(0.083 * Math.pow(q, 2.6), 0.02, 0.4);
+  const pg = penalty ? 0.78 : clamp(0.083 * Math.pow(q, FIN_EXP), 0.02, 0.4);
   A.shots++;
   let shooter = sh;
   if (penalty) { shooter = c.slice().sort((x, y) => y.p.a[1] - x.p.a[1])[0]; ev(m, 'info', A, `Rzut karny dla ${A.t.name}! Do piłki podchodzi ${shortName(shooter.p)}...`); }
@@ -285,7 +288,8 @@ function step(m) {
   const aS = 0.7 * att.str.att + 0.3 * att.str.mid, dS = 0.65 * def.str.def + 0.35 * def.str.mid;
   const mAtt = att.ment === 'att' ? 1.18 : att.ment === 'def' ? 0.82 : 1;
   const mOpp = def.ment === 'att' ? 1.12 : def.ment === 'def' ? 0.88 : 1;
-  const pShot = clamp(0.25 * Math.pow(aS / dS, 1.7) * mAtt * mOpp, 0.03, 0.7);
+  const ha = m.neutral ? 1 : att === H ? HOME_ADV : AWAY_ADV;
+  const pShot = clamp(SHOT_BASE * Math.pow(aS / dS, SHOT_EXP) * mAtt * mOpp * ha, 0.03, 0.7);
   if (rnd() < pShot) doShot(m, att, def);
   const club = m.comp !== 'N' && m.comp !== 'T' && m.comp !== 'F';
   for (const side of [H, A]) {
@@ -363,7 +367,7 @@ function finishMatch(m) {
 }
 
 /* szybka symulacja (mecze AI): ten sam model siły, wynik losowany z rozkładu Poissona */
-const FAST_K = 1.36;
+let FAST_K = 1.12;
 function poisson(l) { let L = Math.exp(-l), k = 0, p = 1; do { k++; p *= rnd(); } while (p > L); return k - 1; }
 function fastSim(h, a, opts = {}) {
   const m = createMatch(h, a, { ...opts, quick: true });
@@ -375,11 +379,12 @@ function fastSim(h, a, opts = {}) {
   const xg = (S1, S2, poss) => {
     const aS = 0.7 * S1.str.att + 0.3 * S1.str.mid, dS = 0.65 * S2.str.def + 0.35 * S2.str.mid;
     const mA = S1.ment === 'att' ? 1.18 : S1.ment === 'def' ? 0.82 : 1, mO = S2.ment === 'att' ? 1.12 : S2.ment === 'def' ? 0.88 : 1;
-    const shots = 90 * poss * clamp(0.25 * Math.pow(aS / dS, 1.7) * mA * mO, 0.03, 0.7);
+    const shots = 90 * poss * clamp(SHOT_BASE * Math.pow(aS / dS, SHOT_EXP) * mA * mO, 0.03, 0.7);
     const q = S1.str.att * 0.97 / (0.5 * S2.str.gk + 0.5 * S2.str.def);
-    return { shots, g: shots * clamp(0.083 * Math.pow(q, 2.6), 0.02, 0.4) * FAST_K };
+    return { shots, g: shots * clamp(0.083 * Math.pow(q, FIN_EXP), 0.02, 0.4) * FAST_K };
   };
   const xh = xg(H, A, ph), xa = xg(A, H, 1 - ph);
+  if (!m.neutral) { xh.g *= HOME_ADV; xa.g *= AWAY_ADV; }
   const addGoals = (side, n, from, to) => {
     for (let i = 0; i < n; i++) {
       const c = side.pitch.filter(s => s.pos !== 'GK'); if (!c.length) return;

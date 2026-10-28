@@ -1,0 +1,60 @@
+/* uikit.css – style dla uikit.js (korzysta z tokenów z style.css) */
+
+/* Herb i koszulka – wyrównanie w tekście i w wierszach .row */
+.crest,.uk-kit{display:inline-block;vertical-align:middle;flex:none;overflow:visible}
+.crest text{pointer-events:none}
+
+/* Wykresy */
+.uk-chart,.uk-spark,.uk-donut{display:inline-block;vertical-align:middle;max-width:100%;height:auto;overflow:visible}
+.uk-chart{display:block}
+.uk-chart text{font:500 10px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;fill:var(--mut);font-variant-numeric:tabular-nums}
+.uk-chart .uk-leg text,.uk-line text.uk-lg{fill:var(--txt)}
+.uk-chart .uk-grid{stroke:var(--line);stroke-width:1;fill:none}
+.uk-chart .uk-grid-o{stroke:#2e4166}
+.uk-chart .uk-empty{font-size:11px;fill:var(--mut)}
+.uk-radar{margin:0 auto}
+.uk-radar text.uk-rl{font-size:10px;font-weight:600;letter-spacing:.04em;fill:var(--mut)}
+.uk-radar text.uk-rv{font-size:12px;font-weight:800}
+.uk-radar tspan.uk-rc{font-size:10.5px;font-weight:700}
+.uk-donut text{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-variant-numeric:tabular-nums}
+.uk-mom{border-radius:8px}
+
+/* Boisko meczowe */
+.uk-pitch{display:block;width:100%;height:auto;border-radius:10px;user-select:none;-webkit-user-select:none}
+.uk-pitch text{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+
+/* Nakładka GOL! */
+.uk-goal{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;pointer-events:none;
+  background:radial-gradient(circle at 50% 50%,rgba(46,229,157,.28),rgba(11,18,32,.82) 70%);
+  animation:uk-goalbg 1.6s ease-out forwards}
+.uk-goal-in{text-align:center;animation:uk-pop 1.6s cubic-bezier(.2,.9,.25,1.15) forwards}
+.uk-goal-t{font:900 64px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:.02em;color:var(--acc);
+  text-shadow:0 0 24px rgba(46,229,157,.65),0 4px 0 #04261a;white-space:nowrap}
+.uk-goal-s{margin-top:10px;font:700 17px/1.25 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--txt);
+  max-width:300px;padding:0 16px;text-shadow:0 2px 8px rgba(0,0,0,.6)}
+@keyframes uk-pop{
+  0%{transform:scale(.3);opacity:0}
+  18%{transform:scale(1.15);opacity:1}
+  30%{transform:scale(.96)}
+  42%{transform:scale(1.02)}
+  78%{transform:scale(1);opacity:1}
+  100%{transform:scale(1.25);opacity:0}
+}
+@keyframes uk-goalbg{0%{opacity:0}12%{opacity:1}75%{opacity:1}100%{opacity:0}}
+
+/* Arkusz dolny (#modal .box) – wjazd i uchwyt do przeciągania */
+@keyframes uk-slideup{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes uk-backdrop{from{background-color:rgba(0,0,0,0)}}
+#modal:not(.hidden){animation:uk-backdrop .22s ease-out}
+#modal .box{animation:uk-slideup .28s cubic-bezier(.2,.85,.25,1);will-change:transform;overscroll-behavior:contain}
+.uk-sheet-drag{width:42px;height:5px;border-radius:3px;background:var(--line);margin:-6px auto 10px;flex:none;touch-action:none}
+.uk-sheet-drag::before{content:"";display:block;height:24px;margin-top:-10px}
+
+/* Zmiana widoku */
+@keyframes uk-fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.uk-fade{animation:uk-fadein .22s ease-out}
+
+@media (prefers-reduced-motion:reduce){
+  .uk-fade,#modal .box,#modal:not(.hidden){animation:none}
+  .uk-goal,.uk-goal-in{animation-duration:1.6s;animation-name:uk-goalbg}
+}

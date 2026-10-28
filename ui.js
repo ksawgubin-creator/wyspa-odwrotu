@@ -20,7 +20,12 @@ function ovrShow(p, pot) { const r = ovrRange(p, pot); if (pot && know(p) < 30) 
 const posTag = p => `<span class="pos ${LINE[p]}">${POS_PL[p]}</span>`;
 const flag = code => NAT[code] ? NAT[code].flag : '🏳️';
 const stars = c => { const n = clamp(Math.round((c.rep - 35) / 12), 1, 5); return '★'.repeat(n) + '☆'.repeat(5 - n); };
-function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('on'), 2800); }
+function toast(t, kind) {
+  const el = $('#toast'); el.textContent = t; el.className = 'on' + (kind ? ' ' + kind : '');
+  if (kind && typeof uk_haptic === 'function') uk_haptic(kind === 'bad' ? 'bad' : 'ok');
+  clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('on'), 2600);
+}
+const toastClear = () => { const el = $('#toast'); el.classList.remove('on'); clearTimeout(toast.t); };
 function modal(html, lock) { const m = $('#modal'); m.innerHTML = `<div class="box">${html}</div>`; m.classList.remove('hidden'); if (lock) m.dataset.lock = '1'; else delete m.dataset.lock; m.onclick = e => { if (e.target === m && !m.dataset.lock) closeModal(); }; }
 function closeModal() { const m = $('#modal'); m.classList.add('hidden'); m.innerHTML = ''; delete m.dataset.lock; }
 const bar = (v, cls = '') => `<div class="bar ${v < 50 ? 'b' : v < 75 ? 'w' : ''} ${cls}"><i style="width:${clamp(v, 0, 100)}%"></i></div>`;
@@ -40,6 +45,7 @@ function render() {
   const T = [['home', '🏠', 'Pulpit'], ['squad', '👕', 'Skład'], ['comps', '🏆', 'Rozgrywki'], ['market', '🔍', 'Transfery'], ['club', '🏟️', 'Klub']];
   $('#nav').innerHTML = T.map(([k, i, n]) => `<button class="${UI.tab === k ? 'on' : ''}" data-act="tab" data-arg="${k}"><i>${i}</i>${n}${k === 'home' && unread ? `<span class="dot">${unread}</span>` : ''}${k === 'market' && S.offers.length ? `<span class="dot">${S.offers.length}</span>` : ''}</button>`).join('');
   $('#view').innerHTML = ({ home: vHome, squad: vSquad, comps: vComps, market: vMarket, club: vClub })[UI.tab]();
+  for (const t of document.querySelectorAll('#view .tabs')) { const on = t.querySelector('.on'); if (on) t.scrollLeft = Math.max(0, on.offsetLeft - (t.clientWidth - on.offsetWidth) / 2); }
 }
 /* ---------- historia nawigacji (przycisk „wstecz” Androida) ---------- */
 const NAVK = ['tab', 'sqTab', 'compTab', 'clubTab', 'mkTab', 'lgTab', 'euroTab', 'nt'];
@@ -147,11 +153,11 @@ ACT.event = uid => {
   const ev = S.pending.find(e => e.uid === +uid); if (!ev) return render();
   const ctx = ctxDeref(ev.ctx);
   modal(`<div class="evcat">${esc(ev.cat)}</div><h2>${esc(ev.title)}</h2>${ctx.p ? `<div class="row" style="margin-bottom:8px" data-act="info" data-arg="${ctx.p.id}">${posTag(ctx.p.pos)}<b class="sp">${esc(ctx.p.n)}</b><small class="mut">${pers(ctx.p)} • ${moraleLabel(ctx.p.mor).join(' ')}</small></div>` : ''}
-    <p>${esc(ev.text)}</p><div class="choices">${ev.choices.map((c, i) => `<button class="btn full" data-act="evchoose" data-arg="${ev.uid}:${i}">${esc(c)}</button>`).join('')}</div>`, true);
+    <p>${esc(ev.text)}</p><div class="choices">${ev.choices.map((c, i) => `<button class="btn full" data-act="evchoose" data-arg="${ev.uid}:${i}">${esc(c)}${ev.hints && ev.hints[i] ? `<small class="hint">⚠️ ${esc(ev.hints[i])}</small>` : ''}</button>`).join('')}</div>`, true);
 };
 ACT.evchoose = a => {
   const [uid, i] = a.split(':').map(Number); const r = resolveEvent(uid, i); if (!r) return closeModal();
-  modal(`<h2>Decyzja podjęta</h2><p>${esc(r.r)}</p><div class="fxl">${r.fx.map(f => `<span class="pill">${esc(f)}</span>`).join(' ') || '<small class="mut">Bez większych konsekwencji.</small>'}</div>
+  modal(`<h2>${r.risky ? '😬 Nie poszło po myśli' : 'Decyzja podjęta'}</h2><p>${esc(r.r)}</p><div class="fxl">${r.fx.map(f => `<span class="pill">${esc(f)}</span>`).join(' ') || '<small class="mut">Bez większych konsekwencji.</small>'}</div>
     <div class="btns"><button class="btn pri full" data-act="evnext">${S.pending.length ? 'Następna decyzja' : 'OK'}</button></div>`, true);
 };
 ACT.evnext = () => { closeModal(); render(); if (S.pending.length) ACT.event(S.pending[0].uid); };
@@ -217,7 +223,7 @@ function vSquad() {
 function sqRow(p) {
   return `<div class="prow ${UI.sel === p.id ? 'sel' : ''} ${isAvail(p) ? '' : 'out'}" data-act="tap" data-arg="${p.id}">
     ${posTag(p.pos)}<div class="pn">${flag(p.nat)} ${esc(p.n)}<small>${p.age} l. ${stTag(p)} ${p.con <= 1 && !p.loan && p.tid === S.user ? '<span class="pill y">kontrakt</span>' : ''} ${p.listed ? '<span class="pill">lista</span>' : ''} ${p.loan ? '<span class="pill">wyp.</span>' : ''}</small></div>
-    ${morale(p)}${formArrow(p.form)}<div class="fitb">${bar(p.fit)}</div>${ovrTag(p.ovr)}<button class="info" data-act="info" data-arg="${p.id}">i</button></div>`;
+    ${morale(p)}${formArrow(p.form)}<div class="fitb">${bar(p.fit)}</div>${ovrTag(p.ovr)}<button class="ibtn" data-act="info" data-arg="${p.id}">i</button></div>`;
 }
 function vSquadList(t) {
   const s = UI.listSort;
@@ -480,7 +486,7 @@ function vRank() {
   const rk = countryRanking();
   const yrs = [0, 1, 2, 3, 4].map(i => `${String(S.season - 5 + i).slice(2)}/${String(S.season - 4 + i).slice(2)}`);
   const cur = S.cpts;
-  const clubs = S.clubs.map(c => ({ c, v: clubCoef(c.id) })).sort((a, b) => b.v - a.v).slice(0, 40);
+  const clubs = S.clubs.filter(isUEFA).map(c => ({ c, v: clubCoef(c.id) })).sort((a, b) => b.v - a.v).slice(0, 40);
   return `<div class="card list"><h2>Ranking krajów (współczynnik UEFA)</h2><div class="scrollx"><table class="rank"><tr><th>#</th><th>Kraj</th>${yrs.map(y => `<th>${y}</th>`).join('')}<th>Bież.</th><th>Suma</th></tr>
     ${rk.map((r, i) => { const c = S.countries[r.cc], now = cur[r.cc] && cur[r.cc].n ? cur[r.cc].pts / cur[r.cc].n : 0; return `<tr class="${r.cc === userClub().cc ? 'me' : ''}"><td>${i + 1}</td><td>${c.flag} ${esc(c.name)}</td>${c.coef.map(v => `<td>${v.toFixed(2)}</td>`).join('')}<td class="good">${now.toFixed(2)}</td><td><b>${r.tot.toFixed(2)}</b></td></tr>`; }).join('')}</table></div>
     <small class="mut">Miejsca w Lidze Mistrzów: 1–4 → 4 kluby, 5–6 → 3, 7–10 → 2, dalej mistrz przez eliminacje. Dwa kraje z najlepszym wynikiem w ostatnim sezonie dostają dodatkowe miejsce (EPS).</small></div>
@@ -641,7 +647,7 @@ function vAcad() {
     <small class="mut">Koszt utrzymania: ${money(acadCost())}/tydz. • nabór: w marcu każdego sezonu.</small>
     <h3>Region rekrutacji</h3><select data-change="acreg" style="width:100%"><option value="">Kraj klubu (${S.countries[userClub().cc].name})</option>${NATIONS.slice().sort((a, b) => a.name.localeCompare(b.name, 'pl')).map(n => `<option value="${n.code}" ${A.region === n.code ? 'selected' : ''}>${n.flag} ${n.name}</option>`).join('')}</select></div>
     <h3>Juniorzy (${ys.length})</h3>
-    <div class="card list">${ys.map(y => `<div class="prow" data-act="info" data-arg="${y.id}">${posTag(y.pos)}<div class="pn">${flag(y.nat)} ${esc(y.n)}<small>${y.age} l. • potencjał <span class="stars">${potStars(y.acad.est)}</span> (~${y.acad.est})</small></div>${ovrTag(y.ovr)}<button class="btn sm" data-act="promote" data-arg="${y.id}">⬆</button><button class="info" data-act="relyouth" data-arg="${y.id}">✕</button></div>`).join('') || '<small class="mut">Brak juniorów – pierwszy nabór w marcu.</small>'}</div>
+    <div class="card list">${ys.map(y => `<div class="prow" data-act="info" data-arg="${y.id}">${posTag(y.pos)}<div class="pn">${flag(y.nat)} ${esc(y.n)}<small>${y.age} l. • potencjał <span class="stars">${potStars(y.acad.est)}</span> (~${y.acad.est})</small></div>${ovrTag(y.ovr)}<button class="btn sm" data-act="promote" data-arg="${y.id}">⬆</button><button class="ibtn" data-act="relyouth" data-arg="${y.id}">✕</button></div>`).join('') || '<small class="mut">Brak juniorów – pierwszy nabór w marcu.</small>'}</div>
     <small class="mut">⬆ – awans do pierwszego zespołu. Juniorzy, którzy skończą 19 lat bez awansu, odchodzą z klubu.</small>`;
 }
 CHG.acreg = v => { S.acad.region = v; saveSoon(); };
@@ -665,8 +671,8 @@ function vNTManage() {
   return `<div class="card hl"><div class="row"><span style="font-size:30px">${n.flag}</span><div class="sp"><b>${esc(n.name)}</b><br><small class="mut">Selekcjoner • siła ${n.str}</small></div><button class="btn sm red" data-act="leavent">Zrezygnuj</button></div></div>
     ${g ? ntGroupHtml(g, 'Twoja grupa') : ''}
     <div class="row"><h3 class="sp">Powołani (${sq.length}/26)</h3><button class="btn sm" data-act="autocall">Auto-powołania</button></div>
-    <div class="card list">${sq.map(p => `<div class="prow" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${esc(p.n)}<small>${esc(clubName(p))} ${stTag(p)}</small></div>${morale(p)}${ovrTag(p.ovr)}<button class="info" data-act="uncall" data-arg="${p.id}">✕</button></div>`).join('')}</div>
-    <h3>Do powołania</h3><div class="card list">${pool.map(p => `<div class="prow" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${esc(p.n)}<small>${esc(clubName(p))} • ${p.age} l. ${stTag(p)}</small></div>${ovrTag(p.ovr)}<button class="info" data-act="call" data-arg="${p.id}">+</button></div>`).join('')}</div>
+    <div class="card list">${sq.map(p => `<div class="prow" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${esc(p.n)}<small>${esc(clubName(p))} ${stTag(p)}</small></div>${morale(p)}${ovrTag(p.ovr)}<button class="ibtn" data-act="uncall" data-arg="${p.id}">✕</button></div>`).join('')}</div>
+    <h3>Do powołania</h3><div class="card list">${pool.map(p => `<div class="prow" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${esc(p.n)}<small>${esc(clubName(p))} • ${p.age} l. ${stTag(p)}</small></div>${ovrTag(p.ovr)}<button class="ibtn" data-act="call" data-arg="${p.id}">+</button></div>`).join('')}</div>
     <small class="mut">Skład i taktykę reprezentacji ustawisz w zakładce Skład → Reprezentacja.</small>`;
 }
 ACT.takent = c => { if (!ntAllowed(NAT[c])) return toast('Za niski OVR trenera.'); setNT(c); toast(`Zostałeś selekcjonerem: ${NAT[c].name}!`); msg('Reprezentacja', `Objąłeś reprezentację: ${NAT[c].name}.`); render(); };
@@ -738,8 +744,10 @@ ACT.startmatch = () => {
   ev(M, 'info', null, '📣 Sędzia gwiżdże – zaczynamy!');
   upd(); mctl(); MT = setTimeout(tick, SPEED_MS[MS.speed]);
 };
-function doTalk() { const s = uside(), o = s === M.home ? M.away : M.home; const d = teamTalk(s, TALK, o.t.rep || 50, false, 0); ev(M, 'info', s, `🗣️ Odprawa: ${TALKS[TALK]} – ${d > 2 ? 'zawodnicy są nakręceni!' : d < 0 ? 'w szatni widać nerwowość.' : 'drużyna skupiona.'}`); M.dirty = true; }
-ACT.httalk = k => { const s = uside(), o = s === M.home ? M.away : M.home; const d = teamTalk(s, k, o.t.rep || 50, true, s.goals - o.goals); M.htTalk = true; ev(M, 'info', s, `🗣️ Przerwa: ${TALKS[k]} – ${d > 2 ? 'świetna reakcja zespołu!' : d < 0 ? 'zawodnicy przyjęli to źle.' : 'spokojna reakcja.'}`); M.dirty = true; upd(); mctl(); };
+const talkMsg = (r, ht) => r.avg > 2 ? (ht ? 'świetna reakcja zespołu!' : 'zawodnicy są nakręceni!') : r.avg < 0 ? (ht ? 'część zawodników przyjęła to źle.' : 'w szatni widać nerwowość.') : 'spokojna reakcja.';
+const talkDetail = r => `${r.good ? ` (${r.good} zmotywowanych` : ' ('}${r.bad ? `${r.good ? ', ' : ''}${r.bad} poirytowanych)` : r.good ? ')' : 'bez wyraźnej reakcji)'}`;
+function doTalk() { const s = uside(), o = s === M.home ? M.away : M.home; const r = teamTalk(s, TALK, o.t.rep || 50, false, 0); ev(M, 'info', s, `🗣️ Odprawa: ${TALKS[TALK]} – ${talkMsg(r)}${talkDetail(r)}`); M.dirty = true; }
+ACT.httalk = k => { const s = uside(), o = s === M.home ? M.away : M.home; const r = teamTalk(s, k, o.t.rep || 50, true, s.goals - o.goals); M.htTalk = true; ev(M, 'info', s, `🗣️ Przerwa: ${TALKS[k]} – ${talkMsg(r, true)}${talkDetail(r)}`); M.dirty = true; upd(); mctl(); };
 function tick() {
   if (MS.paused || MS.over) return;
   const r = step(M); upd();

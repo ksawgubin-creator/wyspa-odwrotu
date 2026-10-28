@@ -241,3 +241,4 @@ button.club[data-act=begin]:disabled,#start .btn.pri:disabled{opacity:1;backgrou
 table{font-variant-numeric:tabular-nums}
 
 .choices .btn small.hint{display:block;font-size:11px;color:var(--warn);font-weight:600;margin-top:2px}
+.prow.me{background:#16324a;border-radius:8px}

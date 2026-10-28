@@ -11,15 +11,19 @@ Mobilna gra menedżerska w stylu trybu kariery (EA FC) / Football Manager Mobile
 APK buduje się automatycznie przez GitHub Actions (`.github/workflows/android.yml`) przy każdym pushu; plik jest też w artefaktach przebiegu.
 
 ## Co jest w grze
-- **Prawdziwe kluby i składy**: 21 krajów; top 5 lig ma po 4 poziomy rozgrywkowe (np. Premier League, Championship, League One, League Two), pozostałe kraje z top 15 rankingu UEFA – po 2 poziomy (np. Chance Liga i Chance Národní liga). Zawodnicy z prawdziwymi nazwiskami, wiekiem, pozycją, oceną i potencjałem w stylu EA FC (w niższych ligach braki w kadrach uzupełniane są generowanymi zawodnikami). Awanse i spadki między wszystkimi poziomami.
+- **Prawdziwe kluby i składy**: 27 krajów (w tym MLS, Liga MX, Brazylia – Série A i B, Argentyna, Arabia Saudyjska, Japonia); top 5 lig ma po 4 poziomy rozgrywkowe (np. Premier League, Championship, League One, League Two), pozostałe kraje z top 15 rankingu UEFA – po 2 poziomy (np. Chance Liga i Chance Národní liga). Zawodnicy z prawdziwymi nazwiskami, wiekiem, pozycją, oceną i potencjałem w stylu EA FC (w niższych ligach braki w kadrach uzupełniane są generowanymi zawodnikami). Awanse i spadki między wszystkimi poziomami.
 - **Trener z OVR**: zaczynasz jako debiutant (OVR 45) lub z licencją UEFA Pro (OVR 55) – na start dostępne są tylko kluby niższych lig. OVR rośnie za wyniki, cele, awanse i trofea; im wyższy, tym większe kluby składają oferty. Każdy klub AI ma własnego trenera z OVR (wpływa na grę), kluby zwalniają trenerów, a Ty dostajesz oferty pracy. Jest też tryb swobodny bez ograniczeń.
-- **Akademia**: infrastruktura, trenerzy młodzieży i rekrutacja (po 5 poziomów), region rekrutacji, coroczny nabór w marcu z szansą na „talent pokolenia”, szacowany potencjał juniorów, awans do pierwszego zespołu.
+- **Akademia**: infrastruktura, trenerzy młodzieży i rekrutacja (po 5 poziomów), region rekrutacji, raport o roczniku przed naborem, nabór w marcu z szansą na „talent pokolenia”, ukryte perełki, trening specjalny atrybutu, przekwalifikowanie na nową pozycję, mentorzy, wypożyczenia juniorów.
+- **Turnieje przedsezonowe**: wybór zaproszenia (krajowy, tournee, prestiżowy), półfinał i finał, premie i trofeum.
+- **Rankingi**: światowy ranking klubów Elo, ranking siły lig, współczynniki UEFA, historia Twojego klubu.
+- **Sztab**: asystent (rady przed meczem), trener przygotowania fizycznego, fizjoterapeuta, trener bramkarzy.
+- **Terminarz i statystyki** zawodników (gole, asysty, oceny, punkty kanadyjskie).
 - **Puchary UEFA w nowym formacie**: Liga Mistrzów, Liga Europy i Liga Konferencji – faza ligowa 36 drużyn z koszykami, baraże, 1/8, ćwierćfinały, półfinały (dwumecze z dogrywką i karnymi) i finał.
 - **Współczynniki UEFA**: ranking krajów z 5 sezonów (realne wartości startowe), punkty za mecze i etapy, liczba miejsc w pucharach zależna od rankingu (z dodatkowymi miejscami EPS), ranking klubów.
 - **Zawodnicy jak w EA FC**: ogólna ocena liczona z atrybutów (TEM, STR, POD, DRY, OBR, FIZ / atrybuty bramkarskie), 12 pozycji z pozycjami alternatywnymi, potencjał, słabsza noga, triki, karta zawodnika w stylu FUT.
 - **Stan zawodnika**: kondycja, morale (zależne od wyników, minut i statusu w kadrze), forma, rytm meczowy, kontuzje, kartki i zawieszenia, rozmowy z zawodnikami.
 - **Skauting**: zakresy ocen dla nieznanych zawodników, skauci o różnej jakości, obserwacje, misje (kraj, narodowość, pozycja, wiek, potencjał), raporty A+–D, lista obserwowanych.
-- **Transfery**: negocjacje kwoty (kontroferty, zawodnicy „nie na sprzedaż”), warunki kontraktu, wypożyczenia, wolni agenci, oferty za Twoich zawodników, transfery między klubami AI, okna transferowe.
+- **Transfery**: negocjacje kwoty (kontroferty, cierpliwość klubu, zawodnicy „nie na sprzedaż”, klauzule odstępnego, płatność w ratach, klauzula odsprzedaży, filtr „realne cele”), warunki kontraktu, wypożyczenia, wolni agenci, oferty za Twoich zawodników, transfery między klubami AI, okna transferowe.
 - **Reprezentacja**: równolegle z klubem (dostępność zależna od OVR trenera) – powołania, skład, eliminacje/Liga Narodów, Mistrzostwa Europy i Świata.
 - **Klub**: finanse, obiekty, trening, zarząd z celami ligowymi i europejskimi, Złota Piłka, historia.
 
@@ -32,6 +36,6 @@ Skład lig odpowiada sezonowi 2026/27 (awanse i spadki po sezonie 2025/26, w Nor
 - `data.js` – reprezentacje i pule nazwisk; `data/*.js` – kraje, ligi, kluby i prawdziwe składy (po pliku na kraj).
 - `engine.js` – zawodnicy, pozycje i atrybuty, formacje, silnik meczu.
 - `world.js` – świat gry: kalendarz, ligi, puchary UEFA, reprezentacje, transfery, skauting, finanse, koniec sezonu, zapis (IndexedDB).
-- `ui.js`, `style.css`, `index.html` – interfejs.
+- `ui.js`, `style.css`, `index.html` – interfejs; `uikit.js`, `uikit.css` – herby, wykresy, boisko meczowe.
 - `manifest.webmanifest`, `sw.js`, `icons/` – PWA.
 - `capacitor.config.json`, `scripts/`, `android-res/` – budowanie aplikacji Android (Capacitor).

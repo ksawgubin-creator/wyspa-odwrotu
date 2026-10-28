@@ -168,6 +168,7 @@ function fixLineup(t, emergency) {
 const lineupAvg = t => Math.round(avg(t.lineup.map((id, i) => ovrAt(pget(id), slotsOf(t.formation)[i].pos))));
 
 /* ---------- silnik meczu ---------- */
+const isClubComp = c => c !== 'N' && c !== 'T' && c !== 'F' && c !== 'P';
 /* opts: {comp, user:'h'|'a'|null, quick, neutral, ko:{aggH,aggA}|null, label} */
 function makeSide(t, isUser, quick, emergency) {
   if (!isUser) { autoPick(t); } else fixLineup(t, emergency);
@@ -290,8 +291,9 @@ function step(m) {
   const mOpp = def.ment === 'att' ? 1.12 : def.ment === 'def' ? 0.88 : 1;
   const ha = m.neutral ? 1 : att === H ? HOME_ADV : AWAY_ADV;
   const pShot = clamp(SHOT_BASE * Math.pow(aS / dS, SHOT_EXP) * mAtt * mOpp * ha, 0.03, 0.7);
-  if (rnd() < pShot) doShot(m, att, def);
-  const club = m.comp !== 'N' && m.comp !== 'T' && m.comp !== 'F';
+  const shot = rnd() < pShot; if (shot) doShot(m, att, def);
+  (m.mom || (m.mom = [])).push((att === H ? 1 : -1) * (shot ? 2.5 : 0.7) * (att.ment === 'att' ? 1.2 : 1));
+  const club = isClubComp(m.comp);
   for (const side of [H, A]) {
     if (!side.pitch.length) continue;
     if (rnd() < 0.011) {
@@ -335,7 +337,7 @@ function winnerSide(m) {
 }
 function finishMatch(m) {
   m.over = true;
-  const club = m.comp !== 'N' && m.comp !== 'T' && m.comp !== 'F';
+  const club = isClubComp(m.comp);
   const pen = m.pens ? ` (k. ${m.pens.h}:${m.pens.a})` : '';
   ev(m, 'ft', null, `🏁 Koniec meczu! ${m.home.t.name} ${m.home.goals}:${m.away.goals} ${m.away.t.name}${m.et ? ' po dogrywce' : ''}${pen}`);
   for (const [side, opp] of [[m.home, m.away], [m.away, m.home]]) {
@@ -353,7 +355,8 @@ function finishMatch(m) {
         const st = p.st; st.apps++; st.g += r.g; st.a += r.a; st.rs += r.rating; st.mins += mins; if (r.y) st.y++; if (r.r) st.r++;
         if (m.comp === 'L') p.lg += r.g; else p.eg += r.g;
         p.car.apps++; p.car.g += r.g; p.car.a += r.a;
-      } else if (m.comp !== 'F') { p.caps++; p.ng += r.g; }
+      } else if (m.comp === 'P') p.shp = clamp(p.shp + mins / 90 * 22, 0, 100);
+      else if (m.comp !== 'F') { p.caps++; p.ng += r.g; }
     }
     if (club && side.t.players) for (const p of side.t.players) {
       const r = side.rec[p.id];
@@ -398,7 +401,7 @@ function fastSim(h, a, opts = {}) {
   addGoals(H, poisson(xh.g), 1, 90); addGoals(A, poisson(xa.g), 1, 90);
   H.shots = Math.round(xh.shots); A.shots = Math.round(xa.shots); H.sot = Math.max(H.goals, Math.round(H.shots * 0.38)); A.sot = Math.max(A.goals, Math.round(A.shots * 0.38));
   H.poss = Math.round(ph * 90); A.poss = 90 - H.poss;
-  const club = m.comp !== 'N' && m.comp !== 'T' && m.comp !== 'F';
+  const club = isClubComp(m.comp);
   for (const side of [H, A]) {
     const ps = side.pitch.filter(s => s.pos !== 'GK');
     for (let i = poisson(1.6); i > 0 && ps.length; i--) side.rec[pick(ps).p.id].y = 1;

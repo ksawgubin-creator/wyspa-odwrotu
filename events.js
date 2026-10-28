@@ -386,6 +386,7 @@ function afterMatchMeta(m, x, mine, opp, gd) {
 function pressConference(x) {
   metaInit();
   const mine = x.user === 'h' ? x.h : x.a, opp = x.user === 'h' ? x.a : x.h;
+  if (x.opts.comp === 'P') return null;
   const big = x.opts.comp !== 'L' && x.opts.comp !== 'F' || (opp.rep || 50) >= (mine.rep || 50) + 6;
   if (!big && rnd() > 0.3) return null;
   const fav = (mine.rep || 50) >= (opp.rep || 50) + 4, ps = mine.players || [], star = ps.slice().sort((a, b) => b.ovr - a.ovr)[0];

@@ -180,7 +180,7 @@ COUNTRY_DATA.push({
         ['Rilind Nivokazi', 'ST', 30, 64, 64, 'KOS'],
         ['Winsley Boteli', 'ST', 22, 64, 70, 'SUI']
       ]],
-      ['FC Thun', 'THU', '#E30613', '#FFFFFF', 54, 10000, [
+      ['FC Thun', 'THU', '#E30613', '#FFFFFF', 50, 10000, [
         ['Niklas Steffen', 'GK', 27, 65, 66, 'SUI'],
         ['Andreas Hirzel', 'GK', 33, 61, 61, 'SUI'],
         ['Marco Bürki', 'CB', 33, 64, 64, 'SUI'],

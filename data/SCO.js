@@ -6,7 +6,7 @@ COUNTRY_DATA.push({
         ['Kasper Schmeichel', 'GK', 39, 76, 76, 'DEN', [74, 73, 72, 78, 45, 77]],
         ['Viljami Sinisalo', 'GK', 25, 69, 74, 'FIN'],
         ['Cameron Carter-Vickers', 'CB', 28, 77, 77, 'USA', [68, 40, 63, 62, 78, 82]],
-        ['Liam Scales', 'CB', 28, 72, 72, 'IRL'],
+        ['Liam Scales', 'CB', 26, 72, 74, 'IRL'],
         ['Auston Trusty', 'CB', 28, 72, 72, 'USA'],
         ['Dane Murray', 'CB', 23, 63, 69, 'SCO'],
         ['Alistair Johnston', 'RB', 28, 74, 74, 'CAN'],

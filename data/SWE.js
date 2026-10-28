@@ -176,6 +176,9 @@ COUNTRY_DATA.push({
       ]],
       ['Halmstads BK', 'HBK', '#0047AB', '#FFFFFF', 46, 10873, [
         ['Tim Rönning', 'GK', 30, 60, 60, 'SWE'],
+        ['Adam Wihed', 'GK', 24, 56, 61, 'SWE'],
+        ['Gustav Friberg', 'CB', 25, 59, 62, 'SWE'],
+        ['Måns Andersson', 'CM', 22, 58, 63, 'SWE'],
         ['Joel Allansson', 'CM', 34, 60, 60, 'SWE'],
         ['Otso Liimatta', 'LW', 22, 61, 67, 'FIN'],
         ['Jesper Westermark', 'ST', 28, 61, 61, 'SWE'],
@@ -208,6 +211,9 @@ COUNTRY_DATA.push({
       ['Kalmar FF', 'KAL', '#E30613', '#FFFFFF', 45, 12105, [
         ['Samuel Brolin', 'GK', 26, 60, 62, 'SWE'],
         ['Jakob Kindberg', 'GK', 24, 59, 63, 'SWE'],
+        ['Casper Andersson', 'GK', 22, 56, 62, 'SWE'],
+        ['Zakarias Ravik', 'ST', 24, 59, 62, 'SWE'],
+        ['Charles Sagoe Jr', 'LW', 22, 60, 65, 'ENG'],
         ['Carl Gustafsson', 'CM', 26, 60, 62, 'SWE']
       ]],
       ['Örgryte IS', 'ORG', '#E30613', '#FFFFFF', 42, 18416, [

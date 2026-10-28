@@ -41,7 +41,43 @@ function render() {
   $('#nav').innerHTML = T.map(([k, i, n]) => `<button class="${UI.tab === k ? 'on' : ''}" data-act="tab" data-arg="${k}"><i>${i}</i>${n}${k === 'home' && unread ? `<span class="dot">${unread}</span>` : ''}${k === 'market' && S.offers.length ? `<span class="dot">${S.offers.length}</span>` : ''}</button>`).join('');
   $('#view').innerHTML = ({ home: vHome, squad: vSquad, comps: vComps, market: vMarket, club: vClub })[UI.tab]();
 }
-ACT.tab = a => { UI.tab = a; UI.sel = null; render(); window.scrollTo(0, 0); };
+/* ---------- historia nawigacji (przycisk „wstecz” Androida) ---------- */
+const NAVK = ['tab', 'sqTab', 'compTab', 'clubTab', 'mkTab', 'lgTab', 'euroTab', 'nt'];
+const NAVH = [];
+const snap = () => { const o = {}; for (const k of NAVK) o[k] = UI[k]; o.y = window.scrollY; return o; };
+function navPush() { const s0 = snap(), last = NAVH[NAVH.length - 1]; if (!last || NAVK.some(k => last[k] !== s0[k])) { NAVH.push(s0); if (NAVH.length > 40) NAVH.shift(); } }
+let backAt = 0;
+function goBack() {
+  if (!$('#busy').classList.contains('hidden')) return;
+  const m = $('#modal');
+  if (!m.classList.contains('hidden')) { if (m.dataset.lock) toast('Najpierw podejmij decyzję.'); else closeModal(); return; }
+  if (!$('#match').classList.contains('hidden')) { if (!MS.over && !MS.paused) ACT.mpause(); toast('Mecz wstrzymany. Użyj ⏭ Koniec, aby go dokończyć.'); return; }
+  if (!$('#start').classList.contains('hidden') || !S || S.user < 0) return minimize();
+  if (UI.sel != null) { UI.sel = null; return render(); }
+  const prev = NAVH.pop();
+  if (prev) { for (const k of NAVK) UI[k] = prev[k]; render(); window.scrollTo(0, prev.y || 0); return; }
+  if (UI.tab !== 'home') { UI.tab = 'home'; render(); window.scrollTo(0, 0); return; }
+  minimize();
+}
+function minimize() {
+  const now = Date.now();
+  if (now - backAt > 2000) { backAt = now; toast('Naciśnij „wstecz” ponownie, aby zminimalizować grę.'); return; }
+  saveNow();
+  const A = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+  if (A && A.minimizeApp) A.minimizeApp(); else if (A && A.exitApp) A.exitApp();
+}
+(function setupBack() {
+  const A = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+  if (A && A.addListener) {
+    A.addListener('backButton', goBack);
+    A.addListener('pause', () => { if (S && S.user >= 0) saveNow(); });
+  } else {
+    history.pushState({ g: 1 }, '');
+    window.addEventListener('popstate', () => { goBack(); history.pushState({ g: 1 }, ''); });
+  }
+  document.addEventListener('visibilitychange', () => { if (document.hidden && S && S.user >= 0) saveNow(); });
+})();
+ACT.tab = a => { if (a !== UI.tab) navPush(); UI.tab = a; UI.sel = null; render(); window.scrollTo(0, 0); };
 
 /* ---------- następny mecz ---------- */
 function peekUser() {
@@ -200,7 +236,7 @@ function vTactic(t) {
     <small class="mut">Młodzi i grający regularnie rozwijają się najszybciej. Ośrodek treningowy: poziom ${S.fac.train}/5.</small></div>`}`;
 }
 ACT.sqnt = a => { UI.nt = a === 'nt'; UI.sel = null; render(); };
-ACT.sqtab = a => { UI.sqTab = a; UI.sel = null; render(); };
+ACT.sqtab = a => { if (a !== UI.sqTab) navPush(); UI.sqTab = a; UI.sel = null; render(); };
 CHG.lsort = v => { UI.listSort = v; render(); };
 CHG.training = v => { userClub().training = v; saveSoon(); };
 ACT.setform = f => { const t = ctxTeam(); t.formation = f; autoPick(t, f); commit(t); render(); };
@@ -352,7 +388,7 @@ function vComps() {
   const head = tabs([['league', 'Ligi'], ['cup', 'Puchary krajowe'], ['euro', 'Puchary UEFA'], ['rank', 'Ranking UEFA'], ['nt', 'Reprezentacje'], ['hist', 'Historia']], UI.compTab, 'ctab');
   return head + ({ league: vLeague, cup: vCup, euro: vEuro, rank: vRank, nt: vNT, hist: vHist })[UI.compTab]();
 }
-ACT.ctab = a => { UI.compTab = a; render(); };
+ACT.ctab = a => { if (a !== UI.compTab) navPush(); UI.compTab = a; render(); };
 function vCup() {
   if (!UI.cupcc) UI.cupcc = userClub().cc;
   const cup = S.cups[UI.cupcc];
@@ -397,7 +433,7 @@ function fxRow(H, A, score, mine, extra) {
 }
 CHG.cc = v => { UI.cc = v; UI.lg = S.countries[v].leagues[0]; UI.rnd = null; render(); };
 CHG.lg = v => { UI.lg = v; UI.rnd = null; render(); };
-ACT.lgtab = a => { UI.lgTab = a; render(); };
+ACT.lgtab = a => { if (a !== UI.lgTab) navPush(); UI.lgTab = a; render(); };
 ACT.rnd = d => { UI.rnd = clamp(UI.rnd + +d, 0, S.leagues[UI.lg].fix.length - 1); render(); };
 ACT.clubv = id => {
   const c = club(+id); const tb = table(c.lg).find(r => r.id === c.id);
@@ -438,7 +474,7 @@ function koRow(t, single, nt) {
   return fxRow(A, B, score, mine, (ex ? ex : '') + (t.w != null ? ` • awans: ${esc((nt ? ntObj(t.w) : club(t.w)).name)}` : '')) + (w ? '' : '');
 }
 ACT.euro = a => { UI.euro = a; UI.md = null; render(); };
-ACT.eutab = a => { UI.euroTab = a; render(); };
+ACT.eutab = a => { if (a !== UI.euroTab) navPush(); UI.euroTab = a; render(); };
 ACT.md = d => { UI.md = clamp(UI.md + +d, 0, S.euro[UI.euro].lp.length - 1); render(); };
 function vRank() {
   const rk = countryRanking();
@@ -481,7 +517,7 @@ function vMarket() {
     `<div class="card"><div class="row"><span>${windowText()}</span></div><div class="row mut" style="font-size:13px;margin-top:4px"><span>Budżet transferowy: <b class="good">${money(ut.tb)}</b></span><span class="sp"></span><span>Kadra: ${ut.players.length}/32</span></div></div>`;
   return head + ({ search: vSearch, short: vShort, scout: vScout, offers: vOffers, news: vNews })[UI.mkTab]();
 }
-ACT.mktab = a => { UI.mkTab = a; render(); };
+ACT.mktab = a => { if (a !== UI.mkTab) navPush(); UI.mkTab = a; render(); };
 function mkRow(p) {
   const c = clubOf(p);
   return `<div class="prow" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${flag(p.nat)} ${esc(p.n)}<small>${c ? esc(c.short) + ' ' + S.countries[c.cc].flag : p.tid === -1 ? 'wolny' : 'zagr.'} • ${p.age} l. • ${p.tid === -1 ? 'bez odstępnego' : money(p.val)}</small></div>${S.short.includes(p.id) ? '<span class="good">★</span>' : ''}${ovrShow(p)}</div>`;
@@ -566,7 +602,7 @@ function vClub() {
   const head = tabs([['mgr', 'Trener'], ['troph', 'Gablota'], ['acad', 'Akademia'], ['fin', 'Finanse'], ['fac', 'Obiekty'], ['nt', 'Reprezentacja'], ['game', 'Gra']], UI.clubTab, 'cltab');
   return head + ({ mgr: vMgr, troph: vTroph, acad: vAcad, fin: vFin, fac: vFac, nt: vNTManage, game: vGame })[UI.clubTab]();
 }
-ACT.cltab = a => { UI.clubTab = a; render(); };
+ACT.cltab = a => { if (a !== UI.clubTab) navPush(); UI.clubTab = a; render(); };
 function vFin() {
   const ut = userClub(), lf = ut.lastFin, bill = sum(ut.players.map(p => p.wage)), sc = sum(S.scouts.map(s => s.cost));
   return `<div class="card"><h2>Finanse</h2>

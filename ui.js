@@ -7,7 +7,7 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&am
 const UI = {
   tab: 'home', sqTab: 'pitch', nt: false, compTab: 'league', cc: null, lg: null, lgTab: 'table', rnd: null,
   euro: 'CL', euroTab: 'lp', md: null, mkTab: 'search', clubTab: 'fin', sel: null, listSort: 'pos',
-  f: { cc: '', pos: '', age: 0, ovr: 0, price: 0, sort: 'ovr', q: '' },
+  f: { cc: '', pos: '', age: 0, ovr: 0, ovrMax: 0, potMin: 0, potMax: 0, ageMin: 0, price: 0, sort: 'ovr', q: '' },
 };
 const ACT = {}, CHG = {};
 
@@ -43,17 +43,40 @@ const NAV_ICONS = {
   comps: 'M7 3h10v2h3v3a4 4 0 0 1-4 4h-.4A5 5 0 0 1 13 14.9V18h3v3H8v-3h3v-3.1A5 5 0 0 1 8.4 12H8a4 4 0 0 1-4-4V5h3zm-1 4v1a2 2 0 0 0 1 1.7V7zm11 0v2.7A2 2 0 0 0 18 8V7z',
   market: 'M10.5 3a7.5 7.5 0 0 1 6 12l4.3 4.3-1.5 1.5-4.3-4.3A7.5 7.5 0 1 1 10.5 3zm0 2.5a5 5 0 1 0 0 10 5 5 0 0 0 0-10z',
   club: 'M12 2 4 6v2h16V6zM5 9v9H3v3h18v-3h-2V9h-3v9h-2.5V9h-3v9H8V9z',
+  acad: 'M12 3 1 8.5 12 14l9-4.5V16h2V8.5zM5 12.3V16c0 1.9 3.1 4 7 4s7-2.1 7-4v-3.7L12 16z',
+  fac: 'M2 9c0-2.2 4.5-4 10-4s10 1.8 10 4v8c0 2.2-4.5 4-10 4S2 19.2 2 17zm10 2c4.4 0 8-1 8-2.5S16.4 6 12 6 4 7 4 8.5 7.6 11 12 11z',
+  fin: 'M3 5h18v14H3zm2 2v10h14V7zm7 1.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7z',
+  staff: 'M8 4a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm8 1a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM2 19c0-3.3 2.7-6 6-6s6 2.7 6 6v1H2zm13-5.5c3 0 7 1.5 7 4.5v2h-6v-1c0-2.1-.4-3.9-1-5.5z',
+  scout: 'M3 8h4l2-3h6l2 3h4v11H3zm9 2a4 4 0 1 0 0 8 4 4 0 0 0 0-8z',
+  cal: 'M4 5h16v15H4zm0 4h16M8 3v4M16 3v4M7 12h3v3H7z',
+  rank: 'M3 20h18M5 20V13h4v7M10 20V8h4v12M15 20v-9h4v9',
+  troph: 'M12 2l2.9 6.2 6.8.8-5 4.7 1.3 6.8L12 17.1 6 20.5l1.3-6.8-5-4.7 6.8-.8z',
 };
-const navIcon = (k, on) => `<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="${NAV_ICONS[k]}" fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="${on ? 0 : 1.6}" stroke-linejoin="round"/></svg>`;
+// dolne menu: [klucz, nazwa, zakładka, [pole podzakładki, wartość]]
+const NAV = [['home', 'Pulpit', 'home'], ['squad', 'Skład', 'squad'], ['comps', 'Rozgrywki', 'comps'], ['market', 'Transfery', 'market'], ['club', 'Klub', 'club', ['clubTab', 'mgr']],
+  ['acad', 'Akademia', 'club', ['clubTab', 'acad']], ['fac', 'Stadion', 'club', ['clubTab', 'fac']], ['fin', 'Finanse', 'club', ['clubTab', 'fin']], ['staff', 'Sztab', 'club', ['clubTab', 'staff']],
+  ['scout', 'Skauting', 'market', ['mkTab', 'scout']], ['cal', 'Terminarz', 'comps', ['compTab', 'cal']], ['rank', 'Rankingi', 'comps', ['compTab', 'rank']], ['troph', 'Gablota', 'club', ['clubTab', 'troph']]];
+function navCur() {
+  const sub = NAV.find(n => n[3] && n[0] !== 'club' && UI.tab === n[2] && UI[n[3][0]] === n[3][1]);
+  return sub ? sub[0] : UI.tab;
+}
+ACT.nav = k => {
+  const n = NAV.find(x => x[0] === k); if (!n) return;
+  const same = navCur() === k && (!n[3] || UI[n[3][0]] === n[3][1]);
+  navPush(); UI.tab = n[2]; if (n[3]) UI[n[3][0]] = n[3][1]; UI.sel = null; render(); window.scrollTo(0, 0);
+  if (same) return;
+};
+const navIcon = (k, on) => { const ln = k === 'cal' || k === 'rank'; return `<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="${NAV_ICONS[k]}" fill="${on && !ln ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="${on && !ln ? 0 : on ? 2.2 : 1.6}" stroke-linejoin="round" stroke-linecap="round"/></svg>`; };
 let SWIPE_DIR = null;
 function render() {
   const ut = userClub(), d = curDay();
   $('#top').innerHTML = `${badge(ut)}<div class="tt"><b>${esc(ut.name)}</b><small>${d ? fmtDate(d.date) : ''} • ${SEASON_LABEL(S.season)}</small></div>
     <div class="money">${money(ut.bal)}<small class="${windowOpen() ? 'good' : 'mut'}">${windowOpen() ? '🟢 okno otwarte' : '🔒 okno zamkn.'}</small></div>`;
   const unread = S.inbox.filter(m => !m.read).length;
-  const T = [['home', 'Pulpit'], ['squad', 'Skład'], ['comps', 'Rozgrywki'], ['market', 'Transfery'], ['club', 'Klub']];
-  $('#nav').innerHTML = T.map(([k, n]) => `<button class="${UI.tab === k ? 'on' : ''}" data-act="tab" data-arg="${k}"><i>${navIcon(k, UI.tab === k)}</i>${n}${k === 'home' && unread ? `<span class="dot">${unread}</span>` : ''}${k === 'market' && S.offers.length ? `<span class="dot">${S.offers.length}</span>` : ''}</button>`).join('');
+  const cur = navCur();
+  $('#nav').innerHTML = NAV.map(([k, n]) => `<button class="${cur === k ? 'on' : ''}" data-act="nav" data-arg="${k}"><i>${navIcon(k, cur === k)}</i>${n}${k === 'home' && unread ? `<span class="dot">${unread}</span>` : ''}${k === 'market' && S.offers.length ? `<span class="dot">${S.offers.length}</span>` : ''}</button>`).join('');
   const vk = [UI.tab, UI.sqTab, UI.compTab, UI.clubTab, UI.mkTab, UI.rkTab].join('/'), v = $('#view');
+  { const nb = $('#nav'), on = nb.querySelector('.on'); if (on && (on.offsetLeft < nb.scrollLeft || on.offsetLeft + on.offsetWidth > nb.scrollLeft + nb.clientWidth)) nb.scrollLeft = on.offsetLeft - (nb.clientWidth - on.offsetWidth) / 2; }
   v.innerHTML = ({ home: vHome, squad: vSquad, comps: vComps, market: vMarket, club: vClub })[UI.tab]();
   if (vk !== render._vk) { render._vk = vk; v.classList.remove('uk-fade', 'sw-l', 'sw-r'); void v.offsetWidth; v.classList.add(SWIPE_DIR ? 'sw-' + SWIPE_DIR : 'uk-fade'); }
   SWIPE_DIR = null;
@@ -326,6 +349,7 @@ ACT.tap = id => {
 };
 
 /* ---------- KARTA ZAWODNIKA ---------- */
+const potTxt = p => { if (know(p) < 30) return '?'; const r = ovrRange(p, true); return r[0] === r[1] ? r[0] : r[0] + '–' + r[1]; };
 ACT.info = id => {
   const p = pget(+id); if (!p) return;
   const mine = p.tid === S.user, k = know(p), c = clubOf(p);
@@ -360,7 +384,7 @@ ACT.info = id => {
   const kv = rows => `<div class="kv">${rows.filter(Boolean).map(([l, v]) => `<div><span>${l}</span><b>${v}</b></div>`).join('')}</div>`;
   const body = {
     ov: () => `${stTag(p)}${own ? `<small class="mut">Charakter: <b>${pers(p)}</b> – ${PERS_DESC[pers(p)]}</small><div class="fxl">${Object.entries(TRAITS).map(([k, n]) => `<span class="pill">${n}: ${traitWord(traits(p)[k])}</span>`).join(' ')}</div>` : `<small class="mut">Charakter: ? (poznasz go po transferze)</small>`}
-      ${kv([['Wiek', p.age], ['Potencjał', ovrShow(p, true)], ['Kondycja', Math.round(p.fit) + '%'], ['Morale', moraleLabel(p.mor).join(' ')], ['Forma', formLabel(p.form)], ['Rytm meczowy', Math.round(p.shp) + '%'], ['Wartość', money(p.val)], ['Status', playerStatus(p)],
+      ${kv([['Wiek', p.age], ['Potencjał', `<span class="potv">${potTxt(p)}</span>${know(p) >= 30 && p.pot > p.ovr ? ` <small class="good">(+${Math.max(0, Math.round((ovrRange(p, true)[0] + ovrRange(p, true)[1]) / 2) - Math.round((r[0] + r[1]) / 2))})</small>` : ''}`], ['Kondycja', Math.round(p.fit) + '%'], ['Morale', moraleLabel(p.mor).join(' ')], ['Forma', formLabel(p.form)], ['Rytm meczowy', Math.round(p.shp) + '%'], ['Wartość', money(p.val)], ['Status', playerStatus(p)],
         !mine && releaseClause(p) ? ['Klauzula odstępnego', money(releaseClause(p))] : null])}
       ${known && typeof radarSVG === 'function' ? `<div style="text-align:center;margin-top:6px">${radarSVG(at, names, { size: 180 })}</div>` : ''}
       ${known && otherPos.length ? `<small class="mut">Inne pozycje: ${otherPos.map(([q, v]) => `${POS_PL[q]} ${v}`).join(' • ')}</small>` : ''}`,
@@ -373,7 +397,7 @@ ACT.info = id => {
   }[UI.pcTab]();
   const abar = mine ? (UI.pcTab === 'ct' ? '' : `<div class="btns"><button class="btn sm pri" data-act="chat" data-arg="${p.id}">💬 Porozmawiaj</button><button class="btn sm" data-act="pctab" data-arg="ct">📝 Kontrakt i transfer</button></div>`) : act;
   modal(`<div class="fut ${cardCls}">
-      <div class="fl"><div class="big">${r[0] === r[1] ? r[0] : r[0] + '–' + r[1]}</div><div>${POS_PL[p.pos]}</div><div class="fg">${flag(p.nat)}</div>${c ? badge(c, 'sm') : ''}</div>
+      <div class="fl"><div class="big">${r[0] === r[1] ? r[0] : r[0] + '–' + r[1]}</div><div>${POS_PL[p.pos]}</div><div class="potbig"><small>POT</small>${potTxt(p)}</div><div class="fg">${flag(p.nat)}</div>${c ? badge(c, 'sm') : ''}</div>
       <div class="fr"><div class="fname">${esc(p.n)}</div>
         <div class="attrs">${names.map((n, i) => `<div><b>${known ? at[i] : '?'}</b> ${n}</div>`).join('')}</div>
         <small>${p.foot === 'L' ? 'Lewa' : 'Prawa'} noga • słabsza ${'★'.repeat(p.wf)} • triki ${'★'.repeat(p.sm)}</small></div></div>
@@ -514,12 +538,15 @@ function vLeague() {
   let body = '';
   if (UI.lgTab === 'table') {
     const tb = table(UI.lg), n = tb.length;
-    const promo = PROMO[lg.cc] || 0, hasLower = S.countries[lg.cc].leagues.length > 1;
-    const rank = countryRanking().findIndex(r => r.cc === lg.cc);
-    const clN = lg.tier === 1 ? (rank < 4 ? 4 : rank < 6 ? 3 : rank < 10 ? 2 : 1) : 0;
+    const ls = S.countries[lg.cc].leagues, down = lg.tier < ls.length ? promoN(lg.cc, lg.tier) : 0, up = lg.tier > 1 ? promoN(lg.cc, lg.tier - 1) : 0;
+    const ez = lg.tier === 1 ? euroZones(lg.cc) : null;
+    const zoneOf = pos => { if (ez) { const z = ez.zones.find(z => pos >= z.from && pos <= z.to); if (z) return z.comp.toLowerCase(); } if (up && pos <= up) return 'up'; if (down && pos > n - down) return 'dn'; return ''; };
+    const ZN = { CL: '🔵 Liga Mistrzów', EL: '🟠 Liga Europy', ECL: '🟢 Liga Konferencji' };
     body = `<div class="card list"><table><tr><th>#</th><th>Klub</th><th>M</th><th>Z</th><th>R</th><th>P</th><th>+/-</th><th>Pkt</th></tr>
-      ${tb.map(r => { const c = club(r.id); let z = ''; if (lg.tier === 1 && r.pos <= clN) z = 'cl'; else if (lg.tier === 1 && hasLower && r.pos > n - promo) z = 'dn'; else if (lg.tier === 2 && r.pos <= promo) z = 'up'; return `<tr class="${r.id === ut.id ? 'me' : ''} ${z}" data-act="clubv" data-arg="${r.id}"><td>${r.pos}</td><td><span class="tn">${badge(c, 'sm')}${esc(c.name)}</span></td><td>${r.P}</td><td>${r.W}</td><td>${r.D}</td><td>${r.L}</td><td>${r.GF - r.GA}</td><td><b>${r.Pts}</b></td></tr>`; }).join('')}</table></div>
-      <small class="mut">${lg.tier === 1 ? `🔵 Liga Mistrzów (${clN} miejsc wg rankingu UEFA)` : ''}${lg.tier === 1 && hasLower ? ` • 🟥 spadek (${promo})` : ''}${lg.tier === 2 ? `🟩 awans (${promo})` : ''}</small>`;
+      ${tb.map(r => { const c = club(r.id); return `<tr class="${r.id === ut.id ? 'me' : ''} ${zoneOf(r.pos)}" data-act="clubv" data-arg="${r.id}"><td>${r.pos}</td><td><span class="tn">${badge(c, 'sm')}${esc(c.name)}</span></td><td>${r.P}</td><td>${r.W}</td><td>${r.D}</td><td>${r.L}</td><td>${r.GF - r.GA}</td><td><b>${r.Pts}</b></td></tr>`; }).join('')}</table></div>
+      <div class="legend">${ez ? ez.zones.map(z => `<span>${ZN[z.comp]}${z.qual ? ' (eliminacje)' : ''}: ${z.from === z.to ? z.from : z.from + '–' + z.to}.</span>`).join('') : ''}
+        ${up ? `<span>🟩 awans: 1–${up}.</span>` : ''}${down ? `<span>🟥 spadek: ${n - down + 1}–${n}.</span>` : ''}</div>
+      <small class="mut">${ez ? `Kraj ${ez.rank}. w rankingu UEFA${ez.eps ? ' (dodatkowe miejsce w LM za wyniki w ostatnim sezonie)' : ''}. Zdobywca krajowego pucharu dostaje miejsce w Lidze Europy – wtedy strefa przesuwa się o jedno miejsce. Obrońcy tytułów grają w LM poza kwotą.` : lg.tier === 1 && !isUEFA({ cc: lg.cc }) ? 'Liga spoza UEFA – kluby nie grają w europejskich pucharach.' : ''}</small>`;
   } else if (UI.lgTab === 'fix') {
     const R = lg.fix.length;
     if (UI.rnd == null || UI.rnd >= R) { const ls = curLs(); UI.rnd = Math.max(0, lg.lsMap.slice(0, ls + 1).filter(x => x >= 0).length - 1); }
@@ -677,7 +704,7 @@ function dealState(p) {
 }
 function mkRow(p) {
   const c = clubOf(p), ds = dealState(p);
-  return `<div class="prow" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${flag(p.nat)} ${esc(p.n)}<small>${c ? esc(c.short) + ' ' + S.countries[c.cc].flag : p.tid === -1 ? 'wolny' : 'zagr.'} • ${p.age} l. • ${p.tid === -1 ? 'bez odstępnego' : money(p.val)}${ds[1] ? ` • <span class="${ds[0] === 'g' ? 'good' : ds[0]}">${ds[1]}</span>` : ''}</small></div>${S.short.includes(p.id) ? '<span class="good">★</span>' : ''}${ovrShow(p)}</div>`;
+  return `<div class="prow" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${flag(p.nat)} ${esc(p.n)}<small>${c ? esc(c.short) + ' ' + S.countries[c.cc].flag : p.tid === -1 ? 'wolny' : 'zagr.'} • ${p.age} l. • ${p.tid === -1 ? 'bez odstępnego' : money(p.val)}${ds[1] ? ` • <span class="${ds[0] === 'g' ? 'good' : ds[0]}">${ds[1]}</span>` : ''}</small></div>${S.short.includes(p.id) ? '<span class="good">★</span>' : ''}${ovrShow(p)}<span class="potc" title="potencjał">${potTxt(p)}</span></div>`;
 }
 const FOPT = {
   pos: () => POSITIONS.map(p => [p, POS_PL[p]]), age: () => [19, 21, 23, 25, 28, 31].map(a => [a, `do ${a} l.`]),
@@ -692,12 +719,19 @@ function searchList() {
   if (f.pos) list = list.filter(p => p.pos === f.pos);
   if (f.age) list = list.filter(p => p.age <= f.age);
   if (f.price) list = list.filter(p => p.val <= f.price);
-  if (f.ovr) list = list.filter(p => ovrRange(p)[1] >= f.ovr);
+  const mid = r => (r[0] + r[1]) / 2;
+  if (f.ovr) list = list.filter(p => mid(ovrRange(p)) >= f.ovr);
+  if (f.ovrMax) list = list.filter(p => mid(ovrRange(p)) <= f.ovrMax);
+  if (f.potMin) list = list.filter(p => know(p) >= 30 && mid(ovrRange(p, true)) >= f.potMin);
+  if (f.potMax) list = list.filter(p => know(p) >= 30 && mid(ovrRange(p, true)) <= f.potMax);
+  if (f.ageMin) list = list.filter(p => p.age >= f.ageMin);
   if (f.q) { const q = f.q.toLowerCase(); list = list.filter(p => p.n.toLowerCase().includes(q)); }
   if (f.real) list = list.filter(p => p.tid !== -2 && ['g', 'warn'].includes(dealState(p)[0]) && dealState(p)[1] !== 'nie na sprzedaż');
   return list;
 }
 function fLabel(k, v) {
+  const L = { ovr: `OVR od ${v}`, ovrMax: `OVR do ${v}`, potMin: `POT od ${v}`, potMax: `POT do ${v}`, ageMin: `wiek od ${v}`, age: `wiek do ${v}` };
+  if (L[k]) return L[k];
   if (k === 'cc') return v === 'FREE' ? 'Wolni agenci' : `${S.countries[v].flag} ${S.countries[v].name}`;
   const o = FOPT[k]().find(x => x[0] === v); return o ? o[1] : v;
 }
@@ -705,28 +739,35 @@ function vSearch() {
   const f = UI.f, list = searchList();
   const key = f.sort === 'pot' ? (p => know(p) >= 30 ? ovrRange(p, true)[1] : 0) : f.sort === 'val' ? (p => p.val) : f.sort === 'age' ? (p => -p.age) : ovrEst;
   list.sort((a, b) => key(b) - key(a));
-  const act = ['cc', 'pos', 'age', 'ovr', 'price'].filter(k => f[k]);
+  const act = ['cc', 'pos', 'ageMin', 'age', 'ovr', 'ovrMax', 'potMin', 'potMax', 'price'].filter(k => f[k]);
   return `<div class="flt"><input placeholder="Szukaj nazwiska…" value="${esc(f.q)}" data-change="fq" style="flex:1 1 55%;min-width:0"><button class="btn sm pri" data-act="fsheet">⚙ Filtry${act.length + (f.real ? 1 : 0) ? ` (${act.length + (f.real ? 1 : 0)})` : ''}</button></div>
     <div class="chipsrow">${f.real ? `<button class="fchip on" data-act="freal">🎯 Realne cele ✕</button>` : `<button class="fchip" data-act="freal">🎯 Realne cele</button>`}${act.map(k => `<button class="fchip on" data-act="fclr" data-arg="${k}">${fLabel(k, f[k])} ✕</button>`).join('')}<button class="fchip" data-act="fsheet">↕ ${fLabel('sort', f.sort || 'ovr')}</button></div>
     <small class="mut">${list.length} zawodników. Zakresy ocen zawężają się dzięki skautingowi.</small>
-    <div class="card list">${list.slice(0, 60).map(mkRow).join('') || empty('🔎', 'Brak wyników', 'Poluzuj filtry, żeby zobaczyć więcej zawodników.', '<button class="btn sm" data-act="freset">Wyczyść filtry</button>')}</div>`;
+    <div class="card list">${list.length ? '<div class="prow lh"><span class="pn mut">Zawodnik</span><span class="lhc">OVR</span><span class="lhc">POT</span></div>' : ''}${list.slice(0, 60).map(mkRow).join('') || empty('🔎', 'Brak wyników', 'Poluzuj filtry, żeby zobaczyć więcej zawodników.', '<button class="btn sm" data-act="freset">Wyczyść filtry</button>')}</div>`;
 }
 function filterSheet() {
   const f = UI.f, n = searchList().length;
+  const range = (t, a, b, vals) => `<h3>${t}</h3><div class="rng"><select data-change="frng" data-k="${a}"><option value="0">od: dowolnie</option>${vals.map(v => `<option value="${v}" ${f[a] === v ? 'selected' : ''}>od ${v}</option>`).join('')}</select><span>–</span><select data-change="frng" data-k="${b}"><option value="0">do: dowolnie</option>${vals.map(v => `<option value="${v}" ${f[b] === v ? 'selected' : ''}>do ${v}</option>`).join('')}</select></div>`;
   const grp = k => `<h3>${FNAME[k]}</h3><div class="chipsrow wrap">${k !== 'sort' ? `<button class="fchip ${!f[k] ? 'on' : ''}" data-act="fset" data-arg="${k}:">Dowolna</button>` : ''}${FOPT[k]().map(([v, l]) => `<button class="fchip ${String(f[k] || (k === 'sort' ? 'ovr' : '')) === String(v) ? 'on' : ''}" data-act="fset" data-arg="${k}:${v}">${l}</button>`).join('')}</div>`;
   modal(`<h2>⚙ Filtry wyszukiwania</h2>
     <h3>Kraj</h3><select data-change="fccs" style="width:100%"><option value="">Wszystkie kraje</option><option value="FREE" ${f.cc === 'FREE' ? 'selected' : ''}>Wolni agenci</option>${Object.values(S.countries).map(c => `<option value="${c.code}" ${f.cc === c.code ? 'selected' : ''}>${c.flag} ${c.name}</option>`).join('')}</select>
     <div class="chipsrow wrap" style="margin-top:10px"><button class="fchip ${f.real ? 'on' : ''}" data-act="frealsheet">🎯 Tylko realne cele (budżet i chęć transferu)</button></div>
-    ${grp('pos')}${grp('age')}${grp('ovr')}${grp('price')}${grp('sort')}
+    ${grp('pos')}
+    ${range('Wiek', 'ageMin', 'age', [16, 17, 18, 19, 20, 21, 23, 25, 28, 31, 34])}
+    ${range('Ocena ogólna (OVR)', 'ovr', 'ovrMax', [40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90])}
+    ${range('Potencjał (POT)', 'potMin', 'potMax', [50, 55, 60, 65, 70, 75, 80, 85, 90, 95])}
+    <small class="mut">Potencjał widać tylko u zawodników, których znasz (skauting ≥ 30%). Filtr liczy środek szacowanego zakresu.</small>
+    ${grp('price')}${grp('sort')}
     <div class="pcbar"><div class="btns"><button class="btn" data-act="fresetsheet">Wyczyść</button><button class="btn pri sp" data-act="close">Pokaż wyniki (${n})</button></div></div>`);
 }
-const NUMF = ['age', 'ovr', 'price'];
+const NUMF = ['age', 'ageMin', 'ovr', 'ovrMax', 'potMin', 'potMax', 'price'];
+CHG.frng = (v, el) => { UI.f[el.dataset.k] = +v; const sc = $('#modal .box').scrollTop; filterSheet(); render(); $('#modal .box').scrollTop = sc; };
 ACT.fsheet = () => filterSheet();
 ACT.fset = a => { const [k, v] = a.split(':'); UI.f[k] = v === '' ? (NUMF.includes(k) ? 0 : '') : NUMF.includes(k) ? +v : v; const b = $('#modal .box'), sc = b ? b.scrollTop : 0; filterSheet(); render(); $('#modal .box').scrollTop = sc; };
 CHG.fccs = v => { UI.f.cc = v; const sc = $('#modal .box').scrollTop; filterSheet(); render(); $('#modal .box').scrollTop = sc; };
 ACT.frealsheet = () => { UI.f.real = !UI.f.real; const sc = $('#modal .box').scrollTop; filterSheet(); render(); $('#modal .box').scrollTop = sc; };
 ACT.fclr = k => { UI.f[k] = NUMF.includes(k) ? 0 : ''; render(); };
-ACT.freset = () => { Object.assign(UI.f, { cc: '', pos: '', age: 0, ovr: 0, price: 0, real: false }); render(); };
+ACT.freset = () => { Object.assign(UI.f, { cc: '', pos: '', age: 0, ageMin: 0, ovr: 0, ovrMax: 0, potMin: 0, potMax: 0, price: 0, real: false }); render(); };
 ACT.fresetsheet = () => { ACT.freset(); filterSheet(); };
 CHG.fq = v => { UI.f.q = v; render(); };
 ACT.freal = () => { UI.f.real = !UI.f.real; render(); };

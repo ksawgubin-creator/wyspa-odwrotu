@@ -329,6 +329,18 @@ function topScorers(lgId, n = 20, key = 'lg') {
 function countryRanking() { return Object.values(S.countries).filter(c => (c.conf || 'UEFA') === 'UEFA').map(c => ({ cc: c.code, tot: sum(c.coef), last: c.coef[4] })).sort((a, b) => b.tot - a.tot); }
 const clubCoef = id => sum(S.ccoef[id] || [0]);
 const isUEFA = c => (S.countries[c.cc].conf || 'UEFA') === 'UEFA';
+// strefy europejskie w tabeli ligi (wg tego samego klucza co allocateEurope)
+function euroZones(cc) {
+  if ((S.countries[cc].conf || 'UEFA') !== 'UEFA') return null;
+  const rank = countryRanking(), i = rank.findIndex(r => r.cc === cc); if (i < 0) return null;
+  const eps = rank.slice().sort((a, b) => b.last - a.last).slice(0, 2).map(r => r.cc);
+  const q = i < 4 ? [4, 2, 1] : i < 6 ? [3, 2, 1] : i < 10 ? [2, 2, 1] : [1, 1, 1];
+  if (eps.includes(cc)) q[0]++;
+  const out = []; let pos = 1;
+  const add = (n, comp, qual) => { if (n > 0) { out.push({ from: pos, to: pos + n - 1, comp, qual }); pos += n; } };
+  add(q[0], 'CL', i >= 10); add(q[1], 'EL', i >= 15); add(q[2] + (i >= 4 ? 1 : 0), 'ECL', i >= 4);
+  return { zones: out, rank: i + 1, eps: eps.includes(cc) };
+}
 function allocateEurope() {
   const rank = countryRanking();
   const eps = rank.slice().sort((a, b) => b.last - a.last).slice(0, 2).map(r => r.cc);

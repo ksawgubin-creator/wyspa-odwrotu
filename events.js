@@ -243,7 +243,7 @@ const EVENTS = [
   { id: 'bonding', cat: 'Szatnia', w: 2, ctx: () => ({}), title: 'Wyjazd integracyjny', text: () => 'Kapitan proponuje wspólny wyjazd integracyjny drużyny w przerwie między meczami.',
     choices: [{ t: 'Zgoda – klub płaci', hint: 'drobne ryzyko', fn: () => ({ team: 6, money: -Math.round(userClub().tv * 0.8) }), r: 'Atmosfera świetna.', alt: { p: () => 0.15, fn: () => ({ team: 3, press: -5, board: -3 }), r: 'Zdjęcia z imprezy wyciekły do mediów.' } },
       { t: 'Nie teraz', fx: { team: -2 }, r: 'Zawodnicy są trochę zawiedzeni.' }] },
-  { id: 'deadline', cat: 'Transfery', w: 2, ctx: () => { if (!windowOpen()) return null; const p = PALL.filter(p => p.tid >= 0 && p.tid !== S.user && p.age <= 29 && p.ovr >= teamLevel(userClub()) && p.ovr <= teamLevel(userClub()) + 6 && p.val <= Math.max(userClub().tb, 2e5)); return p.length ? { p: pick(p) } : null; },
+  { id: 'deadline', cat: 'Transfery', w: 2, ext: true, ctx: () => { if (!windowOpen()) return null; const p = PALL.filter(p => p.tid >= 0 && p.tid !== S.user && p.age <= 29 && p.ovr >= teamLevel(userClub()) && p.ovr <= teamLevel(userClub()) + 6 && p.val <= Math.max(userClub().tb, 2e5) && !p.loan && club(p.tid).players.length > 19 && playerInterest(p).ok && !notForSale(p) && !(p._noTalk > absDay())); return p.length ? { p: pick(p.slice(0, 400)) } : null; },
     title: 'Okazja na rynku', text: c => `Agent dzwoni: ${c.p.n} (${POS_PL[c.p.pos]}, ${clubName(c.p)}) jest do wzięcia, jego klub potrzebuje pieniędzy.`,
     choices: [{ t: 'Dodaj do obserwowanych i sprawdź', fn: c => { S.short = [c.p.id, ...S.short.filter(x => x !== c.p.id)]; S.know[c.p.id] = Math.max(S.know[c.p.id] || 0, 85); c.p.val = Math.round(c.p.val * 0.85 / 10000) * 10000; return {}; }, r: 'Zawodnik na liście – jego wycena spadła o 15%.' },
       { t: 'Nie interesuje mnie', fx: {}, r: 'Agent zadzwoni do kogoś innego.' }] },
@@ -343,8 +343,8 @@ function resolveEvent(uid, ci) {
   const ev = S.pending.find(e => e.uid === uid); if (!ev) return null;
   S.pending = S.pending.filter(e => e !== ev);
   const ctx = ctxDeref(ev.ctx);
-  if ((ev.ctx.p != null && !ctx.p) || (ctx.p && ctx.p.tid !== S.user && ctx.p.tid !== -3)) return { r: 'Sprawa nieaktualna.', fx: [] };
   const def = eventDef(ev); if (!def) return { r: 'Sprawa nieaktualna.', fx: [] };
+  if ((ev.ctx.p != null && !ctx.p) || (ctx.p && !def.ext && ctx.p.tid !== S.user && ctx.p.tid !== -3)) return { r: 'Sprawa nieaktualna – zawodnik nie jest już w klubie.', fx: [] };
   const ch = def.choices[ci];
   let o = ch, risky = false;
   if (ch.alt && rnd() < evText(ch.alt.p, ctx)) { o = ch.alt; risky = true; }

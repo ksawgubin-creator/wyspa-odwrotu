@@ -174,7 +174,7 @@ function createWorld() {
       for (const t of l.clubs) {
         const cl = {
           id: S.clubs.length, name: t[0], short: t[1], col: [t[2], t[3]], cc: c.code, lg: l.id, rep: t[4], cap: t[5],
-          players: [], formation: pick(['4-3-3', '4-2-3-1', '4-4-2', '4-3-3', '3-5-2', '4-1-2-1-2']), ment: 'bal', lineup: [], bench: [], training: 'bal',
+          players: [], formation: pick(['4-3-3', '4-2-3-1', '4-4-2', '4-3-3', '3-5-2', '4-1-2-1-2', '4-1-4-1', '4-4-1-1', '5-3-2', '3-4-2-1', '4-2-3-1', '4-3-3 (fałszywa 9)', '5-4-1', '3-4-1-2']), ment: 'bal', lineup: [], bench: [], training: 'bal',
         };
         cl.players = t[6] && t[6].length ? realSquad(cl, t[6]) : genSquad(cl);
         cl.coach = genCoach(cl.rep);

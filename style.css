@@ -354,3 +354,4 @@ tr.cl td,tr.el td,tr.ecl td,tr.up td,tr.dn td{background:rgba(255,255,255,.025)}
 .duty .row{gap:6px;margin-bottom:4px}
 .duty .seg button{min-width:0;font-size:12px;padding:6px 4px}
 .dev{font-size:11px;min-width:22px;text-align:center;font-weight:700}
+.kv div>b.wrap{white-space:normal;overflow-wrap:anywhere}

@@ -298,7 +298,7 @@ ACT.cont = async () => {
       busy(true, `Symulacja… ${fmtDate(curDay().date)}`);
       await new Promise(r => setTimeout(r, 0));
     }
-    busy(false); saveNow(); render();
+    busy(false); saveSoon(); render();
     if (S.pending.length) ACT.event(S.pending[0].uid);
     else if (userMatchToday()) ACT.prematch();
   } finally { running = false; busy(false); }
@@ -389,7 +389,7 @@ function presetHtml(t, act) {
     <small class="mut">${(Object.entries(TAC_PRE).find(([k]) => cur(k)) || [0, [0, 0, 0, 'Własne ustawienia.']])[1][3]}</small>`;
 }
 ACT.preset = k => { const t = ctxTeam(), p = TAC_PRE[k]; t.ment = p[1]; t.tac = Object.assign({}, p[2]); commit(t); toast(`Styl gry: ${p[0]}`, 'ok'); render(); };
-ACT.cpresave = () => { const t = ctxTeam(); t.tpre = t.tpre || []; if (t.tpre.length >= 3) return toast('Maksymalnie 3 własne taktyki – usuń którąś.', 'bad'); const n = (prompt('Nazwa taktyki:', `Taktyka ${t.tpre.length + 1}`) || '').trim().slice(0, 24); if (!n) return; t.tpre.push({ n, f: t.formation, ment: t.ment || 'bal', tac: Object.assign({}, t.tac || {}), duty: t.duty ? t.duty.slice() : null, pm: t.pm }); commit(t); render(); };
+ACT.cpresave = () => { const t = ctxTeam(); t.tpre = t.tpre || []; if (t.tpre.length >= 3) return toast('Maksymalnie 3 własne taktyki – usuń którąś.', 'bad'); const st = Object.entries(TAC_PRE).find(([k, p]) => (t.ment || 'bal') === p[1] && Object.keys(p[2]).every(x => ((t.tac || {})[x] || 0) === p[2][x])), n = `${st ? st[1][0].replace(/^\S+\s/, '') : 'Własna'} ${t.formation}`; t.tpre.push({ n, f: t.formation, ment: t.ment || 'bal', tac: Object.assign({}, t.tac || {}), duty: t.duty ? t.duty.slice() : null, pm: t.pm }); commit(t); toast(`💾 Zapisano taktykę: ${n}`, 'ok'); render(); };
 ACT.cpreload = i => { const t = ctxTeam(), p = (t.tpre || [])[+i]; if (!p) return; if (p.f !== t.formation) { t.formation = p.f; autoPick(t, p.f); } t.ment = p.ment; t.tac = Object.assign({}, p.tac); t.duty = p.duty ? p.duty.slice() : null; t.pm = p.pm; commit(t); toast(`Wczytano: ${p.n}`, 'ok'); render(); };
 ACT.cpredel = i => { const t = ctxTeam(); if (!confirm('Usunąć tę taktykę?')) return; t.tpre.splice(+i, 1); commit(t); render(); };
 /* role i zadania w wyjściowej jedenastce */
@@ -1055,7 +1055,7 @@ function recordsCard() {
   const R = (S.crec || {})[S.user]; if (!R) return '';
   const all = Object.values(R.all), top = (k, n) => all.slice().sort((a, b) => b[k] - a[k]).slice(0, n);
   return `<div class="card"><h2>📜 Rekordy klubu (Twoja kadencja)</h2><div class="kv">
-    ${R.bigWin ? `<div><span>Najwyższe zwycięstwo</span><b>${esc(R.bigWin.txt)}</b></div>` : ''}${R.bigLoss ? `<div><span>Najwyższa porażka</span><b>${esc(R.bigLoss.txt)}</b></div>` : ''}
+    ${R.bigWin ? `<div><span>Najwyższe zwycięstwo</span><b class="wrap">${esc(R.bigWin.txt)}</b></div>` : ''}${R.bigLoss ? `<div><span>Najwyższa porażka</span><b class="wrap">${esc(R.bigLoss.txt)}</b></div>` : ''}
     ${R.buy ? `<div><span>Rekordowy zakup</span><b>${esc(R.buy.n)} – ${money(R.buy.fee)}</b></div>` : ''}${R.sale ? `<div><span>Rekordowa sprzedaż</span><b>${esc(R.sale.n)} – ${money(R.sale.fee)}</b></div>` : ''}
     ${R.crowd ? `<div><span>Rekordowa frekwencja</span><b>${R.crowd.toLocaleString('pl-PL')}</b></div>` : ''}</div>
     ${all.length ? `<h3>Najlepsi strzelcy</h3>${top('g', 5).filter(a => a.g).map((a, i) => `<div class="rt"><span>${i + 1}. ${esc(a.n)}</span><b>${a.g}</b></div>`).join('')}<h3>Najwięcej występów</h3>${top('apps', 5).map((a, i) => `<div class="rt"><span>${i + 1}. ${esc(a.n)}</span><b>${a.apps}</b></div>`).join('')}` : ''}</div>`;
@@ -1236,7 +1236,7 @@ ACT.quicksim = () => {
   showResult();
 };
 ACT.startmatch = () => {
-  closeModal(); MX = userMatchToday(); if (!MX) return;
+  closeModal(); if (typeof toastClear === 'function') toastClear(); MX = userMatchToday(); if (!MX) return;
   M = createMatch(MX.h, MX.a, { ...MX.opts, user: MX.user }); doTalk();
   MS = { speed: S.settings.speed || 2, paused: false, over: false };
   const el = $('#match'); el.classList.remove('hidden');
@@ -1338,7 +1338,7 @@ ACT.finishday = () => {
   else if (day.t === 'C') { const cup = S.cups[userClub().cc] || Object.values(S.cups).find(c => label.includes(c.name)); const r = day.slot - cup.slot0; if (cup.rounds[r]) res = cup.rounds[r].map(t => fxRow(club(t.h), club(t.a), `${t.m.hg} : ${t.m.ag}`, t.h === S.user || t.a === S.user, t.m.pens ? `karne ${t.m.pens.h}:${t.m.pens.a}` : t.m.et ? 'po dogrywce' : '')).join(''); }
   else if (day.t === 'P' && S.pre && S.pre.chosen) { const T = S.pre.chosen, row = t => fxRow(club(t.h), club(t.a), `${t.hg} : ${t.ag}`, t.h === S.user || t.a === S.user, t.pens ? `karne ${t.pens.h}:${t.pens.a}` : ''); res = (day.md === 0 ? T.sf : [T.fin, T.third]).filter(t => t && t.w != null).map(row).join(''); }
   else if (day.t === 'N' || day.t === 'T') { res = ''; }
-  saveNow(); render();
+  saveSoon(); render();
   if (r.summary) return showSummary(r.summary);
   if (S.sacked) return showSacked();
   if (S.pending.length && !res) return ACT.event(S.pending[0].uid);

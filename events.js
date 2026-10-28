@@ -517,7 +517,7 @@ function playerChat(p, topic) {
     const bigger = p.ovr > teamLevel(userClub()) + 5;
     if (t.amb >= 14 && bigger) { txt = '„Marzę o Lidze Mistrzów. Jeśli tu się nie uda, poszukam nowego wyzwania.”'; fx = { player: R(-3, 0) }; }
     else if (t.loy >= 14) { txt = '„Kocham ten klub. Chcę tu zostać jak najdłużej.”'; fx = { player: R(2, 5) }; }
-    else { txt = `„Skupiam się na kolejnych meczach. Kontrakt mam na ${p.con} ${p.con === 1 ? 'rok' : 'lata'}.”`; fx = { player: R(0, 3) }; }
+    else { txt = `„Skupiam się na kolejnych meczach. Kontrakt mam na ${plural(p.con, 'rok', 'lata', 'lat')}.”`; fx = { player: R(0, 3) }; }
     txt += ` (ambicja: ${traitWord(t.amb, true)}, lojalność: ${traitWord(t.loy, true)})`;
   } else if (topic === 'promise') {
     if (S.promises.some(x => x.pid === p.id)) { txt = '„Pamiętam o obietnicy, trenerze.”'; fx = {}; }

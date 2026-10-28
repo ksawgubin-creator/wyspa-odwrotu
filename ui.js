@@ -7,7 +7,7 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&am
 const UI = {
   tab: 'home', sqTab: 'pitch', nt: false, compTab: 'league', cc: null, lg: null, lgTab: 'table', rnd: null,
   euro: 'CL', euroTab: 'lp', md: null, mkTab: 'search', clubTab: 'mgr', offTab: 'fin', sel: null, listSort: 'pos',
-  f: { real: true, cc: '', pos: '', age: 0, ovr: 0, ovrMax: 0, potMin: 0, potMax: 0, ageMin: 0, price: 0, sort: 'ovr', q: '' },
+  f: { real: true, cc: '', pos: '', age: 0, ovr: 0, ovrMax: 0, potMin: 0, potMax: 0, ageMin: 0, price: 0, sort: 'fit', q: '' },
 };
 const ACT = {}, CHG = {};
 
@@ -200,7 +200,7 @@ function vHome() {
     <div class="card stat"><small>🧑‍💼 OVR trenera</small><b>${Math.round(S.mgr.ovr)}</b>${bar(S.mgr.ovr)}</div>
   </div>
   <div class="grid2">
-    <div class="card stat"><small>${esc(S.leagues[ut.lg].name)}</small><b>${row.pos}. miejsce</b><small>${row.Pts} pkt • ${row.W}-${row.D}-${row.L}</small><div class="chips">${row.form.slice(-5).map(c => `<span class="chip ${c}">${c === 'W' ? 'Z' : c === 'D' ? 'R' : 'P'}</span>`).join('')}</div>${(() => { const h = (S.uhist || []).filter(x => x.s === S.season); return h.length >= 2 && typeof sparkSVG === 'function' ? sparkSVG(h.map(x => x.pos), { w: 130, h: 24, invert: true }) : ''; })()}</div>
+    <div class="card stat"><small>${esc(S.leagues[ut.lg].name)}</small><b>${row.P ? row.pos + ". miejsce" : "Start sezonu"}</b><small>${row.P ? row.Pts + " pkt" : "jeszcze bez meczu"} • ${row.W}-${row.D}-${row.L}</small><div class="chips">${row.form.slice(-5).map(c => `<span class="chip ${c}">${c === 'W' ? 'Z' : c === 'D' ? 'R' : 'P'}</span>`).join('')}</div>${(() => { const h = (S.uhist || []).filter(x => x.s === S.season); return h.length >= 2 && typeof sparkSVG === 'function' ? sparkSVG(h.map(x => x.pos), { w: 130, h: 24, invert: true }) : ''; })()}</div>
     <div class="card stat"><small>Prestiż klubu</small>${presStars(ut)}<small>${presOf(ut).toFixed(1)}/10 • ${presWord(presOf(ut))}</small></div>
     <div class="card stat"><small>Drużyna</small><b>${moraleLabel(mAvg)[0]} ${moraleLabel(mAvg)[1]}</b><small>Morale ${mAvg} • kondycja ${fAvg}%</small>${bar(fAvg)}</div>
   </div>
@@ -333,14 +333,15 @@ function sqRow(p) {
     ${posTag(p.pos)}<div class="pn">${esc(p.n)}<small>${flag(p.nat)} ${p.age} l. ${morale(p)} ${formArrow(p.form)} ${stTag(p)} ${p.con <= 1 && !p.loan && p.tid === S.user ? '<span class="pill y">kontrakt</span>' : ''} ${p.listed ? '<span class="pill">lista</span>' : ''} ${p.loan ? '<span class="pill">wyp.</span>' : ''}</small></div>
     <div class="fitb">${bar(p.fit)}</div>${ovrTag(p.ovr)}<button class="ibtn" data-act="info" data-arg="${p.id}">i</button></div>`;
 }
+const devArrow = p => { const d = p.ovrS != null && p.tid === S.user ? p.ovr - p.ovrS : 0; return d ? `<span class="dev ${d > 0 ? 'good' : 'bad'}">${d > 0 ? '▲' : '▼'}${Math.abs(d)}</span>` : '<span class="dev"></span>'; };
 function vSquadList(t) {
   const s = UI.listSort;
   const ps = t.players.slice().sort((a, b) => s === 'ovr' ? b.ovr - a.ovr : s === 'age' ? a.age - b.age : s === 'fit' ? a.fit - b.fit : s === 'mor' ? a.mor - b.mor : s === 'val' ? b.val - a.val : POSITIONS.indexOf(a.pos) - POSITIONS.indexOf(b.pos) || b.ovr - a.ovr);
   const tot = sum(t.players.map(p => p.val || 0)), wages = sum(t.players.map(p => p.wage || 0));
   return `<div class="flt"><select data-change="lsort">${[['pos', 'wg pozycji'], ['ovr', 'wg ogólnej'], ['age', 'wg wieku'], ['fit', 'wg kondycji'], ['mor', 'wg morale'], ['val', 'wg wartości']].map(([k, n]) => `<option value="${k}" ${s === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
     ${t._st ? '' : `<small class="mut">Wartość kadry: ${money(tot)} • pensje: ${money(wages)}/tydz.</small>`}
-    <div class="card list"><div class="prow lh"><span class="pn mut">Zawodnik</span><span class="mini">Kond.</span><span class="lhc">OVR</span><span class="lhc">POT</span></div>${ps.map(p => `<div class="prow" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${esc(p.n)}<small>${flag(p.nat)} ${p.age} l. • ${p.tid === S.user ? ROLES[roleOf(p)][0].replace(' zawodnik', '') : money(p.val)} ${morale(p)} ${stTag(p)}</small></div>
-      <span class="mini">${Math.round(p.fit)}%</span>${ovrTag(p.ovr)}<span class="potc">${p.pot}</span></div>`).join('')}</div>`;
+    <div class="card list"><div class="prow lh"><span class="pn mut">Zawodnik</span><span class="mini">Kond.</span><span class="lhc">OVR</span><span class="dev"></span><span class="lhc">POT</span></div>${ps.map(p => `<div class="prow" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${esc(p.n)}<small>${flag(p.nat)} ${p.age} l. • ${p.tid === S.user ? ROLES[roleOf(p)][0].replace(' zawodnik', '') : money(p.val)} ${morale(p)} ${stTag(p)}</small></div>
+      <span class="mini">${Math.round(p.fit)}%</span>${ovrTag(p.ovr)}${devArrow(p)}<span class="potc">${p.pot}</span></div>`).join('')}</div>`;
 }
 const TAC = [['press', 'Pressing', ['Niski blok', 'Średni', 'Wysoki pressing'], 'Wysoki pressing częściej odbiera piłkę, ale szybciej męczy zawodników.'],
   ['tempo', 'Tempo', ['Cierpliwe', 'Normalne', 'Szybkie'], 'Szybkie tempo daje więcej strzałów, ale gorszej jakości.'],
@@ -438,7 +439,7 @@ ACT.info = id => {
   if (mine) {
     act = `<div class="btns"><button class="btn sm pri" data-act="chat" data-arg="${p.id}">💬 Porozmawiaj</button></div>
       ${p.loan ? `<p class="mut">Wypożyczony z ${esc(club(p.loan.from).name)} do końca sezonu.</p><div class="btns"><button class="btn sm red" data-act="release" data-arg="${p.id}">Zakończ wypożyczenie</button></div>` : `
-      <h3>Kontrakt (${p.con} ${p.con === 1 ? 'rok' : 'lata'}) • rola: ${ROLES[roleOf(p)][0]}</h3>
+      <h3>Kontrakt (${plural(p.con, 'rok', 'lata', 'lat')}) • rola: ${ROLES[roleOf(p)][0]}</h3>
       <div class="btns"><button class="btn sm pri" data-act="rennego" data-arg="${p.id}">📝 Negocjuj nowy kontrakt</button></div>
       <div class="kv"><div><span>Rola w składzie</span><select data-change="setrole" data-pid="${p.id}">${ROLE_ORD.slice().reverse().filter(r => r !== 'pros' || p.age <= 21).map(r => `<option value="${r}" ${roleOf(p) === r ? 'selected' : ''}>${ROLES[r][0]}</option>`).join('')}</select></div></div>
       <small class="mut">Zawodnik oczekuje roli: <b>${ROLES[expectedRole(p)][0].toLowerCase()}</b>. Rola to obietnica minut – ${ROLES[roleOf(p)][2] ? `co najmniej ok. ${Math.round(ROLES[roleOf(p)][2] * 100)}% gry` : 'bez gwarancji gry'}. Degradacja obniża morale, a niespełniona obietnica frustruje.</small>
@@ -446,7 +447,8 @@ ACT.info = id => {
   } else if (p.tid === -3) {
     act = `<div class="btns"><button class="btn pri sp" data-act="promote" data-arg="${p.id}">⬆ Awans do pierwszego zespołu</button><button class="btn red" data-act="relyouth" data-arg="${p.id}">Zwolnij</button></div>`;
   } else if (p.tid !== -2) {
-    act = `<div class="btns">
+    const pi = playerInterest(p);
+    act = `<div class="row" style="margin-top:6px"><span class="sp mut">Zainteresowanie transferem</span><b class="${pi.ok ? 'good' : 'bad'}">${pi.ok ? '👍 otwarty na rozmowy' : '👎 nie chce'}</b></div>${pi.ok ? '' : `<small class="mut">${esc(pi.msg)}</small>`}<div class="btns">
       ${p.tid === -1 ? `<button class="btn pri sp" data-act="nego" data-arg="${p.id}">✍️ Podpisz (wolny)</button>` : `<button class="btn pri sp" data-act="nego" data-arg="${p.id}">💰 Złóż ofertę</button><button class="btn" data-act="loanin" data-arg="${p.id}">Wypożycz</button>`}
       <button class="btn" data-act="short" data-arg="${p.id}">${S.short.includes(p.id) ? '★ Obserwowany' : '☆ Obserwuj'}</button></div>
       ${k < 100 ? `<div class="btns"><button class="btn sm full" data-act="scoutp" data-arg="${p.id}">🔍 Wyślij skauta (wiedza ${k}%)</button></div>` : ''}`;
@@ -539,6 +541,14 @@ ACT.scoutp = id => {
 ACT.doscoutp = a => { const [sid, pid] = a.split(':').map(Number); assignScout(sid, { k: 'player', pid }); closeModal(); toast('Skaut wyruszył na obserwację.'); render(); };
 
 /* ---------- negocjacje ---------- */
+ACT.wbmod = () => { const ut = userClub(), room = wageRoom();
+  modal(`<h2>⇄ Budżety</h2><div class="kv"><div><span>Budżet transferowy</span><b>${money(ut.tb)}</b></div><div><span>Budżet płac</span><b>${money(S.board.wb)}/tydz.</b></div><div><span>Obecne pensje</span><b>${money(wageBill(ut))}/tydz.</b></div><div><span>Wolne na pensje</span><b class="${room < 0 ? 'bad' : 'good'}">${money(room)}/tydz.</b></div></div>
+    <small class="mut">Przesunięcie 1 000 €/tydz. budżetu płac kosztuje 52 000 € budżetu transferowego (i odwrotnie). Nowi zawodnicy i podwyżki muszą zmieścić się w budżecie płac.</small>
+    <div class="seg wrap">${[-10000, -2000, 2000, 10000].map(v => `<button class="btn sm" data-act="wbshift" data-arg="${v}">${v > 0 ? '+' : '−'}${money(Math.abs(v))}/tydz.</button>`).join('')}</div>
+    <div class="numrow"><span>Inna kwota (€/tydz., ujemna = z płac do transferów):</span><input class="numin" type="number" inputmode="numeric" step="500" value="0" data-change="wbnum"></div>
+    <div class="btns"><button class="btn full" data-act="close">Zamknij</button></div>`); };
+ACT.wbshift = v => { const r = shiftBudget(+v); toast(r.msg, r.ok ? 'ok' : 'bad'); if (r.ok) { render(); ACT.wbmod(); } };
+CHG.wbnum = v => { const n = Math.round(+v || 0); if (n) setTimeout(() => ACT.wbshift(n)); };
 let NEG = null;
 ACT.nego = id => {
   const p = pget(+id);
@@ -579,12 +589,12 @@ function renderNego(note) {
       <div class="seg"><button class="btn sm ${NEG.inst ? 'on' : ''}" data-act="neginst">💳 Raty</button><button class="btn sm ${NEG.sellOn ? 'on' : ''}" data-act="negsellon">🔁 Klauzula odsprzedaży 15%</button>${releaseClause(p) ? `<button class="btn sm" data-act="negrc">📜 Klauzula</button>` : ''}</div>
       <small class="mut">${NEG.inst ? `Raty: teraz ${money(upfront(NEG.fee, NEG))}, potem 2 × ${money(Math.round((Math.round(NEG.fee * INST_K) - upfront(NEG.fee, NEG)) / 2))} na koniec kolejnych sezonów (łącznie +10%).` : 'Płatność jednorazowa.'}${NEG.sellOn ? ' Odsprzedaż: klub sprzedający obniża cenę o ok. 10%, ale dostanie 15% z przyszłej sprzedaży.' : ''}</small>
       ${note ? `<p class="${note.cls}">${esc(note.t)}</p>` : ''}
-      <div class="btns"><button class="btn pri sp" data-act="sendbid">Złóż ofertę</button>${NEG.counter ? `<button class="btn" data-act="acccounter">Przyjmij ${money(NEG.counter)}</button>` : ''}</div>
+      <div class="btns">${p._noTalk > absDay() ? `<button class="btn sp" disabled>Rozmowy zerwane – wróć za ${plural(p._noTalk - absDay(), 'dzień', 'dni', 'dni')}</button>` : '<button class="btn pri sp" data-act="sendbid">Złóż ofertę</button>'}${NEG.counter ? `<button class="btn" data-act="acccounter">Przyjmij ${money(NEG.counter)}</button>` : ''}</div>
       <div class="btns"><button class="btn full" data-act="close">Anuluj</button></div>`);
   } else {
     const dem = signingDemand(p, NEG.role), exp = expectedRoleIn(p, ut);
     modal(`<h2>Warunki kontraktu</h2><div class="row">${posTag(p.pos)}<b class="sp">${esc(p.n)}</b>${ovrShow(p)}</div>
-      <small class="mut">Agent zawodnika oczekuje ok. ${money(dem)}/tydz.${NEG.fee ? ` • kwota transferu: ${money(NEG.fee)}` : ''}</small>
+      <small class="mut">Agent zawodnika oczekuje ok. ${money(dem)}/tydz.${NEG.fee ? ` • kwota transferu: ${money(NEG.fee)}` : ''}<br>Wolne w budżecie płac: <b class="${wageRoom() < dem ? 'bad' : 'good'}">${money(Math.max(0, wageRoom()))}/tydz.</b>${wageRoom() < dem ? ' – <a data-act="wbmod">przesuń środki</a>' : ''}</small>
       <h3>Rola w składzie</h3><div class="seg">${ROLE_ORD.slice().reverse().filter(r => r !== 'pros' || p.age <= 21).map(r => `<button class="btn sm ${NEG.role === r ? 'on' : ''}" data-act="negrole" data-arg="${r}">${ROLES[r][0]}</button>`).join('')}</div>
       <small class="mut">Zawodnik oczekuje roli: <b>${ROLES[exp][0].toLowerCase()}</b>.${NEG.role !== exp ? (ROLE_ORD.indexOf(NEG.role) < ROLE_ORD.indexOf(exp) ? ' Mniejsza rola = wyższe żądania (ambitni mogą odmówić).' : ' Większa rola – musisz mu dać grać.') : ''}</small>
       <h3>Pensja tygodniowa</h3><div class="stepper"><button class="btn" data-act="wage" data-arg="-1">−</button><b>${money(NEG.wage)}</b><button class="btn" data-act="wage" data-arg="1">+</button></div>
@@ -608,7 +618,7 @@ ACT.rennego = id => { const p = pget(+id); const role = roleOf(p); REN = { pid: 
 function renderRen(note) {
   const p = pget(REN.pid), dem = contractDemand(p, REN.years, REN.role), exp = expectedRole(p);
   modal(`<h2>📝 Nowy kontrakt</h2><div class="row">${posTag(p.pos)}<b class="sp">${esc(p.n)}</b>${ovrTag(p.ovr)}</div>
-    <small class="mut">Obecnie: ${money(p.wage)}/tydz., ${p.con} ${p.con === 1 ? 'rok' : 'lata'} • ${pers(p)} • oczekuje roli: <b>${ROLES[exp][0].toLowerCase()}</b></small>
+    <small class="mut">Obecnie: ${money(p.wage)}/tydz., ${plural(p.con, 'rok', 'lata', 'lat')} • ${pers(p)} • oczekuje roli: <b>${ROLES[exp][0].toLowerCase()}</b></small>
     <h3>Rola w składzie</h3><div class="seg">${ROLE_ORD.slice().reverse().filter(r => r !== 'pros' || p.age <= 21).map(r => `<button class="btn sm ${REN.role === r ? 'on' : ''}" data-act="renrole" data-arg="${r}">${ROLES[r][0]}</button>`).join('')}</div>
     <small class="mut">${roleGap(p, REN.role) > 0 ? '⚠️ Proponujesz mniejszą rolę, niż oczekuje – zażąda wyższej pensji, a ambitni mogą odmówić.' : roleGap(p, REN.role) < 0 ? '✨ Większa rola niż oczekuje – zawodnik będzie zachwycony, ale musisz dać mu grać.' : 'Rola zgodna z oczekiwaniami.'}</small>
     <h3>Długość umowy</h3><div class="seg">${[1, 2, 3, 4, 5].map(y => `<button class="btn sm ${REN.years === y ? 'on' : ''}" data-act="renyears" data-arg="${y}">${y} l.</button>`).join('')}</div>
@@ -843,7 +853,8 @@ function vHist() {
 function vMarket() {
   const ut = userClub();
   const head = (navCur() !== 'market' ? '' : tabs([['search', 'Szukaj'], ['short', `Obserwowani`], ['scout', 'Skauting'], ['offers', `Oferty${S.offers.length ? ' (' + S.offers.length + ')' : ''}`], ['news', 'Wieści']], UI.mkTab, 'mktab')) +
-    `<div class="card"><div class="row"><span>${windowText()}</span></div><div class="row mut" style="font-size:13px;margin-top:4px"><span>Budżet transferowy: <b class="good">${money(ut.tb)}</b></span><span class="sp"></span><span>Kadra: ${ut.players.length}/32</span></div></div>`;
+    `<div class="card"><div class="row"><span>${windowText()}</span></div><div class="row mut" style="font-size:13px;margin-top:4px"><span>Budżet transferowy: <b class="good">${money(ut.tb)}</b></span><span class="sp"></span><span>Kadra: ${ut.players.length}/32</span></div>
+      <div class="row mut" style="font-size:13px;margin-top:4px"><span>Budżet płac: <b class="${wageRoom() < 0 ? 'bad' : 'good'}">${money(wageBill(ut))} / ${money(S.board.wb)}</b>/tydz.</span><span class="sp"></span><button class="btn sm" data-act="wbmod">⇄ Przesuń</button></div></div>`;
   return head + ({ search: vSearch, short: vShort, scout: vScout, offers: vOffers, news: vNews })[UI.mkTab]();
 }
 ACT.mktab = a => { if (a !== UI.mkTab) navPush(); UI.mkTab = a; render(); };
@@ -867,7 +878,7 @@ function mkRow(p) {
 const FOPT = {
   pos: () => POSITIONS.map(p => [p, POS_PL[p]]), age: () => [19, 21, 23, 25, 28, 31].map(a => [a, `do ${a} l.`]),
   ovr: () => [60, 65, 70, 75, 80, 85].map(a => [a, `${a}+`]), price: () => [5e5, 1e6, 3e6, 1e7, 3e7, 8e7].map(v => [v, `do ${money(v)}`]),
-  sort: () => [['ovr', 'wg ogólnej'], ['pot', 'wg potencjału'], ['val', 'wg wartości'], ['age', 'najmłodsi']],
+  sort: () => [['fit', 'najlepsi dla mnie'], ['ovr', 'wg ogólnej'], ['pot', 'wg potencjału'], ['val', 'wg wartości'], ['age', 'najmłodsi']],
 };
 const FNAME = { cc: 'Kraj', pos: 'Pozycja', age: 'Wiek', ovr: 'Ogólna', price: 'Cena', sort: 'Sortowanie' };
 function searchList() {
@@ -894,9 +905,18 @@ function fLabel(k, v) {
   if (k === 'cc') return v === 'FREE' ? 'Wolni agenci' : `${S.countries[v].flag} ${S.countries[v].name}`;
   const o = FOPT[k]().find(x => x[0] === v); return o ? o[1] : v;
 }
+/* braki w kadrze: pozycje, na których brakuje graczy na poziomie zespołu (0–2) */
+function squadNeeds() {
+  const ut = userClub(), lv = teamLevel(ut) - 2, n = {};
+  const want = { GK: 2, CB: 3, LB: 1, RB: 1, CDM: 1, CM: 2, CAM: 1, LM: 1, RM: 1, LW: 1, RW: 1, ST: 2 };
+  for (const pos of Object.keys(want)) { const have = ut.players.filter(p => (p.pos === pos || (p.alt || []).includes(pos)) && p.ovr >= lv).length; n[pos] = clamp(want[pos] - have, 0, 2); }
+  return n;
+}
 function vSearch() {
   const f = UI.f, list = searchList();
-  const key = f.sort === 'pot' ? (p => know(p) >= 30 ? ovrRange(p, true)[1] : 0) : f.sort === 'val' ? (p => p.val) : f.sort === 'age' ? (p => -p.age) : ovrEst;
+  const mid = r => (r[0] + r[1]) / 2, need = squadNeeds();
+  const fitK = p => { const o = ovrEst(p), pt = know(p) >= 30 ? mid(ovrRange(p, true)) : o; return o + Math.max(0, pt - o) * 0.35 - Math.max(0, p.age - 29) * 2.5 + (need[p.pos] || 0) * 3; };
+  const key = f.sort === 'pot' ? (p => know(p) >= 30 ? mid(ovrRange(p, true)) : 0) : f.sort === 'val' ? (p => p.val) : f.sort === 'age' ? (p => -p.age) : f.sort === 'ovr' ? ovrEst : fitK;
   list.sort((a, b) => key(b) - key(a));
   const act = ['cc', 'pos', 'ageMin', 'age', 'ovr', 'ovrMax', 'potMin', 'potMax', 'priceMin', 'price'].filter(k => f[k]);
   return `<div class="flt"><input placeholder="Szukaj nazwiska…" value="${esc(f.q)}" data-change="fq" style="flex:1 1 55%;min-width:0"><button class="btn sm pri" data-act="fsheet">⚙ Filtry${act.length + (f.real ? 1 : 0) ? ` (${act.length + (f.real ? 1 : 0)})` : ''}</button></div>
@@ -1097,14 +1117,17 @@ function vFac() {
 ACT.upcomm = k => { const r = upgradeComm(k); toast(r.msg, r.ok ? 'ok' : 'bad'); render(); };
 const stadExp = c => { const add = Math.max(1000, Math.round(c.cap * 0.1 / 500) * 500); return { add, cost: Math.round(add * c.price * 90 / 1e5) * 1e5 }; };
 function stadiumCard(ut) {
-  const e = stadExp(ut), att = attendance(ut, false), dem = Math.round(ticketDemand(ut) * (0.85 + (S.fans != null ? S.fans : 60) / 400) * (1 + commLvl('park') * 0.03)), gate = Math.round(att * ut.price * (1 + commLvl('gastro') * 0.06));
+  const e = stadExp(ut), att = attendance(ut, false), dem = Math.round(ticketDemand(ut) * (0.85 + (S.fans != null ? S.fans : 60) / 400) * (1 + commLvl('park') * 0.03) * priceK(ut)), gate = Math.round(att * ut.price * (1 + commLvl('gastro') * 0.06));
   const full = dem >= ut.cap;
   return `<div class="card"><h2>🏟️ Stadion</h2>
     <div class="kv"><div><span>Pojemność</span><b>${ut.cap.toLocaleString('pl-PL')}</b></div><div><span>Popyt na bilety</span><b>${dem.toLocaleString('pl-PL')}</b></div>
-    <div><span>Średnia frekwencja</span><b>${att.toLocaleString('pl-PL')} (${Math.round(att / ut.cap * 100)}%)</b></div><div><span>Wpływy z meczu</span><b>${money(gate)}</b></div><div><span>Średnia cena biletu</span><b>${Math.round(ut.price)} €</b></div></div>
+    <div><span>Średnia frekwencja</span><b>${att.toLocaleString('pl-PL')} (${Math.round(att / ut.cap * 100)}%)</b></div><div><span>Wpływy z meczu</span><b>${money(gate)}</b></div></div>
+    <h3>🎟️ Cena biletu</h3><div class="stepper"><button class="btn" data-act="tkt" data-arg="-1">−</button><b>${ut.price.toFixed(1)} € <small class="mut">(${Math.round(ut.price / basePrice(ut) * 100)}% standardu)</small></b><button class="btn" data-act="tkt" data-arg="1">+</button></div>
+    <small class="mut">Wyższa cena = mniejszy popyt, ale więcej z każdego biletu. Gdy stadion jest pełny, podwyżka zwykle się opłaca; przy pustych trybunach – obniżka. Bardzo drogie bilety psują nastroje kibiców.</small>
     <small class="mut">Popyt rośnie z renomą klubu, poziomem ligi, nastrojami kibiców i parkingiem. ${full ? 'Stadion jest za mały – rozbudowa się opłaci.' : 'Na razie stadion nie zapełnia się – rozbudowa nie zwiększy wpływów.'}${ut.stadBuild ? ` Trwa rozbudowa: +${ut.stadBuild.add.toLocaleString('pl-PL')} miejsc od ${SEASON_LABEL(ut.stadBuild.season)}.` : ''}</small>
     <div class="btns">${ut.stadBuild ? '<span class="pill">🏗️ Budowa w toku</span>' : `<button class="btn sm ${full ? 'pri' : ''}" data-act="stadexp">Rozbuduj (+${e.add.toLocaleString('pl-PL')} miejsc) • ${money(e.cost)}</button>`}</div></div>`;
 }
+ACT.tkt = d => { const ut = userClub(), b = basePrice(ut); S.tkt = clamp(Math.round(((ut.price / b) + +d * 0.05) * 100) / 100, 0.5, 1.8); ut.price = Math.round(b * S.tkt * 10) / 10; saveSoon(); render(); };
 ACT.stadexp = () => {
   const ut = userClub(), e = stadExp(ut);
   if (ut.bal < e.cost) return toast('Brak środków na rozbudowę stadionu.', 'bad');
@@ -1263,11 +1286,12 @@ function renderSubs() {
   const s = uside();
   modal(`<h2>Zmiany (${s.subs}/${MAX_SUBS})</h2><small class="mut">${subOut ? 'Wybierz zawodnika z ławki.' : 'Wybierz zawodnika, który zejdzie.'}</small>
     <h3>Na boisku</h3>${s.pitch.map(x => `<div class="prow ${subOut === x.p ? 'sel' : ''}" data-act="subout" data-arg="${x.p.id}"><span class="pos ${LINE[x.pos]}">${POS_PL[x.pos]}</span><div class="pn">${esc(x.p.n)}</div><div class="fitb">${bar(Math.round(fitNow(s, x, M.minute)))}</div>${ovrTag(x.ov)}</div>`).join('')}
-    <h3>Ławka</h3>${s.bench.map(p => `<div class="prow" data-act="subin" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${esc(p.n)}</div><div class="fitb">${bar(p.fit)}</div>${ovrTag(p.ovr)}</div>`).join('') || '<small>Pusta</small>'}
+    <h3>Ławka${subOut ? ` <small class="mut">(OVR na pozycji: ${POS_PL[outPos()]})</small>` : ''}</h3>${(subOut ? s.bench.slice().sort((a, b) => ovrAt(b, outPos()) - ovrAt(a, outPos())) : s.bench).map(p => `<div class="prow" data-act="subin" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${esc(p.n)}</div><div class="fitb">${bar(p.fit)}</div>${ovrTag(subOut ? ovrAt(p, outPos()) : p.ovr)}</div>`).join('') || '<small>Pusta</small>'}
     <div class="btns"><button class="btn full" data-act="close">Wróć do meczu</button></div>`);
 }
+const outPos = () => { const x = uside().pitch.find(y => y.p === subOut); return x ? x.pos : 'CM'; };
 ACT.subout = id => { subOut = uside().pitch.find(x => x.p.id === +id).p; renderSubs(); };
-ACT.subin = id => { const s = uside(); if (!subOut) return toast('Najpierw wybierz zawodnika schodzącego.'); if (s.subs >= MAX_SUBS) return toast('Wykorzystano wszystkie zmiany.'); substitute(M, s, subOut, pget(+id)); subOut = null; upd(); mctl(); renderSubs(); };
+ACT.subin = id => { const s = uside(); if (!subOut) return toast('Najpierw wybierz zawodnika schodzącego.'); if (s.subs >= MAX_SUBS) return toast('Wykorzystano wszystkie zmiany.'); const ip = pget(+id), op = outPos(); if ((ip.pos === 'GK') !== (op === 'GK') && !confirm(`${ip.pos === 'GK' ? 'Bramkarz w polu' : 'Zawodnik z pola na bramce'} – OVR na tej pozycji: ${ovrAt(ip, op)}. Na pewno?`)) return; substitute(M, s, subOut, ip); subOut = null; upd(); mctl(); renderSubs(); };
 ACT.matchdone = () => showResult();
 const rateCol = r => r >= 8 ? '#1db36b' : r >= 7 ? '#5cc46b' : r >= 6.3 ? '#b6b33a' : r >= 5.5 ? '#d98a2b' : '#d9473b';
 function showResult() {
@@ -1285,7 +1309,7 @@ function showResult() {
     ${typeof momentumSVG === 'function' ? `<div style="margin:8px 0">${momentumSVG(M.mom || [], { w: Math.min(520, window.innerWidth - 48), h: 50, colH: H.t.col[0], colA: A.t.col[0], goals: [...H.scorers.map(g => ({ min: g.min, side: 'h' })), ...A.scorers.map(g => ({ min: g.min, side: 'a' }))] })}</div>` : ''}
     <div class="kv"><div><span>Posiadanie</span><b>${Math.round(H.poss / ((H.poss + A.poss) || 1) * 100)}–${100 - Math.round(H.poss / ((H.poss + A.poss) || 1) * 100)}%</b></div><div><span>Strzały</span><b>${H.shots}–${A.shots}</b></div><div><span>Celne</span><b>${H.sot}–${A.sot}</b></div><div><span>xG (gole oczekiwane)</span><b>${(H.xg || 0).toFixed(2)}–${(A.xg || 0).toFixed(2)}</b></div><div><span>Rożne</span><b>${H.corners}–${A.corners}</b></div></div>
     ${xgNote(H, A)}
-    <div class="row"><span>⭐ Zawodnik meczu:</span><b class="sp">${esc(M.motm.p.n)}</b><span class="ovr o1">${M.motm.rating.toFixed(1)}</span></div>
+    <div class="row"><span>⭐ Zawodnik meczu:</span><b class="sp">${esc(M.motm.p.n)} <small class="mut">(${esc((M.motm.p.tid === H.t.id || H.rec[M.motm.p.id] ? H : A).t.short)})</small></b><span class="ovr o1">${M.motm.rating.toFixed(1)}</span></div>
     <h3>Oceny</h3>${recs.map(r => `<div class="rt"><span>${posTag(r.pos)} ${esc(shortName(r.p))} ${r.g ? '⚽'.repeat(r.g) : ''}${r.a ? '🅰️'.repeat(r.a) : ''}${r.y && !r.r ? '🟨' : ''}${r.r ? '🟥' : ''}</span><span class="rchip" style="background:${rateCol(r.rating)}">${r.rating.toFixed(1)}</span></div>`).join('')}
     <div class="btns"><button class="btn pri full" data-act="finishday">Dalej</button></div>`, true);
 }

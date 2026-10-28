@@ -129,7 +129,7 @@ function aiStyle(t, d) {
 }
 const MAX_SUBS = 5, BENCH = 9;
 // strojenie silnika: przewaga własnego boiska i „stromość” różnic siły
-let SHOT_BASE = 0.25, SHOT_EXP = 1.3, FIN_EXP = 2.2, HOME_ADV = 1.13, AWAY_ADV = 0.9, DAY_VAR = 0.07;
+let SHOT_BASE = 0.285, SHOT_EXP = 1.3, FIN_EXP = 2.2, HOME_ADV = 1.13, AWAY_ADV = 0.9, DAY_VAR = 0.07;
 
 /* ---------- stan zawodnika ---------- */
 // polska odmiana liczebników: 1 gol, 2 gole, 5 goli
@@ -480,7 +480,7 @@ function finishMatch(m) {
 }
 
 /* szybka symulacja (mecze AI): ten sam model siły, wynik losowany z rozkładu Poissona */
-let FAST_K = 1.12;
+let FAST_K = 1.11, FAST_BLEND = 0.38;
 function poisson(l) { let L = Math.exp(-l), k = 0, p = 1; do { k++; p *= rnd(); } while (p > L); return k - 1; }
 function fastSim(h, a, opts = {}) {
   const m = createMatch(h, a, { ...opts, quick: true });
@@ -498,6 +498,7 @@ function fastSim(h, a, opts = {}) {
   };
   const xh = xg(H, A, ph), xa = xg(A, H, 1 - ph);
   if (!m.neutral) { xh.g *= HOME_ADV; xa.g *= AWAY_ADV; }
+  { const mg = (xh.g + xa.g) / 2; xh.g = xh.g * (1 - FAST_BLEND) + mg * FAST_BLEND; xa.g = xa.g * (1 - FAST_BLEND) + mg * FAST_BLEND; }   // mniej pogromów
   const addGoals = (side, n, from, to) => {
     for (let i = 0; i < n; i++) {
       const c = side.pitch.filter(s => s.pos !== 'GK'); if (!c.length) return;

@@ -337,7 +337,7 @@ function uk_goalOverlay(text, sub) {
     document.body.appendChild(el);
     var done = false, rm = function () { if (done) return; done = true; if (el.parentNode) el.parentNode.removeChild(el); };
     el.addEventListener('animationend', function (e) { if (e.target === el) rm(); });
-    setTimeout(rm, 1800);
+    setTimeout(rm, 1200); el.addEventListener("click", rm);
     try { if (navigator.vibrate) navigator.vibrate(200); } catch (e) { /* */ }
   } catch (e) { /* */ }
 }

@@ -688,7 +688,7 @@ function processDay(live) {
   if (d.t === 'P' && S.pre && !S.pre.chosen) choosePre(0);
   S.offers = windowOpen() ? S.offers.filter(o => o.exp >= S.day) : [];
   recover(d.gap);
-  const list = dayMatches(d);
+  const list = dayMatches(d), roundRes = [];
   let userRes = null;
   for (const x of list) {
     let m;
@@ -699,7 +699,9 @@ function processDay(live) {
     if (!x.nt) eloUpdate(x.h, x.a, m);
     if (x.user) userRes = { m, x };
     if (!x.nt && x.opts.comp !== 'P' && (x.h.id === S.user || x.a.id === S.user)) afterUserClubMatch(m, x);
+    if (d.t === 'L' && !x.nt && x.h.lg === ut.lg) { roundRes.push({ x, m }); for (const sd of [m.home, m.away]) for (const r of Object.values(sd.rec)) if (r.g >= 3) news(`🎩 Hat-trick! ${r.p.n} (${sd.t.name}) strzela ${r.g} gole w meczu ${m.home.t.name} – ${m.away.t.name} (${m.home.goals}:${m.away.goals}).`); }
   }
+  if (roundRes.length) roundNews(ut, roundRes);
   if (d.t === 'L') weekly(d);
   if (d.t === 'E' && d.st === 'Q' && d.leg === 2) finishQ(d.r);
   if (d.t === 'E' && d.st === 'Q' && S.euro.CL && S.euro.CL.q && d.r === qLast(S.euro.CL.q) && d.leg === 2 && S.user >= 0 && typeof setBoardObjective === 'function') { const ec = Object.values(S.euro).find(c => c.teams.includes(S.user)); if (ec) S.board.euro = euroGoal(ec); }
@@ -762,6 +764,30 @@ function derbyName(a, b) {
   if (a == null || b == null) return null; return RIVAL_IDX[Math.min(a, b) + '-' + Math.max(a, b)] || null;
 }
 function h2hRec(opp) { const r = (S.h2h || {})[opp]; return r || { w: 0, d: 0, l: 0 }; }
+function roundNews(ut, res) {
+  const lg = S.leagues[ut.lg], big = res.slice().sort((a, b) => Math.abs(b.m.home.goals - b.m.away.goals) - Math.abs(a.m.home.goals - a.m.away.goals))[0];
+  const up = res.filter(r => Math.abs(eloOf(r.x.h) - eloOf(r.x.a)) > 120).find(r => { const fav = eloOf(r.x.h) > eloOf(r.x.a) ? 'h' : 'a', gd = r.m.home.goals - r.m.away.goals; return fav === 'h' ? gd < 0 : gd > 0; });
+  const lead = club(table(ut.lg)[0].id);
+  const parts = [`Lider: ${lead.name}`];
+  if (big && Math.abs(big.m.home.goals - big.m.away.goals) >= 3) parts.push(`najwyższe zwycięstwo: ${big.m.home.t.name} – ${big.m.away.t.name} ${big.m.home.goals}:${big.m.away.goals}`);
+  if (up) parts.push(`niespodzianka: ${up.m.home.t.name} – ${up.m.away.t.name} ${up.m.home.goals}:${up.m.away.goals}`);
+  news(`📋 ${lg.name}, kolejka: ${parts.join(' • ')}.`);
+}
+/* ---------- rekordy klubu i jubileusze ---------- */
+function clubRec() { S.crec = S.crec || {}; return S.crec[S.user] = S.crec[S.user] || { all: {}, bigWin: null, bigLoss: null, buy: null, sale: null, crowd: 0 }; }
+function recordsAfterMatch(m, mine, opp) {
+  const R = clubRec(), gd = mine.goals - opp.goals, txt = `${m.home.t.name} – ${m.away.t.name} ${m.home.goals}:${m.away.goals} (${SEASON_LABEL(S.season)})`;
+  if (gd > 0 && (!R.bigWin || gd > R.bigWin.gd)) { if (R.bigWin) news(`📜 Rekord klubu: najwyższe zwycięstwo w historii ${mine.t.name} – ${txt}!`); R.bigWin = { gd, txt }; }
+  if (gd < 0 && (!R.bigLoss || gd < R.bigLoss.gd)) R.bigLoss = { gd, txt };
+  if (mine.t._gate && mine === m.home) R.crowd = Math.max(R.crowd, Math.round(mine.t._gate / Math.max(1, mine.t.price)));
+  for (const r of Object.values(mine.rec)) {
+    const a = R.all[r.p.id] = R.all[r.p.id] || { n: r.p.n, apps: 0, g: 0, a: 0 }; a.apps++; a.g += r.g; a.a += r.a;
+    for (const [k, lim, t] of [['apps', [50, 100, 150, 200, 250, 300], 'występ'], ['g', [25, 50, 75, 100, 150], 'gol']]) if (lim.includes(a[k]) && (k === 'apps' || r.g > 0)) {
+      r.p.mor = clamp(r.p.mor + 5, 0, 100); S.fans = clamp((S.fans || 60) + 1, 0, 100);
+      msg(`🎉 Jubileusz: ${r.p.n}`, `${r.p.n} zanotował ${a[k]}. ${t === 'gol' ? 'gola' : 'występ'} w barwach ${mine.t.name}! Kibice przygotowali oprawę na jego cześć.`);
+    }
+  }
+}
 function afterUserClubMatch(m, x) {
   const mine = x.user === 'h' ? m.home : m.away, opp = x.user === 'h' ? m.away : m.home;
   const gd = mine.goals - opp.goals;
@@ -770,6 +796,7 @@ function afterUserClubMatch(m, x) {
   if (m.comp !== 'L') d *= 0.6;
   const dn = derbyName(mine.t.id, opp.t.id);
   if (dn) { d *= 1.6; S.fans = clamp(S.fans + (gd > 0 ? 4 : gd < 0 ? -5 : 0), 0, 100); for (const p of mine.t.players) p.mor = clamp(p.mor + (gd > 0 ? 4 : gd < 0 ? -4 : 0), 0, 100); if (gd !== 0) msg(gd > 0 ? `🔥 Wygraliśmy ${dn}!` : `💔 Przegrane ${dn}`, gd > 0 ? 'Miasto należy do nas! Kibice świętują, a zawodnicy są w świetnych nastrojach.' : 'Bolesna porażka z największym rywalem. Kibice nie zapomną tego szybko.'); }
+  recordsAfterMatch(m, mine, opp);
   S.h2h = S.h2h || {}; const hr = S.h2h[opp.t.id] = S.h2h[opp.t.id] || { w: 0, d: 0, l: 0 }; if (gd > 0) hr.w++; else if (gd < 0) hr.l++; else hr.d++;
   S.board.conf = clamp(S.board.conf + d, 0, 100);
   mgrGain(gd > 0 ? (opp.t.rep > mine.t.rep ? 0.12 : 0.05) : gd < 0 ? -0.04 : 0.01);
@@ -1026,6 +1053,7 @@ function completeTransfer(pid, fee, wage, years, o = {}) {
   detach(p);
   if (seller) { seller.bal += fee; seller.tb += fee; seller.fin.tr += fee; refillAI(seller); }
   ut.bal -= now; ut.tb -= now; ut.fin.tr -= now; S.bigBuy = Math.max(S.bigBuy || 0, fee);
+  { const R = clubRec(); if (fee > 0 && (!R.buy || fee > R.buy.fee)) R.buy = { fee, n: p.n, s: S.season }; }
   if (o.inst && seller) { const rest = Math.round(fee * INST_K) - now; S.debts = S.debts || []; S.debts.push({ from: ut.id, to: seller.id, amt: Math.round(rest / 2), left: 2, pn: p.n }); }
   p.sellOn = o.sellOn && seller ? { club: seller.id, pct: 0.15 } : null;
   attach(p, ut); p.wage = wage; p.con = years; p.mor = clamp(p.mor + 10, 0, 100); p.pt = 0.5; p.joined = absDay();
@@ -1090,6 +1118,7 @@ function sellTo(offerId) {
   const so = p.sellOn ? Math.round(Math.max(0, o.amount) * p.sellOn.pct) : 0;
   if (so) { const sc = club(p.sellOn.club); sc.bal += so; msg('Klauzula odsprzedaży', `${sc.name} otrzymuje ${money(so)} (${Math.round(p.sellOn.pct * 100)}% z transferu ${p.n}).`); }
   p.sellOn = null;
+  { const R = clubRec(); if (!R.sale || o.amount > R.sale.fee) R.sale = { fee: o.amount, n: p.n, s: S.season }; }
   ut.bal += o.amount - so; ut.tb += o.amount - so; ut.fin.tr += o.amount - so; b.bal -= o.amount; b.tb -= o.amount; S.bigSale = Math.max(S.bigSale || 0, o.amount);
   rebuildIndex(); fillBench(ut);
   news(`${p.n} (${p.ovr}) przechodzi z ${ut.name} do ${b.name} za ${money(o.amount)}.`);
@@ -1228,6 +1257,7 @@ function academyWeek(d) {
     for (let i = 0; i < n; i++) { const y = genYouth(); A.youth.push(y); list.push(y); PM.set(y.id, y); PALL.push(y); }
     const best = list.slice().sort((a, b) => b.acad.est - a.acad.est)[0];
     A.nextQ = 0;
+    S.intake = list.map(y => y.id);
     msg('🎓 Dzień naboru do akademii', `Do akademii dołączyło ${n} juniorów. Największy talent: ${best.n} (${POS_PL[best.pos]}, ${best.age} l.) – szacowany potencjał ok. ${best.acad.est}. Zobacz: Klub → Akademia.`);
   }
 }

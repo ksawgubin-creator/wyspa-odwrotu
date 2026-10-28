@@ -192,6 +192,7 @@ function vHome() {
   </div>
   ${S.pre && !S.pre.chosen && S.pre.season === S.season && S.cal[S.day] && S.cal[S.day].t === 'P' ? preCard() : ''}
   ${upcomingStrip(nx)}
+  ${S.intake && S.intake.length ? `<div class="card hl" data-act="intake"><div class="row"><span style="font-size:22px">🎓</span><b class="sp">Dzień naboru do akademii!</b><small>Poznaj juniorów ›</small></div></div>` : ''}
   ${S.pending.length ? `<div class="card hl" data-act="event" data-arg="${S.pending[0].uid}"><div class="row"><span style="font-size:22px">📌</span><b class="sp">Decyzje do podjęcia (${S.pending.length})</b><small>${esc(S.pending[0].title)} ›</small></div></div>` : ''}
   <div class="grid3">
     <div class="card stat"><small>🏟️ Kibice</small><b>${Math.round(S.fans)}%</b>${bar(S.fans)}</div>
@@ -219,6 +220,19 @@ function upcomingStrip(nx) {
   if (!out.length) return '';
   return `<div class="strip">${out.map(x => { const home = x.h.id === S.user, o = home ? x.a : x.h; return `<div class="sfx" ${o.id != null ? `data-act="clubv" data-arg="${o.id}"` : ''}>${badge(o, 'sm')}<b>${esc(o.name || '?')}</b><small>${home ? '🏠 u siebie' : '✈️ wyjazd'} • ${fmtDate(x.d.date).replace(/ \d{4}$/, '')}</small><small class="mut">${esc(x.label.split(' • ')[0])}</small></div>`; }).join('')}</div>`;
 }
+ACT.intake = () => {
+  const ys = (S.intake || []).map(pget).filter(y => y && y.tid === -3).sort((a, b) => b.acad.est - a.acad.est);
+  if (!ys.length) { S.intake = null; return render(); }
+  const st = v => { const n = clamp(Math.round((v - 50) / 9), 1, 5); return '★'.repeat(n) + '☆'.repeat(5 - n); };
+  const com = y => y.acad.est >= 80 ? '„To może być przyszła gwiazda klubu!”' : y.acad.est >= 72 ? '„Bardzo obiecujący chłopak.”' : y.acad.est >= 64 ? '„Solidny materiał na zawodnika.”' : '„Będzie mu trudno się przebić.”';
+  modal(`<h2>🎓 Nowy rocznik akademii</h2><small class="mut">Szef akademii przedstawia ${ys.length} juniorów. Zatrzymaj obiecujących, zwolnij resztę, by nie płacić za szkolenie.</small>
+    ${ys.map((y, i) => `<div class="card intake" style="animation-delay:${i * 0.12}s"><div class="row">${posTag(y.pos)}<b class="sp">${flag(y.nat)} ${esc(y.n)}</b><span class="stars">${st(y.acad.est)}</span></div>
+      <small>${y.age} l. • OVR ${y.ovr} • potencjał ~${y.acad.est} • ${pers(y)}</small><br><small class="mut">${com(y)}</small>
+      <div class="btns"><button class="btn sm" data-act="info" data-arg="${y.id}">Karta</button><button class="btn sm red" data-act="intakerel" data-arg="${y.id}">Zwolnij</button></div></div>`).join('')}
+    <div class="btns"><button class="btn pri full" data-act="intakedone">Zatrzymaj pozostałych</button></div>`);
+};
+ACT.intakerel = id => { releaseYouth(+id); S.intake = (S.intake || []).filter(x => x !== +id); ACT.intake(); };
+ACT.intakedone = () => { S.intake = null; saveSoon(); closeModal(); render(); };
 function preCard() {
   return `<div class="card hl"><h2>☀️ Turniej przedsezonowy</h2><small class="mut">Wybierz zaproszenie – mecze budują rytm meczowy, dają premię i szansę na trofeum.</small>
     ${S.pre.offers.map((o, i) => `<div class="card" style="margin:8px 0"><div class="row"><b class="sp">${esc(o.name)}</b><span class="pill">${o.kind === 'elite' ? '⭐ Prestiż' : o.kind === 'tour' ? '✈️ Tournée' : '🏠 Krajowy'}</span></div>
@@ -897,6 +911,15 @@ function vFin() {
     <div class="kv"><div><span>Menedżer</span><b>${esc(S.manager)}</b></div><div><span>OVR trenera</span><b>${Math.round(S.mgr.ovr)}</b></div></div></div>`;
 }
 const AWN = { potm: '🏅 Piłkarz miesiąca', pots: '⭐ Piłkarz sezonu', yots: '🌱 Młodzieżowiec sezonu', boot: '👟 Król strzelców', motm: '🧑‍💼 Trener sezonu' };
+function recordsCard() {
+  const R = (S.crec || {})[S.user]; if (!R) return '';
+  const all = Object.values(R.all), top = (k, n) => all.slice().sort((a, b) => b[k] - a[k]).slice(0, n);
+  return `<div class="card"><h2>📜 Rekordy klubu (Twoja kadencja)</h2><div class="kv">
+    ${R.bigWin ? `<div><span>Najwyższe zwycięstwo</span><b>${esc(R.bigWin.txt)}</b></div>` : ''}${R.bigLoss ? `<div><span>Najwyższa porażka</span><b>${esc(R.bigLoss.txt)}</b></div>` : ''}
+    ${R.buy ? `<div><span>Rekordowy zakup</span><b>${esc(R.buy.n)} – ${money(R.buy.fee)}</b></div>` : ''}${R.sale ? `<div><span>Rekordowa sprzedaż</span><b>${esc(R.sale.n)} – ${money(R.sale.fee)}</b></div>` : ''}
+    ${R.crowd ? `<div><span>Rekordowa frekwencja</span><b>${R.crowd.toLocaleString('pl-PL')}</b></div>` : ''}</div>
+    ${all.length ? `<h3>Najlepsi strzelcy</h3>${top('g', 5).filter(a => a.g).map((a, i) => `<div class="rt"><span>${i + 1}. ${esc(a.n)}</span><b>${a.g}</b></div>`).join('')}<h3>Najwięcej występów</h3>${top('apps', 5).map((a, i) => `<div class="rt"><span>${i + 1}. ${esc(a.n)}</span><b>${a.apps}</b></div>`).join('')}` : ''}</div>`;
+}
 function awardsCard() {
   const A = (S.awards || []).filter(a => a.k === 'motm' || (pget(a.pid) && (pget(a.pid).tid === S.user || a.club === userClub().short))).slice(-30).reverse();
   const L = (S.awards || []).filter(a => a.lg === userClub().lg && a.k !== 'potm' && a.k !== 'motm').slice(-8).reverse();
@@ -906,7 +929,7 @@ function awardsCard() {
 function vTroph() {
   const done = ACH.filter(a => S.ach[a[0]]).length;
   return `<div class="card"><h2>🏆 Gablota</h2>${S.trophies.length ? S.trophies.slice().reverse().map(t => `<div class="rt"><span>${TROPHY_ICON[t.kind] || '🏆'} ${esc(t.name)}</span><small>${SEASON_LABEL(t.season)}${t.club != null ? ' • ' + esc(club(t.club).short) : ''}</small></div>`).join('') : '<small class="mut">Gablota czeka na pierwsze trofeum.</small>'}</div>
-    ${awardsCard()}
+    ${awardsCard()}${recordsCard()}
     <div class="card"><h2>🏅 Osiągnięcia (${done}/${ACH.length})</h2>${ACH.map(([id, n, d]) => `<div class="ach ${S.ach[id] ? 'on' : ''}"><b>${n}</b><small>${d}${S.ach[id] ? ` • ${SEASON_LABEL(S.ach[id])}` : ''}</small></div>`).join('')}</div>
     <div class="card"><h2>📊 Statystyki</h2><div class="kv"><div><span>Mecze</span><b>${S.stats.games}</b></div><div><span>Zwycięstwa</span><b>${S.stats.wins}</b></div><div><span>Seria bez porażki</span><b>${S.stats.unbeaten}</b></div><div><span>Rekord serii</span><b>${S.stats.bestUnbeaten}</b></div></div></div>`;
 }

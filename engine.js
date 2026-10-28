@@ -88,6 +88,17 @@ let SHOT_BASE = 0.25, SHOT_EXP = 1.3, FIN_EXP = 2.2, HOME_ADV = 1.13, AWAY_ADV =
 
 /* ---------- stan zawodnika ---------- */
 const isAvail = p => !p.inj && !p.susp;
+// rodzaje kontuzji: [nazwa, min dni, max dni, waga]
+const INJ = [['stłuczenie', 3, 10, 30], ['naciągnięcie mięśnia dwugłowego', 10, 28, 20], ['skręcenie stawu skokowego', 10, 35, 18], ['uraz pachwiny', 14, 40, 10], ['naderwanie mięśnia', 21, 49, 8], ['uraz kolana', 30, 70, 6], ['złamanie', 50, 100, 3], ['zerwanie więzadła krzyżowego', 150, 220, 1.2]];
+// ryzyko urazu rośnie przy zmęczeniu, po niedawnym urazie i po przyspieszonym powrocie
+const injRisk = (p, fit) => (1 + Math.max(0, 85 - fit) / 30) * (p._rushed && p._rushed > (typeof absDay === 'function' ? absDay() : 0) ? 3 : 1) * (p.injLast && typeof absDay === 'function' && absDay() - p.injLast < 60 ? 1.5 : 1);
+function injure(p) {
+  const recur = p.injT && p.injLast && typeof absDay === 'function' && absDay() - p.injLast < 60 && rnd() < 0.5;
+  const t = recur ? INJ.find(x => x[0] === p.injT) || INJ[1] : wpick(INJ, x => x[3]);
+  const days = Math.round(ri(t[1], t[2]) * (recur ? 1.3 : 1));
+  p.inj = days; p.injT = t[0]; p.injLast = typeof absDay === 'function' ? absDay() : 0; p._rushed = 0; p.injN = (p.injN || 0) + 1;
+  return { days, type: t[0] + (recur ? ' (nawrót)' : '') };
+}
 const cond = (p, fit) => (0.72 + 0.28 * clamp(fit, 0, 100) / 100) * (0.96 + 0.0008 * p.form) * (0.97 + 0.0006 * p.mor) * (0.95 + 0.0005 * p.shp);
 function moraleLabel(m) { return m >= 80 ? ['😁', 'Wyśmienite'] : m >= 65 ? ['🙂', 'Bardzo dobre'] : m >= 45 ? ['😐', 'Dobre'] : m >= 30 ? ['🙁', 'Słabe'] : ['😠', 'Fatalne']; }
 function formLabel(f) { return f >= 75 ? 'Świetna' : f >= 60 ? 'Dobra' : f >= 42 ? 'Przeciętna' : f >= 28 ? 'Słaba' : 'Fatalna'; }
@@ -335,11 +346,11 @@ function step(m) {
       side.rec[s.p.id].r = 1; removeFromPitch(side, s.p, mn); if (club) { s.p.susp = ri(1, 3); s.p._fresh = true; } m.dirty = true;
       ev(m, 'red', side, `🟥 Czerwona kartka! ${shortName(s.p)} (${side.t.name}) opuszcza boisko.`); m.alert = 'red';
     }
-    if (rnd() < 0.0011) {
-      const s = pick(side.pitch);
-      const days = rnd() < 0.7 ? ri(5, 21) : rnd() < 0.83 ? ri(25, 56) : ri(60, 160);
-      s.p.inj = days;
-      ev(m, 'injury', side, `🚑 Kontuzja! ${shortName(s.p)} (${side.t.name}) nie może kontynuować (ok. ${Math.ceil(days / 7)} tyg.).`); m.alert = 'injury';
+    const risk = side.pitch.map(x => injRisk(x.p, fitNow(side, x, mn)));
+    if (rnd() < 0.0009 * avg(risk)) {
+      const s = wpick(side.pitch, x => risk[side.pitch.indexOf(x)]);
+      const ij = injure(s.p), days = ij.days;
+      ev(m, 'injury', side, `🚑 Kontuzja! ${shortName(s.p)} (${side.t.name}) – ${ij.type}, przerwa ok. ${Math.ceil(days / 7)} tyg.`); m.alert = 'injury';
       const rep = bestSubFor(side, s.pos);
       if (rep && side.subs < MAX_SUBS) substitute(m, side, s.p, rep); else removeFromPitch(side, s.p, mn);
       m.dirty = true;
@@ -433,7 +444,7 @@ function fastSim(h, a, opts = {}) {
     const ps = side.pitch.filter(s => s.pos !== 'GK');
     for (let i = poisson(1.6); i > 0 && ps.length; i--) side.rec[pick(ps).p.id].y = 1;
     if (rnd() < 0.05 && ps.length) { const s = pick(ps); side.rec[s.p.id].r = 1; if (club) { s.p.susp = ri(1, 2); s.p._fresh = true; } }
-    if (rnd() < 0.1) { const s = pick(side.pitch); s.p.inj = rnd() < 0.7 ? ri(5, 21) : rnd() < 0.83 ? ri(25, 56) : ri(60, 160); }
+    { const rk = side.pitch.map(x => injRisk(x.p, x.p.fit)); if (rnd() < 0.085 * avg(rk)) injure(wpick(side.pitch, x => rk[side.pitch.indexOf(x)]).p); }
     const gk = side.pitch.find(s => s.pos === 'GK'); const opp = side === H ? A : H;
     if (gk) side.rec[gk.p.id].sv = Math.max(0, opp.sot - opp.goals);
   }

@@ -31,7 +31,7 @@ function closeModal() { const m = $('#modal'); m.classList.add('hidden'); m.inne
 const bar = (v, cls = '') => `<div class="bar ${v < 50 ? 'b' : v < 75 ? 'w' : ''} ${cls}"><i style="width:${clamp(v, 0, 100)}%"></i></div>`;
 const morale = p => `<span title="${moraleLabel(p.mor)[1]}">${moraleLabel(p.mor)[0]}</span>`;
 const formArrow = f => f >= 65 ? '<span class="good">▲</span>' : f <= 38 ? '<span class="bad">▼</span>' : '<span class="mut">●</span>';
-function stTag(p) { return p.inj ? `<span class="pill r">🚑 ${Math.ceil(p.inj / 7)} tyg.</span>` : p.susp ? `<span class="pill r">🟥 ${p.susp}</span>` : ''; }
+function stTag(p) { return p.inj ? `<span class="pill r" title="${esc(p.injT || 'kontuzja')}">🚑 ${Math.ceil(p.inj / 7)} tyg.</span>` : p.susp ? `<span class="pill r">🟥 ${p.susp}</span>` : ''; }
 const tabs = (list, cur, act) => `<div class="tabs">${list.map(([k, n]) => `<button class="${cur === k ? 'on' : ''}" data-act="${act}" data-arg="${k}">${n}</button>`).join('')}</div>`;
 const busy = (on, t) => { const b = $('#busy'); b.classList.toggle('hidden', !on); if (t) b.querySelector('span').textContent = t; };
 ACT.close = () => closeModal();
@@ -392,6 +392,7 @@ ACT.tap = id => {
 /* ---------- KARTA ZAWODNIKA ---------- */
 const ATTR_HELP = { TEM: 'Tempo – szybkość i przyspieszenie', STR: 'Strzały – wykończenie, siła i technika strzału', POD: 'Podania – krótkie, długie, dośrodkowania, wizja', DRY: 'Drybling – kontrola piłki, zwinność, opanowanie', OBR: 'Obrona – odbiór, krycie, gra głową w obronie', FIZ: 'Fizyczność – siła, wytrzymałość, agresja',
   RZU: 'Rzuty – parady i interwencje w powietrzu', CHW: 'Chwytanie – pewność łapania piłki', WYK: 'Wykopy – wznowienia i gra nogami', REF: 'Refleks – reakcja na strzały z bliska', SZY: 'Szybkość – wyjścia z bramki i sprint', UST: 'Ustawianie – czytanie gry i pozycja w bramce' };
+ACT.rushback = id => { const p = pget(+id); if (!confirm(`Przyspieszyć powrót ${p.n}? Zawodnik będzie gotowy do gry, ale przez 3 tygodnie ryzyko urazu jest trzykrotnie wyższe.`)) return; p.inj = 0; p.fit = Math.min(p.fit, 72); p._rushed = absDay() + 21; saveSoon(); toast(`${p.n} wraca do treningów.`, 'ok'); ACT.info(id); render(); };
 ACT.attrhelp = k => toast(ATTR_HELP[k] || k);
 const potTxt = p => { if (know(p) < 30) return '?'; const r = ovrRange(p, true); return r[0] === r[1] ? r[0] : r[0] + '–' + r[1]; };
 ACT.info = id => {
@@ -427,7 +428,7 @@ ACT.info = id => {
   if (!TABS.some(t => t[0] === UI.pcTab)) UI.pcTab = 'ov';
   const kv = rows => `<div class="kv">${rows.filter(Boolean).map(([l, v]) => `<div><span>${l}</span><b>${v}</b></div>`).join('')}</div>`;
   const body = {
-    ov: () => `${stTag(p)}${own ? `<small class="mut">Charakter: <b>${pers(p)}</b> – ${PERS_DESC[pers(p)]}</small><div class="fxl">${Object.entries(TRAITS).map(([k, n]) => `<span class="pill">${n}: ${traitWord(traits(p)[k], TRAIT_FEM[k])}</span>`).join(' ')}</div>` : `<small class="mut">Charakter: ? (poznasz go po transferze)</small>`}
+    ov: () => `${p.inj ? `<div class="card" style="margin:6px 0;border-color:var(--bad)"><b>🚑 ${esc(p.injT || 'Kontuzja')}</b><br><small class="mut">Fizjoterapeuta szacuje powrót za ok. ${Math.ceil(p.inj / 7)} tyg. (${p.inj} dni).${p.injN > 1 ? ` To już ${p.injN}. uraz tego zawodnika.` : ''}</small>${mine && p.inj <= 14 ? `<div class="btns"><button class="btn sm red" data-act="rushback" data-arg="${p.id}">⚡ Przyspiesz powrót (duże ryzyko nawrotu)</button></div>` : ''}</div>` : ''}${p._rushed > absDay() ? '<small class="warn">⚠️ Po przyspieszonym powrocie – podwyższone ryzyko urazu przez 3 tygodnie.</small><br>' : ''}${stTag(p)}${own ? `<small class="mut">Charakter: <b>${pers(p)}</b> – ${PERS_DESC[pers(p)]}</small><div class="fxl">${Object.entries(TRAITS).map(([k, n]) => `<span class="pill">${n}: ${traitWord(traits(p)[k], TRAIT_FEM[k])}</span>`).join(' ')}</div>` : `<small class="mut">Charakter: ? (poznasz go po transferze)</small>`}
       ${kv([['Wiek', p.age], ['Potencjał', `<span class="potv">${potTxt(p)}</span>${know(p) >= 30 && p.pot > p.ovr ? ` <small class="good">(+${Math.max(0, Math.round((ovrRange(p, true)[0] + ovrRange(p, true)[1]) / 2) - Math.round((r[0] + r[1]) / 2))})</small>` : ''}`], ['Kondycja', Math.round(p.fit) + '%'], ['Morale', moraleLabel(p.mor).join(' ')], ['Forma', formLabel(p.form)], ['Rytm meczowy', Math.round(p.shp) + '%'], ['Wartość', money(p.val)], ['Status', playerStatus(p)],
         !mine && releaseClause(p) ? ['Klauzula odstępnego', money(releaseClause(p))] : null])}
       ${known && typeof radarSVG === 'function' ? `<div style="text-align:center;margin-top:6px">${radarSVG(at, names, { size: 180 })}</div>` : ''}

@@ -743,7 +743,7 @@ function vHist() {
   const ut = userClub();
   return `<div class="card"><h2>Twoja kariera</h2>${S.history.length ? S.history.slice().reverse().map(h => `<div class="rt"><span>${SEASON_LABEL(h.season)} • ${esc(h.club)} • ${esc(S.leagues[h.lg].name)}</span><b>${h.pos}. ${h.achieved ? '✅' : '❌'}</b></div>`).join('') : '<small class="mut">Pierwszy sezon przed Tobą.</small>'}</div>
     <div class="card"><h2>Zwycięzcy pucharów UEFA</h2>${S.euroHist.length ? S.euroHist.slice().reverse().map(e => `<div class="msg"><b>${SEASON_LABEL(e.season)}</b><p>⭐ ${esc(club(e.CL).name)} • 🟠 ${esc(club(e.EL).name)} • 🟢 ${esc(club(e.ECL).name)}</p></div>`).join('') : '<small class="mut">Brak.</small>'}</div>
-    <div class="card"><h2>Złota Piłka</h2>${S.awards.length ? S.awards.slice().reverse().map(a => `<div class="msg"><b>${SEASON_LABEL(a.season)}</b><p>🥇 ${esc(a.ballon[0].n)} (${esc(a.ballon[0].c)}) • 🥈 ${esc(a.ballon[1].n)} • 🥉 ${esc(a.ballon[2].n)}</p></div>`).join('') : '<small class="mut">Brak.</small>'}</div>
+    <div class="card"><h2>Złota Piłka</h2>${S.awards.filter(a => a.ballon).length ? S.awards.filter(a => a.ballon).slice().reverse().map(a => `<div class="msg"><b>${SEASON_LABEL(a.season)}</b><p>🥇 ${esc(a.ballon[0].n)} (${esc(a.ballon[0].c)}) • 🥈 ${esc(a.ballon[1].n)} • 🥉 ${esc(a.ballon[2].n)}</p></div>`).join('') : '<small class="mut">Brak.</small>'}</div>
     <div class="card"><h2>Turnieje reprezentacji</h2>${S.ntHist.length ? S.ntHist.slice().reverse().map(h => `<div class="rt"><span>${esc(h.name)}</span><b>${flag(h.champ)} ${esc(NAT[h.champ].name)}</b></div>`).join('') : '<small class="mut">Brak.</small>'}</div>
     <div class="card"><h2>Mistrzowie lig</h2>${Object.entries(S.champs).map(([id, l]) => `<div class="rt"><span>${esc(S.leagues[id].name)}</span><small>${l.slice(-3).reverse().map(x => esc(club(x.c).short)).join(', ')}</small></div>`).join('') || '<small class="mut">Brak.</small>'}</div>`;
 }
@@ -923,8 +923,8 @@ function recordsCard() {
     ${all.length ? `<h3>Najlepsi strzelcy</h3>${top('g', 5).filter(a => a.g).map((a, i) => `<div class="rt"><span>${i + 1}. ${esc(a.n)}</span><b>${a.g}</b></div>`).join('')}<h3>Najwięcej występów</h3>${top('apps', 5).map((a, i) => `<div class="rt"><span>${i + 1}. ${esc(a.n)}</span><b>${a.apps}</b></div>`).join('')}` : ''}</div>`;
 }
 function awardsCard() {
-  const A = (S.awards || []).filter(a => a.k === 'motm' || (pget(a.pid) && (pget(a.pid).tid === S.user || a.club === userClub().short))).slice(-30).reverse();
-  const L = (S.awards || []).filter(a => a.lg === userClub().lg && a.k !== 'potm' && a.k !== 'motm').slice(-8).reverse();
+  const A = (S.pawards || []).filter(a => a.k === 'motm' || (pget(a.pid) && (pget(a.pid).tid === S.user || a.club === userClub().short))).slice(-30).reverse();
+  const L = (S.pawards || []).filter(a => a.lg === userClub().lg && a.k !== 'potm' && a.k !== 'motm').slice(-8).reverse();
   return `<div class="card"><h2>🎖️ Nagrody indywidualne</h2>${A.length ? A.map(a => `<div class="rt" ${a.pid ? `data-act="info" data-arg="${a.pid}"` : ''}><span>${AWN[a.k]} • ${esc(a.n)}</span><small>${a.m != null ? MONTHS[a.m] + ' ' : ''}${SEASON_LABEL(a.s)}</small></div>`).join('') : '<small class="mut">Twoi zawodnicy nie zdobyli jeszcze nagród. Piłkarz miesiąca wybierany jest w każdej lidze na początku miesiąca.</small>'}
     ${L.length ? `<h3>Ostatnie nagrody w lidze</h3>${L.map(a => `<div class="rt" data-act="info" data-arg="${a.pid}"><span>${AWN[a.k]} • ${esc(a.n)} <small class="mut">${esc(a.club)}</small></span><small>${SEASON_LABEL(a.s)}</small></div>`).join('')}` : ''}</div>`;
 }

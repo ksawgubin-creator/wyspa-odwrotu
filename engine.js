@@ -255,6 +255,7 @@ function doShot(m, A, D) {
   const q = fin / (0.5 * gkE + 0.5 * D.str.def);
   const pg = penalty ? 0.76 + (shooter.p.a[1] - 70) / 400 : clamp(0.083 * Math.pow(q, FIN_EXP), 0.02, 0.4) * (kind === 'fk' ? 0.75 : kind === 'head' ? 0.85 : 1) * (kind ? 1 : (1 - 0.05 * ((A.tac && A.tac.tempo) || 0)) * (1 + 0.08 * ((D.tac && D.tac.line) || 0)));
   A.shots++;
+  { const kc = c.filter(x => x !== shooter); if (kc.length && !penalty) { const k = wpick(kc, x => (LINE[x.pos] === 'MID' ? 2 : LINE[x.pos] === 'ATT' ? 1.5 : 0.6) * Math.pow(x.p.a[2] / 60, 2)); const r = A.rec[k.p.id]; if (r) r.kp = (r.kp || 0) + 1; } }
   if (penalty) ev(m, 'info', A, `Rzut karny dla ${A.t.name}! Do piłki podchodzi ${shortName(shooter.p)}...`);
   else if (kind === 'fk') ev(m, 'info', A, `Rzut wolny dla ${A.t.name} w dogodnej odległości. Do piłki podchodzi ${shortName(shooter.p)}...`);
   else if (kind === 'head') A.corners++;
@@ -323,6 +324,9 @@ function step(m) {
   const hm = Math.pow(H.str.mid, 2) * (m.neutral ? 1 : 1.06) * (1 + 0.05 * (TH.press || 0)), am = Math.pow(A.str.mid, 2) * (1 + 0.05 * (TA.press || 0));
   const att = rnd() < hm / (hm + am) ? H : A, def = att === H ? A : H;
   att.poss++;
+  // odbiór piłki: zasługa obrońcy/pomocnika drużyny, która przejęła posiadanie
+  if (m._last && m._last !== att) { const tk = att.pitch.filter(x => LINE[x.pos] === 'DEF' || LINE[x.pos] === 'MID'); if (tk.length) { const w = wpick(tk, x => (LINE[x.pos] === 'DEF' ? 1.2 : 1) * Math.pow(x.p.a[4] / 60, 2)); const r = att.rec[w.p.id]; if (r) r.tk = (r.tk || 0) + 1; } }
+  m._last = att;
   const aS = 0.7 * att.str.att + 0.3 * att.str.mid, dS = 0.65 * def.str.def + 0.35 * def.str.mid;
   const mAtt = att.ment === 'att' ? 1.18 : att.ment === 'def' ? 0.82 : 1;
   const mOpp = def.ment === 'att' ? 1.12 : def.ment === 'def' ? 0.88 : 1;
@@ -382,7 +386,7 @@ function finishMatch(m) {
     const gd = side.goals - opp.goals;
     for (const r of Object.values(side.rec)) {
       const p = r.p, end = r.off != null ? r.off : m.minute, mins = Math.max(0, end - r.on);
-      let rating = 6.2 + gd * 0.18 + r.g * 1.1 + r.a * 0.6 - r.r * 1.6 - r.y * 0.15 + r.sv * 0.25 + gauss() * 0.5;
+      let rating = 6.0 + gd * 0.15 + r.g * 1.0 + r.a * 0.55 - r.r * 1.6 - r.y * 0.15 + Math.min(r.sv, 7) * 0.2 + Math.min(r.tk || 0, 12) * 0.05 + Math.min(r.kp || 0, 8) * 0.09 + gauss() * 0.4;
       if (LINE[r.pos] === 'GK' || LINE[r.pos] === 'DEF') rating += (opp.goals === 0 ? 0.5 : 0) - opp.goals * 0.2;
       r.rating = clamp(Math.round(rating * 10) / 10, 3, 10); r.mins = mins;
       p.fit = clamp(p.fit - mins * (p.pos === 'GK' ? 0.08 : 0.19 * (1 + 0.12 * ((side.tac && side.tac.press) || 0))), 15, 100);

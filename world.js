@@ -819,7 +819,7 @@ function monthAwards(d) {
     if (w) {
       const p = w.p, c = clubOf(p), mine = p.tid === S.user;
       (p.awards = p.awards || []).push({ k: 'potm', s: S.season, m: prevMo, lg: lg.name });
-      (S.awards = S.awards || []).push({ k: 'potm', s: S.season, m: prevMo, pid: p.id, n: p.n, club: c ? c.short : '', lg: lg.id });
+      (S.pawards = S.pawards || []).push({ k: 'potm', s: S.season, m: prevMo, pid: p.id, n: p.n, club: c ? c.short : '', lg: lg.id });
       news(`🏅 Piłkarz miesiąca (${MONTHS[prevMo]}) w ${lg.name}: ${p.n} (${c ? c.name : ''}) – śr. ocena ${w.r.toFixed(2)}, ${w.g} goli, ${w.a} asyst.`);
       if (mine) { p.mor = clamp(p.mor + 10, 0, 100); p.val = Math.round(p.val * 1.05); msg('🏅 Piłkarz miesiąca!', `${p.n} został wybrany piłkarzem miesiąca (${MONTHS[prevMo]}) w ${lg.name}! Średnia ocena ${w.r.toFixed(2)}, ${w.g} goli i ${w.a} asyst. Morale i wartość zawodnika rosną.`); }
       // trener miesiąca: najlepszy bilans punktowy w miesiącu (tylko gdy to Ty)
@@ -831,12 +831,12 @@ function seasonAwards(lgId, finals) {
   const lg = S.leagues[lgId], ps = lg.clubs.flatMap(id => club(id).players), out = [];
   const best = (f, min) => ps.filter(p => p.st.apps >= min).sort((a, b) => f(b) - f(a))[0];
   const rate = p => p.st.rs / Math.max(1, p.st.apps) + p.st.g * 0.04 + p.st.a * 0.025;
-  const add = (k, n, p, val) => { if (!p) return; (p.awards = p.awards || []).push({ k, s: S.season, lg: lg.name }); (S.awards = S.awards || []).push({ k, s: S.season, pid: p.id, n: p.n, club: clubOf(p) ? clubOf(p).short : '', lg: lgId }); out.push(`${n}: ${p.n} (${clubOf(p) ? clubOf(p).name : ''}${val ? ', ' + val : ''})`); if (p.tid === S.user) { p.mor = clamp(p.mor + 12, 0, 100); p.val = Math.round(p.val * 1.08); } };
+  const add = (k, n, p, val) => { if (!p) return; (p.awards = p.awards || []).push({ k, s: S.season, lg: lg.name }); (S.pawards = S.pawards || []).push({ k, s: S.season, pid: p.id, n: p.n, club: clubOf(p) ? clubOf(p).short : '', lg: lgId }); out.push(`${n}: ${p.n} (${clubOf(p) ? clubOf(p).name : ''}${val ? ', ' + val : ''})`); if (p.tid === S.user) { p.mor = clamp(p.mor + 12, 0, 100); p.val = Math.round(p.val * 1.08); } };
   add('pots', '⭐ Piłkarz sezonu', best(rate, Math.round(lg.fix.length * 0.5)), null);
   add('yots', '🌱 Młodzieżowiec sezonu', best(p => p.age <= 21 ? rate(p) : -1, Math.round(lg.fix.length * 0.35)), null);
   const gb = ps.slice().sort((a, b) => b.lg - a.lg || b.st.a - a.st.a)[0]; if (gb && gb.lg > 0) add('boot', '👟 Król strzelców', gb, `${gb.lg} goli`);
   const ch = finals[lgId] && finals[lgId][0];
-  if (ch && ch.id === S.user) { (S.awards = S.awards || []).push({ k: 'motm', s: S.season, n: S.manager, club: userClub().short, lg: lgId }); out.push(`🧑‍💼 Trener sezonu: ${S.manager}`); mgrGain(1); }
+  if (ch && ch.id === S.user) { (S.pawards = S.pawards || []).push({ k: 'motm', s: S.season, n: S.manager, club: userClub().short, lg: lgId }); out.push(`🧑‍💼 Trener sezonu: ${S.manager}`); mgrGain(1); }
   return out;
 }
 function boardMeeting(d) {

@@ -48,6 +48,7 @@ const uPlayers = () => userClub().players;
 const starPlayer = () => uPlayers().slice().sort((a, b) => b.ovr - a.ovr)[0];
 const randPlayer = f => { const l = uPlayers().filter(f || (() => true)); return l.length ? pick(l) : null; };
 const lastRes = n => S.results.slice(-n);
+const recentM = () => absDay() - (S.lastUM != null ? S.lastUM : -99) <= 5;   // wydarzenia „po meczu” tylko tuż po meczu
 const noisy = v => { const n = v * (0.7 + rnd() * 0.6); return Math.abs(n) < 1 && v !== 0 ? Math.sign(v) : Math.round(n); };
 
 /* ---------- efekty wyborów (z losowym rozrzutem ±30%) ---------- */
@@ -92,7 +93,7 @@ const EVENTS = [
     choices: [{ t: '🏠 Zostajemy w kraju (bazy klubu)', fn: () => ({ teamFit: 6, shp: 4 }), r: 'Skromnie, ale bez wydatków. Śnieg utrudniał treningi.' },
       { t: '🇹🇷 Turcja (Antalya) – sparingi z klubami z Europy', fn: () => ({ money: -campCost(1), teamFit: 12, shp: 10, team: 4 }), r: 'Dobre boiska i solidni sparingpartnerzy.' },
       { t: '🇪🇸 Hiszpania / Dubaj – obóz premium', fn: () => ({ money: -campCost(2), teamFit: 16, shp: 14, team: 7, board: -2 }), r: 'Świetne warunki – zawodnicy zachwyceni, zarząd liczy koszty.' }] },
-  { id: 'fanprotest', cat: 'Kibice', w: 4, ctx: () => lastRes(3).length === 3 && lastRes(3).every(r => r === 'L') ? {} : null,
+  { id: 'fanprotest', cat: 'Kibice', w: 4, ctx: () => recentM() && lastRes(3).length === 3 && lastRes(3).every(r => r === 'L') ? {} : null,
     title: 'Protest kibiców', text: () => `Po serii porażek kibice ${userClub().name} protestują pod stadionem. Transparent: „Obudźcie się!”.`,
     choices: [{ t: 'Wyjdź do kibiców i porozmawiaj', hint: 'ryzykowne', fx: { fans: 8, press: 3, board: -1 }, r: 'Kibice docenili, że stanąłeś z nimi twarzą w twarz.', alt: { p: () => S.fans < 40 ? 0.45 : 0.2, fx: { fans: -6, press: -4 }, r: 'Rozmowa wymknęła się spod kontroli – posypały się wyzwiska, a kamery wszystko nagrały.' } },
       { t: 'Zignoruj protest', fx: { fans: -8, press: -3 }, r: 'Media piszą o „trenerze w wieży z kości słoniowej”.', follow: ['f_protest2', 10, 25, 0.5] },
@@ -102,7 +103,7 @@ const EVENTS = [
       { t: 'Poproś zarząd o obniżkę cen biletów', fx: { fans: 9, price: -0.1, board: -4 }, r: 'Tańsze bilety uspokoiły nastroje.' },
       { t: 'Nadal ignoruj', fx: { fans: -10, board: -4, press: -4 }, r: 'Na meczu połowa trybun pustoszeje.' }] },
   { id: 'nightclub', cat: 'Szatnia', w: 3, ctx: () => { const p = randPlayer(p => p.age < 31); return p ? { p } : null; },
-    title: 'Nocna eskapada', text: c => `Tabloidy publikują zdjęcia ${c.p.n} z klubu nocnego – dwa dni przed meczem.`,
+    title: 'Nocna eskapada', text: c => `Tabloidy publikują zdjęcia z klubu nocnego – widać na nich zawodnika ${c.p.n}, a do meczu zostały dwa dni.`,
     choices: [{ t: 'Nałóż karę finansową', fx: { player: -8, press: 3, board: 2, team: 1 }, r: 'Zawodnik zacisnął zęby i zapłacił.', alt: { p: c => traits(c.p).tem >= 14 ? 0.5 : 0.1, fx: { player: -16, team: -3, press: 2 }, r: 'Zawodnik wybuchł i trzasnął drzwiami – w szatni napięcie.' }, mem: 'strict' },
       { t: 'Odsuń go od najbliższego meczu', fx: { player: -15, fans: 3, press: 5, form: -5 }, r: 'Twarda decyzja.', mem: 'strict' },
       { t: 'Bagatelizuj sprawę', fx: { player: 4, press: -6, board: -3 }, r: 'Prasa zarzuca Ci brak dyscypliny.', mem: 'soft', follow: ['f_nightclub2', 20, 40, 0.45] }] },
@@ -132,7 +133,7 @@ const EVENTS = [
       { t: 'Zebranie drużyny i kara dla obu', fx: { player: -5, player2: -5, team: 3, press: 1 }, r: 'Atmosfera się oczyściła.', alt: { p: c => (traits(c.p).tem + traits(c.q).tem) >= 28 ? 0.5 : 0.15, fx: { player: -9, player2: -9, team: -4 }, r: 'Obaj uznali karę za niesprawiedliwą – konflikt się pogłębił.' }, mem: 'strict' },
       { t: 'Nie wtrącaj się', fx: { team: -5, player: -2, player2: -2 }, r: 'Konflikt się tli…', mem: 'soft' }] },
   { id: 'youthshine', cat: 'Akademia', w: 2, ctx: () => { const y = S.acad.youth.slice().sort((a, b) => b.ovr - a.ovr)[0]; return y ? { p: y } : null; },
-    title: 'Junior błyszczy', text: c => `Trenerzy akademii zachwycają się ${c.p.n} (${c.p.age} l.). Kibice dopytują, kiedy zadebiutuje.`,
+    title: 'Junior błyszczy', text: c => `Trenerzy akademii są zachwyceni grą juniora ${c.p.n} (${c.p.age} l.). Kibice dopytują, kiedy zadebiutuje.`,
     choices: [{ t: 'Awansuj go do pierwszego zespołu', fn: c => { promoteYouth(c.p.id); return { fans: 5, press: 3 }; }, r: 'Wychowanek trenuje z pierwszą drużyną!' },
       { t: 'Daj mu jeszcze czas w akademii', hint: 'może się zniechęcić', fx: { player: -3 }, r: 'Rozsądnie – niech dojrzeje.', alt: { p: c => traits(c.p).amb >= 14 ? 0.45 : 0.1, fx: { player: -12 }, r: 'Ambitny junior poczuł się zlekceważony.' } }] },
   { id: 'trainingknock', cat: 'Medycyna', w: 3, ctx: () => { const p = randPlayer(p => !p.inj && p.st.apps > 0); return p ? { p } : null; },
@@ -140,7 +141,7 @@ const EVENTS = [
     choices: [{ t: 'Posłuchaj lekarza', fx: { inj: 7, player: -3 }, r: 'Bezpiecznie.' },
       { t: 'Niech gra na środkach przeciwbólowych', hint: 'ryzyko poważnej kontuzji', fx: { player: 4 }, r: 'Zagrał – tym razem bez konsekwencji.', alt: { p: () => 0.35, fn: () => ({ inj: ri(21, 50), press: -4, fans: -2 }), r: 'Uraz się pogłębił – czeka go dłuższa przerwa.' } }] },
   { id: 'agentraise', cat: 'Kontrakty', w: 3, ctx: () => { const p = starPlayer(); return p && p.con >= 2 ? { p } : null; },
-    title: 'Agent żąda podwyżki', text: c => `Agent ${c.p.n} żąda 30% podwyżki, sugerując zainteresowanie innych klubów.`,
+    title: 'Agent żąda podwyżki', text: c => `Agent zawodnika ${c.p.n} żąda 30% podwyżki, sugerując zainteresowanie innych klubów.`,
     choices: [{ t: 'Daj podwyżkę', fx: { wage: 0.3, player: 10, team: -2 }, r: 'Gwiazda zadowolona, reszta szatni liczy pieniądze.' },
       { t: 'Zaproponuj 10%', hint: 'zależy od charakteru', fx: { wage: 0.1, player: 2 }, r: 'Agent niechętnie się zgadza.', alt: { p: c => traits(c.p).amb >= 13 ? 0.45 : 0.15, fx: { wage: 0.1, player: -8 }, r: 'Zawodnik przyjął, ale czuje się niedoceniony.' } },
       { t: 'Odmów', fx: { player: -12, board: 2 }, r: 'Zawodnik jest rozczarowany…', follow: ['f_transferreq', 15, 40, 0.5] }] },
@@ -203,7 +204,7 @@ const EVENTS = [
     title: 'Cynk o talencie', text: c => `Znajomy agent podsuwa nazwisko: ${c.p.n} (${c.p.age} l., ${clubName(c.p)}). Podobno ogromny potencjał.`,
     choices: [{ t: 'Dodaj do obserwowanych (wiedza 75%)', fn: c => { S.short = [c.p.id, ...S.short.filter(x => x !== c.p.id)]; S.know[c.p.id] = Math.max(S.know[c.p.id] || 0, 75); return {}; }, r: 'Zawodnik trafił na Twoją listę.' },
       { t: 'Zignoruj', fx: {}, r: 'Może kiedyś…' }] },
-  { id: 'winstreak', cat: 'Prasa', w: 3, ctx: () => lastRes(4).length === 4 && lastRes(4).every(r => r === 'W') ? {} : null, title: 'Media zachwycone', text: () => 'Po serii zwycięstw dziennikarze nazywają Cię „objawieniem sezonu”.',
+  { id: 'winstreak', cat: 'Prasa', w: 3, ctx: () => recentM() && lastRes(4).length === 4 && lastRes(4).every(r => r === 'W') ? {} : null, title: 'Media zachwycone', text: () => 'Po serii zwycięstw dziennikarze nazywają Cię „objawieniem sezonu”.',
     choices: [{ t: 'Podziękuj drużynie', fx: { team: 4, press: 2 }, r: 'Zawodnicy czują się docenieni.' },
       { t: '„To dopiero początek”', hint: 'zobowiązuje', fx: { fans: 6, press: 2, boast: true }, r: 'Oczekiwania rosną…' },
       { t: 'Studź emocje', fx: { board: 3, fans: -2 }, r: 'Rozsądnie – choć kibice chcieli świętować.' }] },
@@ -228,7 +229,7 @@ const EVENTS = [
       { t: 'Zbagatelizuj', fx: { press: -2 }, r: 'Sprawa przycicha… na razie.', follow: ['f_leak2', 20, 45, 0.35] }] },
   { id: 'f_leak2', cat: 'Prasa', follow: true, title: 'Kolejny przeciek', text: () => 'Ten sam dziennikarz publikuje Twój skład dzień przed meczem. Rywal był przygotowany.',
     choices: [{ t: 'Ogłoś kary za kontakty z mediami', fx: { team: -3, press: -3, board: 2 }, r: 'Przecieki ustały.' }, { t: 'Udawaj, że nic się nie stało', fx: { board: -4, team: -2 }, r: 'Szatnia traci zaufanie.' }] },
-  { id: 'tapup', cat: 'Kontrakty', w: 3, ctx: () => { const p = randPlayer(p => p.con <= 1 && !p.loan && p.ovr >= teamLevel(userClub())); return p ? { p } : null; }, title: 'Podchody rywala', text: c => `Media donoszą, że inny klub potajemnie rozmawia z ${c.p.n}, któremu kończy się kontrakt.`,
+  { id: 'tapup', cat: 'Kontrakty', w: 3, ctx: () => { const p = randPlayer(p => p.con <= 1 && !p.loan && p.ovr >= teamLevel(userClub())); return p ? { p } : null; }, title: 'Podchody rywala', text: c => `Media donoszą, że inny klub potajemnie rozmawia z zawodnikiem, któremu kończy się kontrakt: ${c.p.n}.`,
     choices: [{ t: 'Zaproponuj od razu nowy kontrakt', fn: c => { const r = renewContract(c.p.id, 3); return r.ok ? { player: 6 } : { player: -6, press: -2 }; }, r: 'Negocjacje zakończone.' },
       { t: 'Zgłoś sprawę do federacji', fx: { press: 3, player: -10, board: 2 }, r: 'Rywal dostał ostrzeżenie, ale zawodnik czuje się źle.' },
       { t: 'Odpuść', fx: { player: -3 }, r: 'Zawodnik prawdopodobnie odejdzie.' }] },
@@ -236,10 +237,10 @@ const EVENTS = [
     choices: [{ t: 'Przekonaj go do jeszcze jednego sezonu', fn: c => { c.p.con = Math.max(c.p.con, 2); return { player: 8, wage: 0.1 }; }, r: 'Zostaje – szatnia ceni jego doświadczenie.' },
       { t: 'Zaproponuj mecz pożegnalny', fx: { fans: 7, press: 3, player: 5 }, r: 'Piękne pożegnanie na koniec sezonu.' },
       { t: 'Nie wtrącaj się', fx: { player: -3 }, r: 'Sam podejmie decyzję.' }] },
-  { id: 'refcontro', cat: 'Prasa', w: 3, ctx: () => lastRes(1)[0] === 'L' ? {} : null, title: 'Kontrowersje sędziowskie', text: () => 'Po porażce kibice i media kłócą się o niepodyktowany rzut karny dla Twojej drużyny.',
+  { id: 'refcontro', cat: 'Prasa', w: 3, ctx: () => recentM() && lastRes(1)[0] === 'L' ? {} : null, title: 'Kontrowersje sędziowskie', text: () => 'Po porażce kibice i media kłócą się o niepodyktowany rzut karny dla Twojej drużyny.',
     choices: [{ t: 'Skrytykuj sędziego', fn: () => ({ fans: 5, board: -2, money: -Math.round(userClub().tv * 0.5) }), r: 'Kara finansowa od ligi, ale kibice są z Tobą.', mem: 'media' },
       { t: 'Przyjmij porażkę z klasą', fx: { press: 4, fans: -2 }, r: 'Fair play doceniony w mediach.' }] },
-  { id: 'poach', cat: 'Akademia', w: 3, ctx: () => { const y = S.acad.youth.filter(y => y.acad && y.acad.est >= 72).sort((a, b) => b.acad.est - a.acad.est)[0]; return y ? { p: y } : null; }, title: 'Podbieranie talentu', text: c => `Duży klub próbuje podkupić ${c.p.n} z Twojej akademii, oferując jego rodzinie wysoką pensję.`,
+  { id: 'poach', cat: 'Akademia', w: 3, ctx: () => { const y = S.acad.youth.filter(y => y.acad && y.acad.est >= 72).sort((a, b) => b.acad.est - a.acad.est)[0]; return y ? { p: y } : null; }, title: 'Podbieranie talentu', text: c => `Duży klub próbuje podkupić z Twojej akademii juniora ${c.p.n}, oferując jego rodzinie wysoką pensję.`,
     choices: [{ t: 'Daj mu profesjonalny kontrakt', fn: c => { promoteYouth(c.p.id); return { fans: 3 }; }, r: 'Talent zostaje i dołącza do pierwszego zespołu.' },
       { t: 'Zaoferuj premię rodzinie', fn: () => ({ money: -Math.round(userClub().tv * 1.5) }), r: 'Rodzina przyjęła ofertę – na razie.', alt: { p: c => traits(c.p).loy <= 7 ? 0.5 : 0.15, fn: c => { releaseYouth(c.p.id); return { money: Math.round(userClub().tv * 2), fans: -5 }; }, r: 'Mimo premii odszedł – klub dostał tylko odszkodowanie.' } },
       { t: 'Pozwól mu odejść za odszkodowanie', fn: c => { releaseYouth(c.p.id); return { money: Math.round(userClub().tv * 3), fans: -6 }; }, r: 'Pieniądze się przydadzą, ale kibice są rozczarowani.' }] },
@@ -256,7 +257,7 @@ const EVENTS = [
   { id: 'journalist', cat: 'Prasa', w: 2, ctx: () => ({}), title: 'Wywiad na wyłączność', text: () => 'Popularny dziennikarz prosi o długi wywiad o Twojej filozofii pracy.',
     choices: [{ t: 'Zgódź się', hint: 'słowa mogą zostać przekręcone', fx: { press: 6, fans: 2, mgr: 0.2 }, r: 'Świetny materiał – czyta go cały kraj.', alt: { p: () => S.press < 40 ? 0.45 : 0.2, fx: { press: -4, team: -3 }, r: 'Tytuł wyrwał Twoje słowa z kontekstu – zawodnicy poczuli się urażeni.' } },
       { t: 'Odmów', fx: { press: -3 }, r: 'Dziennikarz zapamięta.' }] },
-  { id: 'sponsorbonus', cat: 'Zarząd', w: 2, ctx: () => lastRes(3).filter(r => r === 'W').length >= 2 ? {} : null, title: 'Premia od sponsora', text: () => 'Główny sponsor proponuje wybór: stała premia teraz albo dużo wyższa premia za awans/miejsce w czołówce na koniec sezonu.',
+  { id: 'sponsorbonus', cat: 'Zarząd', w: 2, ctx: () => recentM() && lastRes(3).filter(r => r === 'W').length >= 2 ? {} : null, title: 'Premia od sponsora', text: () => 'Główny sponsor proponuje wybór: stała premia teraz albo dużo wyższa premia za awans/miejsce w czołówce na koniec sezonu.',
     choices: [{ t: 'Stała premia teraz', fn: () => ({ money: Math.round(userClub().spons * 5) }), r: 'Pewne pieniądze na koncie.' },
       { t: 'Premia za wynik', hint: 'tylko jeśli zrealizujesz cel', fn: () => { S.sponsBet = { season: S.season, amount: Math.round(userClub().spons * 14) }; return {}; }, r: 'Zakład przyjęty – rozliczenie na koniec sezonu.' }] },
   { id: 'unsettled', cat: 'Transfery', follow: true, title: 'Zawodnik chce odejść', text: c => `${c.p.n} jest wściekły, że odrzuciłeś ofertę ${c.p._suitor || 'większego klubu'}. Jego agent mówi o „szansie życia”, która przechodzi mu koło nosa.`,
@@ -399,15 +400,17 @@ function eventsWeek(d) {
     if (unhappy.length && rnd() < 0.55) { const p = pick(unhappy); p._meet = now; S.lastMeet = now; pushEvent(meetingEvent(p), { p }); return; }
   }
   if (d.ls >= 18 && d.ls <= 34) {
-    const exp = ut.players.filter(p => p.con <= 1 && !p.loan && p.ovr >= teamLevel(ut) - 5 && (p._cev || 0) !== S.season);
+    const exp = ut.players.filter(p => p.con <= 1 && !p.loan && p.age <= 32 && p.ovr >= teamLevel(ut) - 5 && (p._cev || 0) !== S.season);
     S.cev = S.cev && S.cev.s === S.season ? S.cev : { s: S.season, n: 0 };
     if (exp.length && S.cev.n < 2 && rnd() < 0.5) { const p = exp.sort((a, b) => b.ovr - a.ovr)[0]; p._cev = S.season; S.cev.n++; pushEvent(contractEvent(p), { p }); return; }
   }
-  // losowe wydarzenie: każde maks. raz na sezon, kategoria co 3 tygodnie, rzadziej powtarzane w kolejnych sezonach
+  // losowe wydarzenie: każde maks. raz na sezon, kategoria co 3 tygodnie, rzadziej powtarzane; globalnie nie częściej niż co ~10 dni (w przerwie zimowej – co 3 tygodnie)
+  const brk = S.leagues[ut.lg].lsMap[d.ls] === -1;
+  if (S.lastRandEv != null && now - S.lastRandEv < (brk ? 21 : 10)) return;
   if (rnd() < 0.36) {
     S.evCount = S.evCount || {};
     const opts = EVENTS.filter(e => !e.follow && S.evSeen[e.id] !== S.season && (!S.evCat[e.cat] || now - S.evCat[e.cat] >= 21)).map(e => ({ e, c: e.ctx() })).filter(x => x.c);
-    if (opts.length) { const x = wpick(opts, o => o.e.w / (1 + (S.evCount[o.e.id] || 0) * 0.6)); pushEvent(x.e, x.c); }
+    if (opts.length) { const x = wpick(opts, o => o.e.w / (1 + (S.evCount[o.e.id] || 0) * 0.6)); pushEvent(x.e, x.c); S.lastRandEv = now; }
   }
 }
 
@@ -418,7 +421,7 @@ const HEAD_D = ['Podział punktów w meczu {c} – {o}', '{c} tylko remisuje', '
 function afterMatchMeta(m, x, mine, opp, gd) {
   metaInit();
   const r = gd > 0 ? 'W' : gd < 0 ? 'L' : 'D';
-  S.results.push(r); if (S.results.length > 40) S.results.shift();
+  S.results.push(r); if (S.results.length > 40) S.results.shift(); S.lastUM = absDay();
   const st = S.stats; st.games++; if (r === 'W') st.wins++;
   st.unbeaten = r === 'L' ? 0 : st.unbeaten + 1; st.bestUnbeaten = Math.max(st.bestUnbeaten, st.unbeaten);
   const big = Math.abs(gd) >= 3, upset = opp.t.rep - mine.t.rep >= 8;
@@ -437,12 +440,13 @@ function pressConference(x) {
   const mine = x.user === 'h' ? x.h : x.a, opp = x.user === 'h' ? x.a : x.h;
   if (x.opts.comp === 'P') return null;
   const big = x.opts.comp !== 'L' && x.opts.comp !== 'F' || (opp.rep || 50) >= (mine.rep || 50) + 6 || !!(typeof derbyName === 'function' && derbyName(mine.id, opp.id));
-  if (!big && rnd() > 0.3) return null;
+  const pm = (S.settings && S.settings.press) || 'rare';
+  if (pm === 'off' || (pm === 'rare' && (!big || rnd() > 0.5)) || (pm === 'on' && !big && rnd() > 0.3)) return null;
   const fav = (mine.rep || 50) >= (opp.rep || 50) + 4, ps = mine.players || [], star = ps.slice().sort((a, b) => b.ovr - a.ovr)[0];
   const inj = ps.filter(p => p.inj).sort((a, b) => b.ovr - a.ovr)[0], losing = lastRes(3).filter(r => r === 'L').length >= 2, winning = lastRes(3).filter(r => r === 'W').length >= 3;
   const listed = ps.find(p => p.listed), young = ps.filter(p => p.age <= 20 && p.st.apps > 0).sort((a, b) => b.ovr - a.ovr)[0];
   const qs = [
-    { q: `Mecz: ${mine.name} – ${opp.name}. Kto jest faworytem?`, a: [['„Szanujemy rywala, ale gramy o zwycięstwo.”', 'calm', { team: 2, press: 1 }], [fav ? '„My. I udowodnimy to na boisku.”' : '„Oni – nie mamy nic do stracenia.”', 'bold', fav ? { team: 3, fans: 3, boast: true } : { team: 3, press: 1 }], ['„Wygramy, gwarantuję.”', 'bold', { fans: 5, press: 3, team: 2, boast: true }]] },
+    { q: `Mecz: ${x.h.name} – ${x.a.name}. Kto jest faworytem?`, a: [['„Szanujemy rywala, ale gramy o zwycięstwo.”', 'calm', { team: 2, press: 1 }], [fav ? '„My. I udowodnimy to na boisku.”' : '„Oni – nie mamy nic do stracenia.”', 'bold', fav ? { team: 3, fans: 3, boast: true } : { team: 3, press: 1 }], ['„Wygramy, gwarantuję.”', 'bold', { fans: 5, press: 3, team: 2, boast: true }]] },
     { q: 'Jak ocenia Pan atmosferę w zespole?', a: [['„Jesteśmy jak rodzina.”', 'calm', { team: 2, press: 1 }], ['„Wszyscy muszą dać z siebie więcej.”', 'harsh', { team: -2, fans: 2, press: 2 }], ['„To zostaje w szatni.”', 'evasive', { press: -3, team: 1 }]] },
     { q: `Ile zostało do celu zarządu? ${S.board.text}`, a: [['„Idziemy zgodnie z planem.”', 'calm', { board: 2, press: 1 }], ['„Stać nas na więcej niż cel zarządu.”', 'bold', { fans: 4, board: 1, boast: true }], ['„Cele stawia zarząd, ja skupiam się na meczu.”', 'evasive', { board: -2 }]] },
   ];
@@ -472,7 +476,8 @@ function postMatchPress(m, user) {
   let run = 0, worst = 0; for (const e of ev) { run += e.d; worst = Math.min(worst, run); }
   const red = Object.values(me.rec).find(r => r.r), motm = m.motm && me.rec[m.motm.p.id] ? m.motm.p : null, dn = typeof derbyName === 'function' ? derbyName(me.t.id, op.t.id) : null;
   const big = m.comp !== 'L' || dn || Math.abs(gd) >= 3 || red || (worst <= -1 && gd > 0);
-  if (!big && rnd() > 0.35) return null;
+  const pm = (S.settings && S.settings.press) || 'rare';
+  if (pm === 'off' || (pm === 'rare' && (!big || rnd() > 0.4)) || (pm === 'on' && !big && rnd() > 0.35)) return null;
   const qs = [];
   if (gd >= 3) qs.push({ q: `${me.goals}:${op.goals}! Czy to najlepszy mecz Pana drużyny w tym sezonie?`, a: [['„Cieszymy się, ale jutro wracamy do pracy.”', 'calm', { team: 2, board: 1 }], ['„Tak gra drużyna, która myśli o czymś wielkim.”', 'bold', { fans: 5, team: 2, boast: true }], ['„Rywal ułatwił nam zadanie.”', 'evasive', { press: 2 }]] });
   if (gd > 0 && worst <= -1) qs.push({ q: 'Wielki powrót! Co powiedział Pan zawodnikom, gdy przegrywaliście?', a: [['„Że wierzę w nich do ostatniej minuty.”', 'calm', { team: 4 }], ['„Kilka mocnych słów – i zadziałało.”', 'harsh', { team: 1, fans: 2, press: 2 }], ['„To zostaje w szatni.”', 'evasive', { press: -1, team: 2 }]] });

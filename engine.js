@@ -431,7 +431,7 @@ function step(m) {
       ev(m, 'red', side, `🟥 Czerwona kartka! ${shortName(s.p)} (${side.t.name}) opuszcza boisko.`); m.alert = 'red';
     }
     const risk = side.pitch.map(x => injRisk(x.p, fitNow(side, x, mn)));
-    if (rnd() < 0.0009 * avg(risk)) {
+    if (rnd() < 0.0009 * avg(risk) * (m.comp === 'P' ? 0.35 : 1)) {
       const s = wpick(side.pitch, x => risk[side.pitch.indexOf(x)]);
       const ij = injure(s.p), days = ij.days;
       ev(m, 'injury', side, `🚑 Kontuzja! ${shortName(s.p)} (${side.t.name}) – ${ij.type}, przerwa ok. ${Math.ceil(days / 7)} tyg.`); m.alert = 'injury';
@@ -444,7 +444,7 @@ function step(m) {
   if (mn === 45 && !m.htDone) { m.htDone = true; ev(m, 'ht', null, `⏸ Przerwa. ${H.t.name} ${H.goals}:${A.goals} ${A.t.name}`); return 'ht'; }
   if (mn >= m.end) {
     if (m.ko && tied(m)) {
-      if (!m.et) { m.et = true; m.end = 120 + ri(0, 2); ev(m, 'ht', null, '⏱ Dogrywka!'); return 'et'; }
+      if (!m.et && m.comp !== 'P') { m.et = true; m.end = 120 + ri(0, 2); ev(m, 'ht', null, '⏱ Dogrywka!'); return 'et'; }
       shootout(m);
     }
     finishMatch(m); return 'ft';
@@ -530,15 +530,16 @@ function fastSim(h, a, opts = {}) {
     const ps = side.pitch.filter(s => s.pos !== 'GK');
     for (let i = poisson(1.6); i > 0 && ps.length; i--) side.rec[pick(ps).p.id].y = 1;
     if (rnd() < 0.05 && ps.length) { const s = pick(ps); side.rec[s.p.id].r = 1; if (club) { s.p.susp = ri(1, 2); s.p._fresh = true; } }
-    { const rk = side.pitch.map(x => injRisk(x.p, x.p.fit)); if (rnd() < 0.085 * avg(rk)) injure(wpick(side.pitch, x => rk[side.pitch.indexOf(x)]).p); }
+    { const rk = side.pitch.map(x => injRisk(x.p, x.p.fit)); if (rnd() < 0.085 * avg(rk) * (m.comp === 'P' ? 0.35 : 1)) injure(wpick(side.pitch, x => rk[side.pitch.indexOf(x)]).p); }
     const gk = side.pitch.find(s => s.pos === 'GK'); const opp = side === H ? A : H;
     if (gk) side.rec[gk.p.id].sv = Math.max(0, opp.sot - opp.goals);
   }
   m.minute = 90;
   if (m.ko && tied(m)) {
-    m.et = true; m.minute = 120;
-    addGoals(H, poisson(xh.g / 3), 91, 120); addGoals(A, poisson(xa.g / 3), 91, 120);
-    if (tied(m)) shootout(m);
+    if (m.comp === 'P') shootout(m);   // sparingi: od razu karne
+    else { m.et = true; m.minute = 120;
+      addGoals(H, poisson(xh.g / 3), 91, 120); addGoals(A, poisson(xa.g / 3), 91, 120);
+      if (tied(m)) shootout(m); }
   }
   m.scorersSorted = true;
   finishMatch(m);

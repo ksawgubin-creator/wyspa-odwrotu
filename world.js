@@ -223,7 +223,7 @@ function setupEconomy(c) {
   const bill = sum(c.players.map(p => p.wage));
   c.tv = tvFor(c);
   c.price = 5 + c.rep * 0.3;
-  const gateAvg = 0.5 * Math.min(c.cap, ticketDemand(c)) * c.price;
+  const gateAvg = homeShare(c) * Math.min(c.cap, ticketDemand(c)) * c.price;
   c.spons = Math.max(2000, Math.round((bill * (0.98 + c.rep / 700 + rnd() * 0.08) - c.tv - gateAvg) / 1000) * 1000);
   const sv = sum(c.players.map(p => p.val));
   c.bal = Math.round(sv * (0.08 + rnd() * 0.1) / 100000) * 100000;
@@ -888,7 +888,8 @@ function seasonAwards(lgId, finals) {
 }
 function boardMeeting(d) {
   if (![12, 24, 36].includes(d.ls)) return;
-  const ut = userClub(), c = S.board.conf, g = c >= 80 ? 'A' : c >= 65 ? 'B' : c >= 50 ? 'C' : c >= 35 ? 'D' : 'F';
+  const ut = userClub(), c = S.board.conf; let g = c >= 80 ? 'A' : c >= 65 ? 'B' : c >= 50 ? 'C' : c >= 35 ? 'D' : 'F';
+  if (ut.bal < 0 && (g === 'A' || g === 'B')) g = 'C';   // długi psują ocenę mimo wyników
   const side = (S.board.side || []).filter(x => x.season === S.season).map(x => `• ${x.t}: ${BOARD_GOALS[x.k][2](ut, x)}`).join('\n');
   let extra = '';
   if (g === 'A') { const b = Math.round(Math.max(ut.tb, 0) * 0.1 / 1e4) * 1e4 + Math.round(ut.tv * 2); ut.tb += b; extra = ` Zarząd jest zachwycony i zwiększa budżet transferowy o ${money(b)}.`; }
@@ -968,9 +969,9 @@ function baseKnow(p) {
   const ut = userClub();
   if (p.tid === S.user) return 100;
   if (p.tid === -3) return 92;
-  let k = 15;
+  let k = 30;
   const c = clubOf(p);
-  if (c) { if (c.lg === ut.lg) k = 75; else if (c.cc === ut.cc) k = 50; if (c.rep >= 85) k = Math.max(k, 60); }
+  if (c) { if (c.lg === ut.lg) k = 82; else if (c.cc === ut.cc) k = 62; if (c.rep >= 85) k = Math.max(k, 70); }
   if (p.ovr >= 84) k = Math.max(k, 80); else if (p.ovr >= 80) k = Math.max(k, 60);
   if (S.nt && p.nat === S.nt) k = Math.max(k, 65);
   return k;
@@ -1136,7 +1137,7 @@ function playerInterest(p) {
 }
 /* budżet płacowy (tygodniowy) – jak w trybie kariery FC; można przesuwać środki z budżetu transferowego */
 const wageBill = c => sum(c.players.map(p => p.wage || 0));
-function weeklyIncome(c) { return c.tv + c.spons + 0.5 * Math.min(c.cap, ticketDemand(c)) * c.price; }
+function weeklyIncome(c) { return c.tv + c.spons + homeShare(c) * Math.min(c.cap, ticketDemand(c)) * c.price; }
 function setWageBudget() { const ut = userClub(); S.board.wb = Math.round(Math.max(wageBill(ut) * 1.12, weeklyIncome(ut) * 0.9) / 1000) * 1000; }
 function wageRoom() { if (S.board.wb == null) setWageBudget(); return S.board.wb - wageBill(userClub()); }
 /* przesunięcie: 52 € budżetu transferowego = 1 €/tydz. budżetu płac */
@@ -1604,7 +1605,7 @@ function academySeasonEnd() {
 const BOARD_GOALS = {
   u21: [ut => 'Daj młodzieżowcom (do 21 lat) łącznie co najmniej 25 występów', ut => sum(ut.players.filter(p => p.age <= 21).map(p => p.st.apps)) >= 25, ut => `${sum(ut.players.filter(p => p.age <= 21).map(p => p.st.apps))}/25`],
   wage: [ut => "Zmieść się w budżecie płac (stan na koniec sezonu)", ut => wageBill(ut) <= (S.board.wb || Infinity), ut => `${money(wageBill(ut))} / ${money(S.board.wb || 0)}`],
-  trans: [ut => 'Zakończ sezon z nieujemnym bilansem transferów', ut => ut.fin.tr >= 0, ut => money(ut.fin.tr)],
+  trans: [ut => 'Zakończ sezon bez długów (saldo na plusie)', ut => ut.bal >= 0, ut => money(ut.bal)],
   cup: [ut => 'Dojdź co najmniej do ćwierćfinału pucharu kraju', ut => cupReach(ut) <= 8, ut => { const r = cupReach(ut); return r <= 2 ? 'finał' : r <= 8 ? 'ćwierćfinał+' : 'jeszcze nie'; }],
   fans: [ut => 'Utrzymaj poparcie kibiców na poziomie co najmniej 60%', ut => (S.fans || 0) >= 60, ut => Math.round(S.fans || 0) + '%'],
   acad: [ut => 'Wypromuj co najmniej jednego wychowanka do pierwszego zespołu', ut => (S.promoted || {})[S.season] >= 1, ut => `${(S.promoted || {})[S.season] || 0}/1`],
@@ -1744,7 +1745,7 @@ function finishPre() {
 function startCareer(name, clubId, nt, mgrOvr) {
   S.manager = name; S.user = clubId; S.nt = nt || null;
   const ut = userClub(); S.mgr = { ovr: mgrOvr || 50, best: mgrOvr || 50 }; clubFacilities(ut);
-  S.board.since = S.season; S.board.ult = null; S.board.hired = absDay(); S.startClub = ut.id; S.startTier = S.leagues[ut.lg].tier; if (typeof metaInit === 'function') metaInit();
+  S.attV = 3; S.board.since = S.season; S.board.ult = null; S.board.hired = absDay(); S.startClub = ut.id; S.startTier = S.leagues[ut.lg].tier; if (typeof metaInit === 'function') metaInit();
   if (!S.acad.youth.length) for (let i = 0, n = 3 + S.acad.rec; i < n; i++) { const y = genYouth(); y.age = ri(15, 17); S.acad.youth.push(y); PM.set(y.id, y); PALL.push(y); }
   for (const p of ut.players) p.ovrS = p.ovr;
   { const b = bestFormation(ut); if (b && b.avg >= pickLineup(ut, ut.formation).avg + 1) ut.formation = b.f; }   // start w formacji pasującej do kadry
@@ -1879,7 +1880,7 @@ function endSeason() {
       if (p.pot < p.ovr) p.pot = p.ovr;   // potencjał nigdy poniżej aktualnej oceny
       p.inj = 0; p.susp = 0; p.fit = 100; p.form = 50; p.shp = 60; p.st = newStats(); p.lg = 0; p.eg = 0; p.listed = false; p.pt = 0.5;
       p.val = calcValue(p);
-      if (p.age >= 34 && !p.preTo && rnd() < 0.25 + (p.age - 34) * 0.2) { detach(p); PM.delete(p.id); if (c === ut) retired.push(p.n); continue; }
+      if (p.age >= 34 && !p.preTo && (p.con <= 1 || p.age >= 37) && rnd() < 0.25 + (p.age - 34) * 0.2) { detach(p); PM.delete(p.id); if (c === ut) retired.push(p.n); continue; }
       p.con--;
       if (p.con <= 0 && p.preTo && c !== ut) {
         if (p.preTo.club === S.user) { preMoves.push(p); continue; }
@@ -1967,7 +1968,9 @@ function endSeason() {
 }
 function tvFor(c) { const t = TVW[c.cc] || [5e4, 1e4], tier = S.leagues[c.lg].tier, t2 = t[1] || t[0] * 0.15; return Math.round(tier === 1 ? t[0] : tier === 2 ? t2 : tier === 3 ? t2 * 0.3 : t2 * 0.12); }
 function setupTV(c) { c.tv = tvFor(c); }
-function rebalanceSpons(c) { const bill = sum(c.players.map(p => p.wage)), gateAvg = 0.5 * Math.min(c.cap, ticketDemand(c)) * c.price; c.spons = Math.max(2000, Math.round((bill * (1.0 + c.rep / 700) - c.tv - gateAvg) / 1000) * 1000); }
+// udział tygodni z meczem domowym w lidze (np. 17 meczów u siebie na 46 terminów)
+function homeShare(c) { const L = S.leagues[c.lg], R = L && L.fix ? L.fix.length : 34; return clamp(R / 2 / LS, 0.25, 0.5); }
+function rebalanceSpons(c) { const bill = sum(c.players.map(p => p.wage)), gateAvg = homeShare(c) * Math.min(c.cap, ticketDemand(c)) * c.price; c.spons = Math.max(2000, Math.round((bill * (1.0 + c.rep / 700) - c.tv - gateAvg) / 1000) * 1000); }
 
 /* ---------- praca ---------- */
 function mgrGain(d) { if (d > 0) d *= clamp((95 - S.mgr.ovr) / 50, 0.15, 1); S.mgr.ovr = clamp(Math.round((S.mgr.ovr + d) * 10) / 10, 20, 99); S.mgr.best = Math.max(S.mgr.best || 0, S.mgr.ovr); }
@@ -2090,6 +2093,8 @@ async function listSlots() {
 }
 async function loadSlot(n) { if (typeof indexedDB === 'undefined') return null; try { const db = await idb(); return await idbGet(db, slotKey(n)); } catch (e) { return null; } }
 async function deleteSlot(n) { if (typeof indexedDB === 'undefined') return; try { const db = await idb(); await idbDel(db, slotKey(n)); const meta = (await idbGet(db, 'meta')) || {}; delete meta[n]; await idbPut(db, 'meta', meta); } catch (e) { } }
-function useSave(s) { if (typeof resetCaches === 'function') resetCaches(); S = s; rebuildIndex(); if (!S.attV) { S.attV = 1; for (const c of S.clubs) rebalanceSpons(c); } if (typeof metaInit === 'function') metaInit(); if (S.user >= 0) initStaff(); }
+function useSave(s) { if (typeof resetCaches === 'function') resetCaches(); S = s; rebuildIndex(); if (!S.attV) { S.attV = 1; for (const c of S.clubs) if (c.id !== S.user) rebalanceSpons(c); }
+  // naprawa zapisów, w których migracja zaniżyła sponsora Twojego klubu (brak kosztów sztabu i akademii)
+  if (S.attV < 3 && S.user >= 0) { S.attV = 3; const u = userClub(), sp0 = u.spons; if (S.staff) { rebalanceSpons(u); const tgt = u.spons + staffCost() + acadCost(); u.spons = Math.max(sp0, tgt); } } if (typeof metaInit === 'function') metaInit(); if (S.user >= 0) initStaff(); }
 
 if (typeof module !== 'undefined') module.exports = { get S() { return S; } };

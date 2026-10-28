@@ -211,7 +211,7 @@ function vHome() {
   ${S.offers.length ? `<div class="card hl" data-act="gooffers"><div class="row"><span style="font-size:22px">💰</span><b class="sp">Oferty za Twoich zawodników (${S.offers.length})</b><small>Zobacz ›</small></div></div>` : ''}
   ${S.jobs.length ? `<div class="card hl" data-act="jobs"><div class="row"><span style="font-size:22px">📨</span><b class="sp">Oferty pracy (${S.jobs.length})</b><small>Zobacz ›</small></div></div>` : ''}
   ${ec ? `<div class="card" data-act="goeuro" data-arg="${ec.id}"><div class="row"><span class="eu ${ec.id}">${ec.id === 'CL' ? '⭐' : ec.id === 'EL' ? '🟠' : '🟢'}</span><b class="sp">${ec.name}</b><small>${euroStatus(ec)}</small></div></div>` : ''}
-  <div class="card"><div class="row"><b>Zarząd</b><span class="sp"></span><span class="${conf > 55 ? 'good' : conf > 30 ? 'warn' : 'bad'}">${conf > 70 ? 'Bardzo zadowolony' : conf > 50 ? 'Zadowolony' : conf > 30 ? 'Niezadowolony' : 'Na krawędzi zwolnienia!'}</span></div>
+  <div class="card"><div class="row"><b>Zarząd</b><span class="sp"></span><span class="${conf > 55 ? 'good' : conf > 30 ? 'warn' : 'bad'}">${ut.bal < 0 ? 'Zaniepokojony długami' : conf > 70 ? 'Bardzo zadowolony' : conf > 50 ? 'Zadowolony' : conf > 30 ? 'Niezadowolony' : 'Na krawędzi zwolnienia!'}</span></div>
     ${bar(conf)}<small>${esc(S.board.text)}${S.board.euro ? ' Europa: ' + esc(S.board.euro) + '.' : ''}</small>
     ${(S.board.side || []).filter(g => g.season === S.season).map(g => `<div class="rt"><small>🎯 ${esc(g.t)}</small><small class="${BOARD_GOALS[g.k][1](ut, g) ? 'good' : 'mut'}">${esc(BOARD_GOALS[g.k][2](ut, g))}</small></div>`).join('')}</div>
   ${S.nt ? `<div class="card" data-act="gont"><div class="row"><span style="font-size:22px">${flag(S.nt)}</span><b class="sp">Reprezentacja: ${esc(NAT[S.nt].name)}</b><small>Powołania ›</small></div></div>` : ''}
@@ -1192,10 +1192,15 @@ ACT.uncall = id => { const st = S.ntTeams[S.nt]; st.sq = st.sq.filter(x => x !==
 function vGame() {
   return `<div class="card"><h2>Zapis gry</h2><small class="mut">Gra zapisuje się automatycznie w pamięci urządzenia.</small>
     <div class="btns"><button class="btn sp" data-act="savegame">💾 Zapisz teraz</button><button class="btn" data-act="export">⬇️ Eksportuj</button><label class="btn">⬆️ Importuj<input type="file" accept=".json" data-change="import" hidden></label></div></div>
+    <div class="card"><h2>Przerywniki</h2><small class="mut">Ustal, o co gra ma Cię pytać. Asystent przejmie resztę.</small>
+      <h3>Konferencje prasowe</h3><div class="seg">${[['on', 'Często'], ['rare', 'Tylko ważne mecze'], ['off', 'Wyłączone']].map(([k, n]) => `<button class="btn sm ${(S.settings.press || 'rare') === k ? 'on' : ''}" data-act="setpress" data-arg="${k}">${n}</button>`).join('')}</div>
+      ${[['htAuto', 'Odprawę w przerwie prowadzi asystent', true], ['autoPause', 'Pauza przy czerwonej kartce / kontuzji bez zmiany', true], ['resPopup', 'Okno z wynikami kolejki po meczu', false]].map(([k, n, def]) => `<div class="row" style="margin-top:8px"><span class="sp">${n}</span><button class="btn sm ${(S.settings[k] != null ? S.settings[k] : def) ? 'pri' : ''}" data-act="settog" data-arg="${k}">${(S.settings[k] != null ? S.settings[k] : def) ? 'Tak' : 'Nie'}</button></div>`).join('')}</div>
     <div class="card"><h2>Szybkość meczu</h2><div class="seg">${[1, 2, 4, 8].map(s => `<button class="btn sm ${S.settings.speed === s ? 'on' : ''}" data-act="defspeed" data-arg="${s}">x${s}</button>`).join('')}</div></div>
     <div class="card"><h2>Kariery</h2><small class="mut">Ta kariera jest w slocie ${SLOT}. W menu głównym możesz wczytać inną karierę albo zacząć nową w wolnym slocie.</small><div class="btns"><button class="btn full" data-act="newgame">🏠 Menu główne (sloty karier)</button></div></div>`;
 }
 ACT.savegame = async () => { await saveNow(); toast('Zapisano grę.'); };
+ACT.setpress = k => { S.settings.press = k; saveSoon(); render(); };
+ACT.settog = k => { const def = { htAuto: true, autoPause: true, resPopup: false }[k]; S.settings[k] = !(S.settings[k] != null ? S.settings[k] : def); saveSoon(); render(); };
 ACT.defspeed = s => { S.settings.speed = +s; saveSoon(); render(); };
 ACT.newgame = async () => { if (confirm('Wrócić do menu głównego? Kariera jest zapisana.')) { await saveNow(); location.reload(); } };
 ACT.export = () => {
@@ -1283,8 +1288,9 @@ function tick() {
   if (MS.paused || MS.over) return;
   const r = step(M); upd();
   if (r === 'ft') { MS.over = true; mctl(); return; }
-  if (r === 'ht' || r === 'et') { MS.paused = true; mctl(); if (r === 'et') toast('Dogrywka!'); document.querySelectorAll('.uk-goal').forEach(e => e.remove()); return; }
-  if ((M.alert === 'red' || M.alert === 'injury') && M.ev[M.ev.length - 1].side === MX.user) { MS.paused = true; mctl(); toast(M.alert === 'red' ? 'Czerwona kartka!' : 'Kontuzja!'); return; }
+  if (r === 'ht' && S.settings.htAuto !== false) { const s = uside(), o = s === M.home ? M.away : M.home, d = s.goals - o.goals, k = d < 0 ? 'motivate' : d > 0 ? 'calm' : 'motivate'; const tr = teamTalk(s, k, o.t.rep || 50, true, d); M.htTalk = true; ev(M, 'info', s, `🗣️ Przerwa (asystent): ${TALKS[k]} – ${talkMsg(tr, true)}`); upd(); }
+  else if (r === 'ht' || r === 'et') { MS.paused = true; mctl(); if (r === 'et') toast('Dogrywka!'); document.querySelectorAll('.uk-goal').forEach(e => e.remove()); return; }
+  { const le = M.ev[M.ev.length - 1]; if (S.settings.autoPause !== false && (M.alert === 'red' || (M.alert === 'injury' && le.type === 'injury')) && le.side === MX.user) { MS.paused = true; mctl(); toast(M.alert === 'red' ? 'Czerwona kartka!' : 'Kontuzja – brak automatycznej zmiany!'); return; } }
   MT = setTimeout(tick, SPEED_MS[MS.speed] * (M.alert === 'goal' ? 2.5 : 1));
 }
 function upd() {
@@ -1322,14 +1328,14 @@ ACT.mform = f => { const s = uside(), sl = slotsOf(f), free = sl.map((x, i) => i
   const gk = left.find(x => x.pos === 'GK'); if (gk) { const gi = sl.findIndex(x => x.pos === 'GK'); gk.slot = gi; free.splice(free.indexOf(gi), 1); left.splice(left.indexOf(gk), 1); }
   while (left.length && free.length) { let b = null; for (const x of left) for (const i of free) { const v = ovrAt(x.p, sl[i].pos) - i * 0.01; if (!b || v > b.v) b = { x, i, v }; } b.x.slot = b.i; b.x.pos = sl[b.i].pos; b.x.ov = ovrAt(b.x.p, b.x.pos); s.rec[b.x.p.id].pos = b.x.pos; free.splice(free.indexOf(b.i), 1); left.splice(left.indexOf(b.x), 1); }
   s.form = f; s.duty = null; s.pm = null; M.dirty = true; ev(M, 'info', s, `📋 ${s.t.name}: zmiana ustawienia na ${f}.`); upd(); ACT.mtactic(); };
-ACT.mtactic = () => { MS.paused = true; mctl(); const s = uside(); modal(`<h2>Taktyka</h2><h3>Formacja</h3><select data-change="mformsel" style="width:100%">${Object.keys(FORMATIONS).map(f => `<option ${(s.form || s.t.formation) === f ? "selected" : ""}>${f}</option>`).join('')}</select><h3>Styl gry</h3>${presetHtml({ ment: s.ment, tac: s.tac }, 'mpreset')}<h3>Mentalność</h3><div class="seg">${Object.entries(MENT).map(([k, v]) => `<button class="btn ${s.ment === k ? 'on' : ''}" data-act="mment" data-arg="${k}">${v}</button>`).join('')}</div>${tacHtml(s.tac, 'mtac')}<div class="btns"><button class="btn full" data-act="close">Wróć do meczu</button></div>`); };
+ACT.mtactic = () => { document.querySelectorAll('.uk-goal').forEach(e => e.remove()); MS.paused = true; mctl(); const s = uside(); modal(`<h2>Taktyka</h2><h3>Formacja</h3><select data-change="mformsel" style="width:100%">${Object.keys(FORMATIONS).map(f => `<option ${(s.form || s.t.formation) === f ? "selected" : ""}>${f}</option>`).join('')}</select><h3>Styl gry</h3>${presetHtml({ ment: s.ment, tac: s.tac }, 'mpreset')}<h3>Mentalność</h3><div class="seg">${Object.entries(MENT).map(([k, v]) => `<button class="btn ${s.ment === k ? 'on' : ''}" data-act="mment" data-arg="${k}">${v}</button>`).join('')}</div>${tacHtml(s.tac, 'mtac')}<div class="btns"><button class="btn full" data-act="close">Wróć do meczu</button></div>`); };
 ACT.mment = k => { uside().ment = k; M.dirty = true; ev(M, 'info', uside(), `📋 ${uside().t.name}: mentalność ${MENT[k].toLowerCase()}.`); upd(); closeModal(); };
 let subOut = null;
-ACT.msubs = () => { MS.paused = true; mctl(); subOut = null; renderSubs(); };
+ACT.msubs = () => { document.querySelectorAll('.uk-goal').forEach(e => e.remove()); MS.paused = true; mctl(); subOut = null; renderSubs(); };
 function renderSubs() {
   const s = uside();
   modal(`<h2>Zmiany (${s.subs}/${MAX_SUBS})</h2><small class="mut">${subOut ? 'Wybierz zawodnika z ławki.' : 'Wybierz zawodnika, który zejdzie.'}</small>
-    <h3>Na boisku</h3>${s.pitch.map(x => `<div class="prow ${subOut === x.p ? 'sel' : ''}" data-act="subout" data-arg="${x.p.id}"><span class="pos ${LINE[x.pos]}">${POS_PL[x.pos]}</span><div class="pn">${esc(x.p.n)}</div><div class="fitb">${bar(Math.round(fitNow(s, x, M.minute)))}</div>${ovrTag(x.ov)}</div>`).join('')}
+    <h3>Na boisku</h3>${s.pitch.map(x => `<div class="prow ${subOut === x.p ? 'sel' : ''}" data-act="subout" data-arg="${x.p.id}"><span class="pos ${LINE[x.pos]}">${POS_PL[x.pos]}</span><div class="pn">${esc(x.p.n)}${s.rec[x.p.id] && s.rec[x.p.id].y ? ' 🟨' : ''}${s.rec[x.p.id] && s.rec[x.p.id].g ? ' ⚽'.repeat(s.rec[x.p.id].g) : ''}</div><div class="fitb">${bar(Math.round(fitNow(s, x, M.minute)))}</div>${ovrTag(x.ov)}</div>`).join('')}
     <h3>Ławka${subOut ? ` <small class="mut">(OVR na pozycji: ${POS_PL[outPos()]})</small>` : ''}</h3>${(subOut ? s.bench.slice().sort((a, b) => ovrAt(b, outPos()) - ovrAt(a, outPos())) : s.bench).map(p => `<div class="prow" data-act="subin" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${esc(p.n)}</div><div class="fitb">${bar(p.fit)}</div>${ovrTag(subOut ? ovrAt(p, outPos()) : p.ovr)}</div>`).join('') || '<small>Pusta</small>'}
     <div class="btns"><button class="btn full" data-act="close">Wróć do meczu</button></div>`);
 }
@@ -1384,7 +1390,9 @@ ACT.finishday = () => {
   if (r.summary) return showSummary(r.summary);
   if (S.sacked) return showSacked();
   if (S.pending.length && !res) return ACT.event(S.pending[0].uid);
-  if (res) modal(`<h2>Wyniki: ${esc(label)}</h2>${tchg}<div class="card list">${res}</div><div class="btns"><button class="btn pri full" data-act="close">OK</button></div>`);
+  if (res && S.settings.resPopup) modal(`<h2>Wyniki: ${esc(label)}</h2>${tchg}<div class="card list">${res}</div><div class="btns"><button class="btn pri full" data-act="close">OK</button></div>`);
+  else if (res && pos1 != null && pos1 !== pos0) toast(`Tabela: ${pos0}. → ${pos1}. miejsce`, pos1 < pos0 ? 'ok' : 'bad');
+  else if (S.pending.length) ACT.event(S.pending[0].uid);
 };
 function showSummary(s) {
   const M = s.meta, G = { res: [], you: [], squad: [], fin: [], world: [] };

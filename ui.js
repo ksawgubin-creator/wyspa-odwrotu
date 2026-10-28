@@ -127,6 +127,9 @@ function vSquadStats(t) {
     <div class="card"><b>Zespół</b><div class="kv"><div><span>Mecze (kariera)</span><b>${st.games || 0}</b></div><div><span>Zwycięstwa</span><b>${st.wins || 0} (${st.games ? Math.round(st.wins / st.games * 100) : 0}%)</b></div>
       <div><span>Seria bez porażki</span><b>${st.unbeaten || 0}</b></div><div><span>Rekord serii</span><b>${st.bestUnbeaten || 0}</b></div></div>
       <div class="chips">${res.slice(-10).map(c => `<span class="chip ${c}">${c === 'W' ? 'Z' : c === 'D' ? 'R' : 'P'}</span>`).join('')}</div></div>
+    <div class="card"><b>👑 Hierarchia szatni</b><br><small class="mut">Liderzy wpływają na nastroje całej drużyny, a grupy narodowościowe trzymają się razem. Odstawienie lub sprzedaż lidera odbija się na atmosferze.</small>
+      ${squadLeaders().map(p => `<div class="rt" data-act="info" data-arg="${p.id}"><span>👑 ${esc(p.n)}</span><small>${moraleLabel(p.mor).join(' ')}</small></div>`).join('')}
+      ${squadCliques().map(g => `<div class="rt"><span>${flag(g.nat)} ${esc(NAT[g.nat] ? NAT[g.nat].name : g.nat)} (${g.ps.length})</span><small>morale ${Math.round(avg(g.ps.map(p => p.mor)))}</small></div>`).join('')}</div>
     <div class="card list"><div class="scrollx"><table class="rank"><tr><th>Zawodnik</th>${th('apps', 'M')}${th('min', 'Min')}${th('g', 'G')}${th('a', 'A')}${th('ga', 'K')}${th('r', 'Ocena')}</tr>
       ${ps.map(p => `<tr data-act="info" data-arg="${p.id}"><td>${posTag(p.pos)} ${esc(lastName(p))}</td><td>${p.st.apps}</td><td>${p.st.mins}</td><td>${p.st.g}</td><td>${p.st.a}</td><td>${p.st.g + p.st.a}</td><td>${p.st.apps ? (p.st.rs / p.st.apps).toFixed(2) : '–'}</td></tr>`).join('')}</table></div>
       <small class="mut">Statystyki z bieżącego sezonu (liga, puchary, Europa). K – punkty kanadyjskie.</small></div>
@@ -144,9 +147,11 @@ function vHome() {
   <div class="card hl">
     ${nx ? `<div class="row"><small>${esc(nx.label)}</small><span class="sp"></span><span class="pill">${fmtDate(nx.d.date)}</span></div>
     <div class="fixture"><div class="tm">${badge(nx.h, 'lg')}<span>${esc(nx.h.name)}</span></div><div class="vs">vs</div><div class="tm">${badge(nx.a, 'lg')}<span>${esc(nx.a.name)}</span></div></div>` : '<b>Koniec sezonu</b>'}
+    ${nx && !nx.nt && nx.h.lg && nx.a.lg ? `<div class="row mut" style="font-size:12px;justify-content:space-between"><span>${heroInfo(nx.h)}</span><span>${heroInfo(nx.a)}</span></div>` : ''}
     <div class="btns">${today ? `<button class="btn pri sp" data-act="prematch">⚽ Graj mecz</button><button class="btn" data-act="quicksim">⏩ Symuluj</button>` : `<button class="btn pri sp" data-act="cont">▶ Kontynuuj</button>`}</div>
   </div>
   ${S.pre && !S.pre.chosen && S.pre.season === S.season && S.cal[S.day] && S.cal[S.day].t === 'P' ? preCard() : ''}
+  ${upcomingStrip(nx)}
   ${S.pending.length ? `<div class="card hl" data-act="event" data-arg="${S.pending[0].uid}"><div class="row"><span style="font-size:22px">📌</span><b class="sp">Decyzje do podjęcia (${S.pending.length})</b><small>${esc(S.pending[0].title)} ›</small></div></div>` : ''}
   <div class="grid3">
     <div class="card stat"><small>🏟️ Kibice</small><b>${Math.round(S.fans)}%</b>${bar(S.fans)}</div>
@@ -165,6 +170,13 @@ function vHome() {
   ${out.length ? `<div class="card"><b>Niedostępni</b>${out.map(p => `<div class="row" style="margin-top:6px" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<span class="sp">${esc(p.n)}</span>${stTag(p)}</div>`).join('')}</div>` : ''}
   <div class="card"><div class="row"><b>Wiadomości</b><span class="sp"></span><button class="btn sm" data-act="inbox">Wszystkie</button></div>
     ${S.inbox.slice(0, 4).map(m => `<div class="msg ${m.read ? '' : 'new'}"><b>${esc(m.title)}</b><p>${esc(m.body)}</p></div>`).join('')}</div>`;
+}
+const empty = (ic, t, sub, act) => `<div class="empty"><div class="ei">${ic}</div><b>${t}</b>${sub ? `<small class="mut">${sub}</small>` : ''}${act ? `<div class="btns" style="justify-content:center">${act}</div>` : ''}</div>`;
+function heroInfo(c) { if (!c || c.id == null || !S.leagues[c.lg]) return ''; const r = table(c.lg).find(x => x.id === c.id); return r ? `${r.pos}. m. • ${r.form.slice(-5).map(f => f === 'W' ? '🟢' : f === 'D' ? '🟡' : '🔴').join('')}` : ''; }
+function upcomingStrip(nx) {
+  const out = []; for (let i = (nx ? nx.i + 1 : S.day); i < S.cal.length && out.length < 5; i++) { const x = fixtureAt(i); if (x && !x.nt) out.push(x); }
+  if (!out.length) return '';
+  return `<div class="strip">${out.map(x => { const home = x.h.id === S.user, o = home ? x.a : x.h; return `<div class="sfx" ${o.id != null ? `data-act="clubv" data-arg="${o.id}"` : ''}>${badge(o, 'sm')}<b>${esc(o.short || '?')}</b><small>${home ? 'D' : 'W'} • ${fmtDate(x.d.date).replace(/ \d{4}$/, '')}</small><small class="mut">${esc(x.label.split(' • ')[0])}</small></div>`; }).join('')}</div>`;
 }
 function preCard() {
   return `<div class="card hl"><h2>☀️ Turniej przedsezonowy</h2><small class="mut">Wybierz zaproszenie – mecze budują rytm meczowy, dają premię i szansę na trofeum.</small>
@@ -244,7 +256,7 @@ function vSquad() {
   const slots = slotsOf(t.formation);
   const inL = new Set(t.lineup), inB = new Set(t.bench);
   const chip = (p, i) => { const s = slots[i]; const v = ovrAt(p, s.pos); return `<div class="pchip ${UI.sel === p.id ? 'sel' : ''}" style="left:${s.x}%;bottom:${s.y}%" data-act="tap" data-arg="${p.id}">
-      ${ovrTag(v)}<div class="nm">${esc(lastName(p))}</div><div class="pp">${POS_PL[s.pos]}${p.pos !== s.pos && !(p.alt || []).includes(s.pos) ? ' ⚠' : ''} ${moraleLabel(p.mor)[0]}</div><div class="fb"><i style="width:${p.fit}%;background:${p.fit < 60 ? 'var(--bad)' : p.fit < 80 ? 'var(--warn)' : 'var(--acc)'}"></i></div></div>`; };
+      ${typeof kitSVG === 'function' ? `<div class="kit">${kitSVG(t.col, 26)}</div>` : ''}${ovrTag(v)}<div class="nm">${esc(lastName(p))}</div><div class="pp">${POS_PL[s.pos]}${p.pos !== s.pos && !(p.alt || []).includes(s.pos) ? ' ⚠' : ''} ${moraleLabel(p.mor)[0]}</div><div class="fb"><i style="width:${p.fit}%;background:${p.fit < 60 ? 'var(--bad)' : p.fit < 80 ? 'var(--warn)' : 'var(--acc)'}"></i></div></div>`; };
   const bench = t.bench.map(pget).filter(Boolean);
   const res = t.players.filter(p => !inL.has(p.id) && !inB.has(p.id)).sort((a, b) => POSITIONS.indexOf(a.pos) - POSITIONS.indexOf(b.pos) || b.ovr - a.ovr);
   return head + `
@@ -258,8 +270,8 @@ function vSquad() {
 }
 function sqRow(p) {
   return `<div class="prow ${UI.sel === p.id ? 'sel' : ''} ${isAvail(p) ? '' : 'out'}" data-act="tap" data-arg="${p.id}">
-    ${posTag(p.pos)}<div class="pn">${flag(p.nat)} ${esc(p.n)}<small>${p.age} l. ${stTag(p)} ${p.con <= 1 && !p.loan && p.tid === S.user ? '<span class="pill y">kontrakt</span>' : ''} ${p.listed ? '<span class="pill">lista</span>' : ''} ${p.loan ? '<span class="pill">wyp.</span>' : ''}</small></div>
-    ${morale(p)}${formArrow(p.form)}<div class="fitb">${bar(p.fit)}</div>${ovrTag(p.ovr)}<button class="ibtn" data-act="info" data-arg="${p.id}">i</button></div>`;
+    ${posTag(p.pos)}<div class="pn">${esc(p.n)}<small>${flag(p.nat)} ${p.age} l. ${morale(p)} ${formArrow(p.form)} ${stTag(p)} ${p.con <= 1 && !p.loan && p.tid === S.user ? '<span class="pill y">kontrakt</span>' : ''} ${p.listed ? '<span class="pill">lista</span>' : ''} ${p.loan ? '<span class="pill">wyp.</span>' : ''}</small></div>
+    <div class="fitb">${bar(p.fit)}</div>${ovrTag(p.ovr)}<button class="ibtn" data-act="info" data-arg="${p.id}">i</button></div>`;
 }
 function vSquadList(t) {
   const s = UI.listSort;
@@ -267,8 +279,8 @@ function vSquadList(t) {
   const tot = sum(t.players.map(p => p.val || 0)), wages = sum(t.players.map(p => p.wage || 0));
   return `<div class="flt"><select data-change="lsort">${[['pos', 'wg pozycji'], ['ovr', 'wg ogólnej'], ['age', 'wg wieku'], ['fit', 'wg kondycji'], ['mor', 'wg morale'], ['val', 'wg wartości']].map(([k, n]) => `<option value="${k}" ${s === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
     ${t._st ? '' : `<small class="mut">Wartość kadry: ${money(tot)} • pensje: ${money(wages)}/tydz.</small>`}
-    <div class="card list">${ps.map(p => `<div class="prow" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${flag(p.nat)} ${esc(p.n)}<small>${p.age} l. • ${playerStatus(p)} • ${money(p.val)} ${stTag(p)}</small></div>
-      <span class="mini">${Math.round(p.fit)}%</span>${morale(p)}${ovrTag(p.ovr)}${ovrTag(p.pot)}</div>`).join('')}</div>`;
+    <div class="card list"><div class="prow lh"><span class="pn mut">Zawodnik</span><span class="mini">Kond.</span><span class="lhc">OVR</span><span class="lhc">POT</span></div>${ps.map(p => `<div class="prow" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${esc(p.n)}<small>${flag(p.nat)} ${p.age} l. • ${playerStatus(p)} • ${money(p.val)} ${morale(p)} ${stTag(p)}</small></div>
+      <span class="mini">${Math.round(p.fit)}%</span>${ovrTag(p.ovr)}<span class="potc">${p.pot}</span></div>`).join('')}</div>`;
 }
 function vTactic(t) {
   return `<div class="card"><h2>Formacja</h2><div class="seg">${Object.keys(FORMATIONS).map(f => `<button class="btn sm ${t.formation === f ? 'on' : ''}" data-act="setform" data-arg="${f}">${f}</button>`).join('')}</div></div>
@@ -315,7 +327,7 @@ ACT.info = id => {
   const otherPos = p.pos === 'GK' ? [] : POSITIONS.filter(q => q !== 'GK' && q !== p.pos).map(q => [q, ovrAt(p, q)]).sort((a, b) => b[1] - a[1]).slice(0, 4);
   let act = '';
   if (mine) {
-    act = `<h3>Rozmowa indywidualna</h3><div class="btns"><button class="btn sm pri" data-act="chat" data-arg="${p.id}">💬 Porozmawiaj</button>${S.captain === p.id ? '<span class="pill g">©️ Kapitan</span>' : ''}</div>
+    act = `<h3>Rozmowa indywidualna</h3><div class="btns"><button class="btn sm pri" data-act="chat" data-arg="${p.id}">💬 Porozmawiaj</button>${S.captain === p.id ? '<span class="pill g">©️ Kapitan</span>' : ''}${squadLeaders().includes(p) ? '<span class="pill">👑 Lider szatni</span>' : ''}</div>
       ${p.loan ? `<p class="mut">Wypożyczony z ${esc(club(p.loan.from).name)} do końca sezonu.</p><div class="btns"><button class="btn sm red" data-act="release" data-arg="${p.id}">Zakończ wypożyczenie</button></div>` : `
       <h3>Kontrakt (${p.con} ${p.con === 1 ? 'rok' : 'lata'})</h3><div class="btns">${[1, 2, 3, 4, 5].map(y => `<button class="btn sm" data-act="renew" data-arg="${p.id}:${y}">${y} l. • ${money(renewDemand(p, y))}/t</button>`).join('')}</div>
       <div class="btns"><button class="btn sm ${p.listed ? 'pri' : ''}" data-act="list" data-arg="${p.id}">${p.listed ? '✔ Na liście transferowej' : 'Wystaw na sprzedaż'}</button><button class="btn sm" data-act="loanout" data-arg="${p.id}">Wypożycz</button><button class="btn sm red" data-act="release" data-arg="${p.id}">Rozwiąż (${money(p.wage * 20 * p.con)})</button></div>`}`;
@@ -350,6 +362,7 @@ ACT.info = id => {
       <div><span>Kariera</span><b>${p.car.apps} m., ${p.car.g} g.</b></div><div><span>Reprezentacja</span><b>${p.caps} m., ${p.ng} g.</b></div>
     </div>
     ${known && typeof radarSVG === 'function' ? `<div style="text-align:center;margin-top:6px">${radarSVG(at, names, { size: 180 })}</div>` : ''}
+    ${(p.hist || []).length ? `<h3>Historia kariery</h3>${p.hist.length >= 2 && typeof sparkSVG === 'function' ? sparkSVG(p.hist.map(h => h.ovr).concat(p.ovr), { w: 300, h: 44 }) : ''}<div class="scrollx"><table class="rank"><tr><th>Sezon</th><th>Klub</th><th>OVR</th><th>M</th><th>G</th><th>A</th></tr>${p.hist.slice().reverse().map(h => `<tr><td>${SEASON_LABEL(h.s)}</td><td>${esc(h.c || '–')}</td><td>${h.ovr}</td><td>${h.m}</td><td>${h.g}</td><td>${h.a}</td></tr>`).join('')}</table></div>` : ''}
     ${known && otherPos.length ? `<small class="mut">Inne pozycje: ${otherPos.map(([q, v]) => `${POS_PL[q]} ${v}`).join(' • ')}</small>` : ''}
     ${act}<div class="btns"><button class="btn full" data-act="close">Zamknij</button></div>`);
 };
@@ -415,6 +428,7 @@ function renderNego(note) {
       <small class="mut">${esc(c.name)} • wartość ${money(p.val)} • budżet ${money(ut.tb)}</small>
       ${releaseClause(p) ? `<br><small class="warn">📜 Klauzula odstępnego: <b>${money(releaseClause(p))}</b> – wpłata całości (bez rat) gwarantuje zgodę klubu.</small>` : ''}
       <div class="stepper"><button class="btn" data-act="fee" data-arg="-1">−</button><b>${money(NEG.fee)}</b><button class="btn" data-act="fee" data-arg="1">+</button></div>
+      ${(() => { const a = askPrice(p), lo = Math.round(a * 0.5), hi = Math.round(Math.max(a * 1.6, releaseClause(p) || 0)), pc = v => clamp((v - lo) / (hi - lo) * 100, 0, 100); return `<div class="slider"><input type="range" min="${lo}" max="${hi}" step="${feeStep(a)}" value="${clamp(NEG.fee, lo, hi)}" data-change="negfee"><div class="marks"><i style="left:${pc(p.val)}%" title="wartość"></i><i class="b" style="left:${pc(ut.tb)}%"></i></div><small class="mut">▮ wartość ${money(p.val)} • <span class="warn">▮</span> budżet ${money(ut.tb)} • cierpliwość klubu: ${'●'.repeat(Math.max(0, 3 - (p._bids || 0)))}${'○'.repeat(Math.min(3, p._bids || 0))}</small></div>`; })()}
       <div class="seg"><button class="btn sm ${NEG.inst ? 'on' : ''}" data-act="neginst">💳 Raty</button><button class="btn sm ${NEG.sellOn ? 'on' : ''}" data-act="negsellon">🔁 Klauzula odsprzedaży 15%</button>${releaseClause(p) ? `<button class="btn sm" data-act="negrc">📜 Klauzula</button>` : ''}</div>
       <small class="mut">${NEG.inst ? `Raty: teraz ${money(upfront(NEG.fee, NEG))}, potem 2 × ${money(Math.round((Math.round(NEG.fee * INST_K) - upfront(NEG.fee, NEG)) / 2))} na koniec kolejnych sezonów (łącznie +10%).` : 'Płatność jednorazowa.'}${NEG.sellOn ? ' Odsprzedaż: klub sprzedający obniża cenę o ok. 10%, ale dostanie 15% z przyszłej sprzedaży.' : ''}</small>
       ${note ? `<p class="${note.cls}">${esc(note.t)}</p>` : ''}
@@ -433,6 +447,7 @@ function renderNego(note) {
 ACT.fee = d => { NEG.fee = Math.max(0, NEG.fee + +d * feeStep(NEG.fee)); renderNego(); };
 ACT.wage = d => { NEG.wage = Math.max(500, NEG.wage + +d * (NEG.wage >= 50000 ? 5000 : NEG.wage >= 10000 ? 1000 : 250)); renderNego(); };
 ACT.years = y => { NEG.years = +y; renderNego(); };
+CHG.negfee = v => { NEG.fee = +v; NEG.counter = null; renderNego(); };
 ACT.neginst = () => { NEG.inst = !NEG.inst; NEG.counter = null; renderNego(); };
 ACT.negsellon = () => { NEG.sellOn = !NEG.sellOn; NEG.counter = null; renderNego(); };
 ACT.negrc = () => { NEG.fee = releaseClause(pget(NEG.pid)); NEG.inst = false; renderNego(); };
@@ -675,7 +690,7 @@ CHG.fq = v => { UI.f.q = v; render(); };
 ACT.freal = () => { UI.f.real = !UI.f.real; render(); };
 function vShort() {
   const l = S.short.map(pget).filter(Boolean);
-  return `<div class="card list">${l.map(mkRow).join('') || '<small class="mut">Dodaj zawodników do obserwowanych z ich karty (☆ Obserwuj).</small>'}</div>`;
+  return `<div class="card list">${l.map(mkRow).join('') || empty('⭐', 'Lista obserwowanych jest pusta', 'Dodaj zawodników z ich karty (☆ Obserwuj) albo poproś skautów o raport.', '<button class="btn sm pri" data-act="mktab" data-arg="search">Szukaj zawodników</button>')}</div>`;
 }
 function vScout() {
   const ut = userClub();
@@ -683,7 +698,7 @@ function vScout() {
       <small class="mut">${money(s.cost)}/tydz. • ${s.task ? (s.task.k === 'player' ? `obserwuje: ${esc(pget(s.task.pid) ? pget(s.task.pid).n : '?')}` : `misja: ${scoutTaskText(s.task)} (${s.task.weeks} tyg.)`) : 'wolny'}</small>
       <div class="btns"><button class="btn sm pri" data-act="mission" data-arg="${s.id}">🌍 Misja skautingowa</button><button class="btn sm red" data-act="firescout" data-arg="${s.id}">Zwolnij</button></div></div>`).join('')}
     <h3>Raporty (${S.reports.length})</h3>
-    <div class="card list">${S.reports.slice(0, 40).map(r => { const p = pget(r.pid); if (!p) return ''; return `<div class="prow" data-act="report" data-arg="${S.reports.indexOf(r)}"><span class="grade g${r.grade.replace('+', 'p')}">${r.grade}</span>${posTag(p.pos)}<div class="pn">${flag(p.nat)} ${esc(p.n)}<small>${esc(clubName(p))} • ${p.age} l. • ocena ${r.eo}, pot. ${r.ep}</small></div>›</div>`; }).join('') || '<small class="mut">Brak raportów – wyślij skautów na misję.</small>'}</div>
+    <div class="card list">${S.reports.slice(0, 40).map(r => { const p = pget(r.pid); if (!p) return ''; return `<div class="prow" data-act="report" data-arg="${S.reports.indexOf(r)}"><span class="grade g${r.grade.replace('+', 'p')}">${r.grade}</span>${posTag(p.pos)}<div class="pn">${flag(p.nat)} ${esc(p.n)}<small>${esc(clubName(p))} • ${p.age} l. • ocena ${r.eo}, pot. ${r.ep}</small></div>›</div>`; }).join('') || empty('🔍', 'Brak raportów', 'Wyślij skautów na misję – raporty pojawią się po kilku tygodniach.')}</div>
     <h3>Rynek skautów</h3><div class="card list">${S.scoutMarket.map(s => `<div class="prow"><div class="pn">${esc(s.name)}<small>ocena ${s.ab}/20 • ${money(s.cost)}/tydz.</small></div><button class="btn sm" data-act="hirescout" data-arg="${s.id}">Zatrudnij</button></div>`).join('')}</div>`;
 }
 function scoutTaskText(t) { return [t.cc ? S.countries[t.cc].flag + ' ' + S.countries[t.cc].name : t.nat ? flag(t.nat) + ' ' + NAT[t.nat].name : 'cały świat', t.pos ? POS_PL[t.pos] : '', t.maxAge ? `do ${t.maxAge} l.` : '', t.minPot ? `pot. ${t.minPot}+` : ''].filter(Boolean).join(', '); }
@@ -718,10 +733,10 @@ function vOffers() {
   return S.offers.map(o => { const p = pget(o.pid), b = club(o.from); if (!p) return ''; return `<div class="card"><div class="row">${posTag(p.pos)}<b class="sp">${esc(p.n)}</b>${ovrTag(p.ovr)}</div>
     <div class="row" style="margin:8px 0">${badge(b, 'sm')}<span>${esc(b.name)} ${S.countries[b.cc].flag} oferuje <b class="good">${money(o.amount)}</b></span></div>
     <small class="mut">Wartość: ${money(p.val)} • morale zawodnika: ${moraleLabel(p.mor).join(' ')}</small>
-    <div class="btns"><button class="btn pri sp" data-act="accept" data-arg="${o.id}">Akceptuj</button><button class="btn" data-act="decline" data-arg="${o.id}">Odrzuć</button></div></div>`; }).join('') || '<div class="card mut">Brak ofert. Wystaw zawodnika na sprzedaż w jego karcie – oferty przychodzą w oknie transferowym.</div>';
+    <div class="btns"><button class="btn pri sp" data-act="accept" data-arg="${o.id}">Akceptuj</button><button class="btn" data-act="decline" data-arg="${o.id}">Odrzuć</button></div></div>`; }).join('') || `<div class="card">${empty('📭', 'Brak ofert za Twoich zawodników', 'Wystaw zawodnika na sprzedaż w jego karcie – oferty przychodzą w oknie transferowym.')}</div>`;
 }
 ACT.accept = id => { const r = sellTo(+id); toast(r.msg); render(); };
-ACT.decline = id => { const o = S.offers.find(x => x.id === +id); if (o) { const p = pget(o.pid); if (p && o.amount > p.val * 1.3) p.mor = clamp(p.mor - 8, 0, 100); } S.offers = S.offers.filter(x => x.id !== +id); saveSoon(); render(); };
+ACT.decline = id => { const o = S.offers.find(x => x.id === +id); if (o) { const p = pget(o.pid); if (p && o.amount > p.val * 1.3) p.mor = clamp(p.mor - 8, 0, 100); declineOfferMeta(o); } S.offers = S.offers.filter(x => x.id !== +id); saveSoon(); render(); };
 function vNews() { return `<div class="card">${S.news.map(n => `<div class="msg"><small>${n.d ? fmtDate(n.d) : ''}</small><p style="color:var(--txt)">${esc(n.t)}</p></div>`).join('') || '<small class="mut">Brak wieści.</small>'}</div>`; }
 
 /* ---------- KLUB ---------- */
@@ -779,7 +794,7 @@ function vAcad() {
     <small class="mut">Koszt utrzymania: ${money(acadCost())}/tydz. • nabór: w marcu każdego sezonu.</small>
     <h3>Region rekrutacji</h3><select data-change="acreg" style="width:100%"><option value="">Kraj klubu (${S.countries[userClub().cc].name})</option>${NATIONS.slice().sort((a, b) => a.name.localeCompare(b.name, 'pl')).map(n => `<option value="${n.code}" ${A.region === n.code ? 'selected' : ''}>${n.flag} ${n.name}</option>`).join('')}</select></div>
     <h3>Juniorzy (${ys.length})</h3>
-    <div class="card list">${ys.map(y => `<div class="prow" data-act="info" data-arg="${y.id}">${posTag(y.pos)}<div class="pn">${flag(y.nat)} ${esc(y.n)}<small>${y.age} l. • potencjał <span class="stars">${potStars(y.acad.est)}</span> (~${y.acad.est})</small></div>${ovrTag(y.ovr)}<button class="btn sm" data-act="promote" data-arg="${y.id}">⬆</button><button class="ibtn" data-act="relyouth" data-arg="${y.id}">✕</button></div>`).join('') || '<small class="mut">Brak juniorów – pierwszy nabór w marcu.</small>'}</div>
+    <div class="card list">${ys.map(y => `<div class="prow" data-act="info" data-arg="${y.id}">${posTag(y.pos)}<div class="pn">${flag(y.nat)} ${esc(y.n)}<small>${y.age} l. • potencjał <span class="stars">${potStars(y.acad.est)}</span> (~${y.acad.est})</small></div>${ovrTag(y.ovr)}<button class="btn sm" data-act="promote" data-arg="${y.id}">⬆</button><button class="ibtn" data-act="relyouth" data-arg="${y.id}">✕</button></div>`).join('') || empty('🎓', 'Brak juniorów', 'Nabór odbywa się w marcu. Rozbuduj Rekrutację, by przyszło więcej talentów.')}</div>
     ${(S.mentors || []).length ? `<h3>🧑‍🏫 Mentorzy</h3><div class="card list">${S.mentors.map(x => { const m = pget(x.m), u = pget(x.p); return m && u ? `<div class="prow" data-act="info" data-arg="${u.id}"><div class="pn">${esc(m.n)} → ${esc(u.n)}<small>${pers(m)} • uczeń: ${pers(u)}</small></div></div>` : ''; }).join('')}</div>` : ''}
     <small class="mut">⬆ – awans do pierwszego zespołu. Kliknij juniora, by ustawić trening specjalny, mentora lub wypożyczenie. Juniorzy, którzy skończą 21 lat bez awansu, odchodzą z klubu.</small>`;
 }
@@ -846,7 +861,7 @@ ACT.prematch = () => {
   const sl = mine.lineup.map(pget), tired = sl.filter(p => p.fit < 65);
   modal(`<h2>Przed meczem</h2><small class="mut">${esc(MX.opts.label)}</small>
     <div class="fixture"><div class="tm">${badge(MX.h, 'lg')}<span>${esc(MX.h.name)}</span></div><div class="vs">vs</div><div class="tm">${badge(MX.a, 'lg')}<span>${esc(MX.a.name)}</span></div></div>
-    <div class="kv"><div><span>Formacja</span><b>${mine.formation}</b></div><div><span>Średnia XI</span><b>${lineupAvg(mine)}</b></div><div><span>Rywal (śr.)</span><b>${Math.round(avg(opp.players.map(p => p.ovr).sort((a, b) => b - a).slice(0, 11)))}</b></div><div><span>Rywal – forma</span><b>${opp.nation ? '–' : table(opp.lg).find(r => r.id === opp.id).form.slice(-5).join('') || '–'}</b></div><div><span>Twój OVR trenera</span><b>${Math.round(S.mgr.ovr)}</b></div><div><span>Trener rywala</span><b>${Math.round(coachOvr(opp))}</b></div></div>
+    <div class="kv"><div><span>Formacja</span><b>${mine.formation}</b></div><div><span>Średnia XI</span><b>${lineupAvg(mine)}</b></div><div><span>Rywal (śr.)</span><b>${Math.round(avg(opp.players.map(p => p.ovr).sort((a, b) => b - a).slice(0, 11)))}</b></div><div><span>Rywal – forma</span><b>${opp.nation ? '–' : table(opp.lg).find(r => r.id === opp.id).form.slice(-5).map(f => f === 'W' ? 'Z' : f === 'D' ? 'R' : 'P').join('') || '–'}</b></div><div><span>Twój OVR trenera</span><b>${Math.round(S.mgr.ovr)}</b></div><div><span>Trener rywala</span><b>${Math.round(coachOvr(opp))}</b></div></div>
     ${MX.nt ? '' : `<p class="hint">🧑‍💼 ${esc(assistantTip(opp))}</p>`}
     <h3>Mentalność</h3><div class="seg">${Object.entries(MENT).map(([k, v]) => `<button class="btn sm ${(mine.ment || 'bal') === k ? 'on' : ''}" data-act="prement" data-arg="${k}">${v}</button>`).join('')}</div>
     <h3>Odprawa przedmeczowa</h3><div class="seg talk">${Object.entries(TALKS).map(([k, v]) => `<button class="btn sm ${TALK === k ? 'on' : ''}" data-act="settalk" data-arg="${k}">${v}</button>`).join('')}</div>
@@ -930,7 +945,9 @@ function renderSubs() {
 ACT.subout = id => { subOut = uside().pitch.find(x => x.p.id === +id).p; renderSubs(); };
 ACT.subin = id => { const s = uside(); if (!subOut) return toast('Najpierw wybierz zawodnika schodzącego.'); if (s.subs >= MAX_SUBS) return toast('Wykorzystano wszystkie zmiany.'); substitute(M, s, subOut, pget(+id)); subOut = null; upd(); mctl(); renderSubs(); };
 ACT.matchdone = () => showResult();
+const rateCol = r => r >= 8 ? '#1db36b' : r >= 7 ? '#5cc46b' : r >= 6.3 ? '#b6b33a' : r >= 5.5 ? '#d98a2b' : '#d9473b';
 function showResult() {
+  if (typeof toastClear === 'function') toastClear();
   const H = M.home, A = M.away, mine = uside();
   const opp = mine === H ? A : H;
   const sc = side => side.scorers.map(g => `${g.name} ${g.min}'${g.pen ? ' (k)' : ''}`).join(', ') || '—';
@@ -940,15 +957,18 @@ function showResult() {
   modal(`<h2>${won ? '🎉 Zwycięstwo!' : draw ? '🤝 Remis' : '😞 Porażka'}</h2><small class="mut">${esc(MX.opts.label)}</small>
     <div class="fixture"><div class="tm">${badge(H.t, 'lg')}<span>${esc(H.t.name)}</span></div><div class="vs" style="color:var(--txt)">${H.goals} : ${A.goals}${M.pens ? `<small style="display:block;font-size:13px">k. ${M.pens.h}:${M.pens.a}</small>` : M.et ? '<small style="display:block;font-size:13px">po dogrywce</small>' : ''}</div><div class="tm">${badge(A.t, 'lg')}<span>${esc(A.t.name)}</span></div></div>
     <small>⚽ ${esc(H.t.short)}: ${esc(sc(H))}<br>⚽ ${esc(A.t.short)}: ${esc(sc(A))}</small>
-    <div class="kv"><div><span>Posiadanie</span><b>${Math.round(H.poss / ((H.poss + A.poss) || 1) * 100)}–${100 - Math.round(H.poss / ((H.poss + A.poss) || 1) * 100)}%</b></div><div><span>Strzały</span><b>${H.shots}–${A.shots}</b></div></div>
+    ${typeof momentumSVG === 'function' ? `<div style="margin:8px 0">${momentumSVG(M.mom || [], { w: Math.min(520, window.innerWidth - 48), h: 50, colH: H.t.col[0], colA: A.t.col[0], goals: [...H.scorers.map(g => ({ min: g.min, side: 'h' })), ...A.scorers.map(g => ({ min: g.min, side: 'a' }))] })}</div>` : ''}
+    <div class="kv"><div><span>Posiadanie</span><b>${Math.round(H.poss / ((H.poss + A.poss) || 1) * 100)}–${100 - Math.round(H.poss / ((H.poss + A.poss) || 1) * 100)}%</b></div><div><span>Strzały</span><b>${H.shots}–${A.shots}</b></div><div><span>Celne</span><b>${H.sot}–${A.sot}</b></div><div><span>Rożne</span><b>${H.corners}–${A.corners}</b></div></div>
     <div class="row"><span>⭐ Zawodnik meczu:</span><b class="sp">${esc(M.motm.p.n)}</b><span class="ovr o1">${M.motm.rating.toFixed(1)}</span></div>
-    <h3>Oceny</h3>${recs.map(r => `<div class="rt"><span>${posTag(r.pos)} ${esc(shortName(r.p))} ${r.g ? '⚽'.repeat(r.g) : ''}${r.a ? '🅰️'.repeat(r.a) : ''}${r.y && !r.r ? '🟨' : ''}${r.r ? '🟥' : ''}</span><b class="${r.rating >= 7.5 ? 'good' : r.rating < 5.5 ? 'bad' : ''}">${r.rating.toFixed(1)}</b></div>`).join('')}
+    <h3>Oceny</h3>${recs.map(r => `<div class="rt"><span>${posTag(r.pos)} ${esc(shortName(r.p))} ${r.g ? '⚽'.repeat(r.g) : ''}${r.a ? '🅰️'.repeat(r.a) : ''}${r.y && !r.r ? '🟨' : ''}${r.r ? '🟥' : ''}</span><span class="rchip" style="background:${rateCol(r.rating)}">${r.rating.toFixed(1)}</span></div>`).join('')}
     <div class="btns"><button class="btn pri full" data-act="finishday">Dalej</button></div>`, true);
 }
 ACT.finishday = () => {
   const m = M, x = MX; M = null; closeModal();
-  const day = curDay();
+  const day = curDay(), ut0 = userClub(), pos0 = day.t === 'L' ? leaguePos(ut0) : null;
   const r = processDay(m);
+  const pos1 = pos0 != null && !r.summary && userClub() === ut0 ? leaguePos(ut0) : null;
+  const tchg = pos1 != null ? `<div class="card"><div class="row"><b class="sp">Tabela: ${pos0}. → ${pos1}. miejsce</b><span class="${pos1 < pos0 ? 'good' : pos1 > pos0 ? 'bad' : 'mut'}">${pos1 < pos0 ? '▲' + (pos0 - pos1) : pos1 > pos0 ? '▼' + (pos1 - pos0) : '='}</span></div></div>` : '';
   const label = x.opts.label.split(' • ')[0];
   let res = '';
   if (day.t === 'L') { const lg = S.leagues[x.h.lg || userClub().lg]; const rd = lg.fix[lg.lsMap[day.ls]] || []; res = rd.map(f => fxRow(club(f.h), club(f.a), `${f.hg} : ${f.ag}`, f.h === S.user || f.a === S.user)).join(''); }
@@ -960,7 +980,7 @@ ACT.finishday = () => {
   if (r.summary) return showSummary(r.summary);
   if (S.sacked) return showSacked();
   if (S.pending.length && !res) return ACT.event(S.pending[0].uid);
-  if (res) modal(`<h2>Wyniki: ${esc(label)}</h2><div class="card list">${res}</div><div class="btns"><button class="btn pri full" data-act="close">OK</button></div>`);
+  if (res) modal(`<h2>Wyniki: ${esc(label)}</h2>${tchg}<div class="card list">${res}</div><div class="btns"><button class="btn pri full" data-act="close">OK</button></div>`);
 };
 function showSummary(s) {
   modal(`<h2>🏁 ${esc(s.title)}</h2>${s.lines.map(l => `<p>${esc(l)}</p>`).join('')}<div class="btns"><button class="btn pri full" data-act="aftersum">Nowy sezon</button></div>`, true);

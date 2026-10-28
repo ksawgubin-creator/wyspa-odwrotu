@@ -242,3 +242,22 @@ table{font-variant-numeric:tabular-nums}
 
 .choices .btn small.hint{display:block;font-size:11px;color:var(--warn);font-weight:600;margin-top:2px}
 .prow.me{background:#16324a;border-radius:8px}
+
+/* poprawki z przeglądu UI */
+.btn{min-height:44px}.btn.sm{min-height:38px}.tabs button{min-height:40px}.seg button{min-height:40px}
+.ibtn{width:40px;height:40px}
+table,.kv b,.mini{font-variant-numeric:tabular-nums}
+.prow.lh{padding:2px 6px;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.prow.lh .lhc{width:34px;text-align:center;color:var(--mut)}
+.potc{flex:none;width:34px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:2px solid var(--line);border-radius:8px;font-weight:800;font-size:13px;color:var(--mut)}
+.pchip .kit{height:26px;line-height:0;margin-bottom:-4px}
+.rchip{display:inline-block;min-width:38px;text-align:center;border-radius:7px;padding:2px 6px;font-weight:800;color:#fff;font-size:13px}
+.strip{display:flex;gap:8px;overflow-x:auto;margin:0 0 12px;padding-bottom:2px;scroll-snap-type:x mandatory}
+.sfx{flex:none;scroll-snap-align:start;min-width:84px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center}
+.sfx small{font-size:11px}
+.empty{text-align:center;padding:22px 10px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.empty .ei{font-size:36px;opacity:.85}
+.slider{margin:6px 0}.slider input{width:100%;accent-color:var(--acc)}
+.slider .marks{position:relative;height:8px;margin:-4px 10px 4px}
+.slider .marks i{position:absolute;top:0;width:3px;height:8px;background:var(--txt);border-radius:2px;transform:translateX(-50%)}
+.slider .marks i.b{background:var(--warn)}

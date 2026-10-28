@@ -1288,6 +1288,7 @@ function endSeason() {
         const old = p.pot; p.pot = clamp(p.pot + d, p.ovr, 95);
         if (c === ut && Math.abs(p.pot - old) >= 4) potNotes.push(`${p.n} ${p.pot > old ? '📈 zaskakuje – rośnie jego potencjał' : '📉 rozczarowuje – potencjał spada'}`);
       }
+      if (p.st.apps > 0 || c === ut) { (p.hist = p.hist || []).push({ s: S.season, c: c.short, ovr: p.ovr, m: p.st.apps, g: p.st.g, a: p.st.a }); if (p.hist.length > 12) p.hist.shift(); }
       p.age++;
       if (p.age >= 30) p.pot = Math.min(p.pot, p.ovr + 1);
       p.inj = 0; p.susp = 0; p.fit = 100; p.form = 50; p.shp = 60; p.st = newStats(); p.lg = 0; p.eg = 0; p.listed = false; p.pt = 0.5;
@@ -1392,7 +1393,8 @@ function coachMarket(d) {
       if (r.pos - exp >= 5 && rnd() < 0.3) {
         const old = c.coach; c.coach = genCoach(c.rep);
         news(`${c.name} zwalnia trenera ${old.n}. Nowym szkoleniowcem został ${c.coach.n} (OVR ${c.coach.ovr}).`);
-        if (fitsMgr(c) && rnd() < 0.45) offerJob(c, 'zwolnił trenera i chce Cię zatrudnić');
+        if (fitsMgr(c) && c.rep > userClub().rep + 4 && rnd() < 0.35 && typeof pushEvent === 'function' && S.pending.length < 4 && S.evSeen && S.evSeen.approach !== S.season) { S.approach = c.id; pushEvent(EVENTS.find(e => e.id === 'approach'), {}); }
+        else if (fitsMgr(c) && rnd() < 0.45) offerJob(c, 'zwolnił trenera i chce Cię zatrudnić');
       }
     }
   }

@@ -253,7 +253,47 @@ const EVENTS = [
   { id: 'sponsorbonus', cat: 'Zarząd', w: 2, ctx: () => lastRes(3).filter(r => r === 'W').length >= 2 ? {} : null, title: 'Premia od sponsora', text: () => 'Główny sponsor proponuje wybór: stała premia teraz albo dużo wyższa premia za awans/miejsce w czołówce na koniec sezonu.',
     choices: [{ t: 'Stała premia teraz', fn: () => ({ money: Math.round(userClub().spons * 5) }), r: 'Pewne pieniądze na koncie.' },
       { t: 'Premia za wynik', hint: 'tylko jeśli zrealizujesz cel', fn: () => { S.sponsBet = { season: S.season, amount: Math.round(userClub().spons * 14) }; return {}; }, r: 'Zakład przyjęty – rozliczenie na koniec sezonu.' }] },
+  { id: 'unsettled', cat: 'Transfery', follow: true, title: 'Zawodnik chce odejść', text: c => `${c.p.n} jest wściekły, że odrzuciłeś ofertę ${c.p._suitor || 'większego klubu'}. Jego agent mówi o „szansie życia”, która przechodzi mu koło nosa.`,
+    choices: [{ t: 'Daj mu podwyżkę i nowy kontrakt', hint: 'kosztowne', fn: c => { c.p.con = Math.max(c.p.con, 3); return { wage: 0.25, player: 12, samepos: -2 }; }, r: 'Pensja w górę – zawodnik się uspokoił. Inni widzą, że można wywalczyć podwyżkę.' },
+      { t: '„Jesteś tu kluczowy – zostajesz”', hint: 'zależy od charakteru', fn: c => traits(c.p).pro >= 12 || traits(c.p).loy >= 13 ? { player: 4, team: 1 } : { player: -12, form: -6 }, r: 'Twarde stanowisko.', mem: 'strict' },
+      { t: 'Obiecaj, że następną ofertę przyjmiesz', fx: { player: 7, list: true, fans: -3 }, r: 'Zawodnik trafia na listę transferową – kibice nie są zachwyceni.', mem: 'soft' }] },
+  { id: 'approach', cat: 'Prasa', follow: true, title: 'Media łączą Cię z innym klubem', text: () => { const c = S.approach != null ? club(S.approach) : null; return `${c ? c.name : 'Inny klub'} zwolnił trenera, a dziennikarze twierdzą, że jesteś głównym kandydatem do przejęcia drużyny. Zarząd i kibice czekają na Twoją reakcję.`; },
+    choices: [{ t: 'Dementuj – jestem lojalny wobec klubu', fx: { board: 5, fans: 4, press: 1 }, r: 'Kibice skandują Twoje nazwisko.', mem: 'honest' },
+      { t: '„Nie wykluczam niczego”', hint: 'zarząd będzie urażony', fn: () => { const c = S.approach != null ? club(S.approach) : null; if (c && c.id !== S.user) offerJob(c, 'oficjalnie składa Ci ofertę'); return { board: -7, fans: -5, press: 3 }; }, r: 'Telefon zadzwonił – ale w Twoim klubie zrobiło się chłodno.' },
+      { t: 'Bez komentarza', fx: { press: -3 }, r: 'Spekulacje trwają.', alt: { p: () => 0.35, fx: { press: -3, board: -4 }, r: 'Milczenie odebrano jako sygnał, że chcesz odejść.' } }] },
+  { id: 'leaderbench', cat: 'Szatnia', w: 3, ctx: () => { const l = squadLeaders().filter(p => p.pt < 0.3 && !p.inj); return l.length ? { p: l[0] } : null; }, title: 'Lider szatni na ławce', text: c => `${c.p.n} – jeden z liderów szatni – coraz rzadziej gra. Część zespołu stoi za nim murem i atmosfera gęstnieje.`,
+    choices: [{ t: 'Przywróć go do składu', hint: 'obietnica gry', fx: { player: 8, team: 3, promise: true, samepos: -4 }, r: 'Szatnia odetchnęła – musisz teraz dać mu grać.' },
+      { t: 'Wyjaśnij mu nową rolę – mentora', hint: 'zależy od charakteru', fn: c => traits(c.p).pro >= 12 ? { player: 3, team: 2 } : { player: -10, team: -4 }, r: 'Rozmowa o nowej roli w zespole.' },
+      { t: 'Decyzje sportowe są moje', fx: { player: -8, team: -5, board: 2 }, r: 'Autorytet zachowany, ale atmosfera siadła.', mem: 'strict' }] },
+  { id: 'clique', cat: 'Szatnia', w: 3, ctx: () => { const g = squadCliques().find(g => avg(g.ps.map(p => p.mor)) < 45); return g ? { p: g.ps[0], nat: g.nat } : null; }, title: 'Grupa trzyma się z boku', text: c => `Zawodnicy z kraju ${NAT[c.p.nat] ? NAT[c.p.nat].name : c.p.nat} trzymają się razem i są coraz bardziej niezadowoleni. Ich nastroje udzielają się reszcie.`,
+    choices: [{ t: 'Spotkanie z całą grupą', fn: c => { for (const p of squadCliques().find(g => g.nat === c.p.nat)?.ps || []) p.mor = clamp(p.mor + 8, 0, 100); return { team: 1 }; }, r: 'Wysłuchałeś ich – grupa poczuła się doceniona.', alt: { p: () => 0.25, fn: c => { for (const p of squadCliques().find(g => g.nat === c.p.nat)?.ps || []) p.mor = clamp(p.mor - 4, 0, 100); return { team: -2 }; }, r: 'Spotkanie zamieniło się w listę żądań.' } },
+      { t: 'Wymieszaj pokoje i grupy treningowe', fx: { team: 3, player: -4 }, r: 'Na początku zgrzyty, ale zespół się integruje.' },
+      { t: 'Zignoruj', fn: c => { for (const p of squadCliques().find(g => g.nat === c.p.nat)?.ps || []) p.mor = clamp(p.mor - 6, 0, 100); return { team: -2 }; }, r: 'Podziały w szatni się pogłębiają.' }] },
 ];
+
+/* ---------- hierarchia szatni i grupy ---------- */
+function squadLeaders() {
+  const ps = uPlayers().filter(p => p.age >= 24);
+  const sc = p => traits(p).pre + traits(p).pro * 0.6 + Math.min(10, p.car.apps / 30) + (p.age - 24) * 0.4 + (S.captain === p.id ? 8 : 0) + (p.ovr - teamLevel(userClub())) * 0.3;
+  return ps.sort((a, b) => sc(b) - sc(a)).slice(0, 3);
+}
+function squadCliques() {
+  const by = {}, home = S.countries[userClub().cc].nat;
+  for (const p of uPlayers()) if (p.nat !== home) (by[p.nat] = by[p.nat] || []).push(p);
+  return Object.entries(by).filter(([, ps]) => ps.length >= 3).map(([nat, ps]) => ({ nat, ps }));
+}
+function squadDynamicsWeek() {
+  const ut = userClub(), L = squadLeaders();
+  for (const l of L) { const k = 0.015 + traits(l).pre / 800; for (const p of ut.players) if (p !== l) p.mor = clamp(p.mor + (l.mor - p.mor) * k, 0, 100); }
+  for (const g of squadCliques()) { const m = avg(g.ps.map(p => p.mor)); for (const p of g.ps) p.mor = clamp(p.mor + (m - p.mor) * 0.1, 0, 100); }
+  const gone = (S.leaderIds || []).map(pget).filter(p => p && p.tid !== S.user && p.tid !== -3);
+  for (const p of gone) { for (const q of ut.players) q.mor = clamp(q.mor - 4, 0, 100); msg('Odejście lidera', `${p.n} był jednym z liderów szatni – jego odejście odbiło się na nastrojach w zespole.`); }
+  S.leaderIds = L.map(p => p.id);
+}
+function declineOfferMeta(o) {
+  const p = pget(o.pid), b = club(o.from), ut = userClub(); if (!p || !b) return;
+  if (b.rep >= ut.rep + 3 && traits(p).amb >= 12 && rnd() < 0.7) { p._suitor = b.name; metaInit(); pushEvent(EVENTS.find(e => e.id === 'unsettled'), { p }); }
+}
 
 /* spotkania z zawodnikami (sami proszą o rozmowę) */
 function meetingEvent(p) {
@@ -322,6 +362,7 @@ function eventsWeek(d) {
   const cap = S.captain != null ? pget(S.captain) : null;
   if (cap && cap.tid !== S.user) { S.captain = null; msg('Kapitan odszedł', 'Drużyna nie ma kapitana – wybierz nowego w karcie zawodnika.'); }
   else if (cap) for (const p of ut.players) p.mor = clamp(p.mor + (cap.mor - p.mor) * (0.03 + traits(cap).pro / 400), 0, 100);
+  squadDynamicsWeek();
   // kibice/prasa → zarząd, merchandising
   S.board.conf = clamp(S.board.conf + (S.fans - 55) / 220 + (S.press - 55) / 330, 0, 100);
   const merch = Math.round(ut.spons * 0.12 * (S.fans / 60)); ut.bal += merch; ut.fin.inc += merch;

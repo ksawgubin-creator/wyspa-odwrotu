@@ -26,7 +26,7 @@ function toast(t, kind) {
   clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('on'), 2600);
 }
 const toastClear = () => { const el = $('#toast'); el.classList.remove('on'); clearTimeout(toast.t); };
-function modal(html, lock) { const m = $('#modal'); m.innerHTML = `<div class="box">${html}</div>`; m.classList.remove('hidden'); if (lock) m.dataset.lock = '1'; else delete m.dataset.lock; m.onclick = e => { if (e.target === m && !m.dataset.lock) closeModal(); }; if (!lock && typeof uk_enableSheetSwipe === 'function') uk_enableSheetSwipe(m.querySelector('.box'), closeModal); }
+function modal(html, lock) { const m = $('#modal'), again = !m.classList.contains('hidden'); m.innerHTML = `<div class="box${again ? ' noanim' : ''}">${html}</div>`; m.classList.remove('hidden'); if (lock) m.dataset.lock = '1'; else delete m.dataset.lock; m.onclick = e => { if (e.target === m && !m.dataset.lock) closeModal(); }; if (!lock && typeof uk_enableSheetSwipe === 'function') uk_enableSheetSwipe(m.querySelector('.box'), closeModal); }
 function closeModal() { const m = $('#modal'); m.classList.add('hidden'); m.innerHTML = ''; delete m.dataset.lock; }
 const bar = (v, cls = '') => `<div class="bar ${v < 50 ? 'b' : v < 75 ? 'w' : ''} ${cls}"><i style="width:${clamp(v, 0, 100)}%"></i></div>`;
 const morale = p => `<span title="${moraleLabel(p.mor)[1]}">${moraleLabel(p.mor)[0]}</span>`;
@@ -37,16 +37,26 @@ const busy = (on, t) => { const b = $('#busy'); b.classList.toggle('hidden', !on
 ACT.close = () => closeModal();
 
 /* ---------- render główny ---------- */
+const NAV_ICONS = {
+  home: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z',
+  squad: 'M8 3 3.5 5.5 2 10l3.5 1.2V21h13v-9.8L22 10l-1.5-4.5L16 3c-.6 1.6-2.1 2.6-4 2.6S8.6 4.6 8 3z',
+  comps: 'M7 3h10v2h3v3a4 4 0 0 1-4 4h-.4A5 5 0 0 1 13 14.9V18h3v3H8v-3h3v-3.1A5 5 0 0 1 8.4 12H8a4 4 0 0 1-4-4V5h3zm-1 4v1a2 2 0 0 0 1 1.7V7zm11 0v2.7A2 2 0 0 0 18 8V7z',
+  market: 'M10.5 3a7.5 7.5 0 0 1 6 12l4.3 4.3-1.5 1.5-4.3-4.3A7.5 7.5 0 1 1 10.5 3zm0 2.5a5 5 0 1 0 0 10 5 5 0 0 0 0-10z',
+  club: 'M12 2 4 6v2h16V6zM5 9v9H3v3h18v-3h-2V9h-3v9h-2.5V9h-3v9H8V9z',
+};
+const navIcon = (k, on) => `<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="${NAV_ICONS[k]}" fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="${on ? 0 : 1.6}" stroke-linejoin="round"/></svg>`;
+let SWIPE_DIR = null;
 function render() {
   const ut = userClub(), d = curDay();
   $('#top').innerHTML = `${badge(ut)}<div class="tt"><b>${esc(ut.name)}</b><small>${d ? fmtDate(d.date) : ''} • ${SEASON_LABEL(S.season)}</small></div>
     <div class="money">${money(ut.bal)}<small class="${windowOpen() ? 'good' : 'mut'}">${windowOpen() ? '🟢 okno otwarte' : '🔒 okno zamkn.'}</small></div>`;
   const unread = S.inbox.filter(m => !m.read).length;
-  const T = [['home', '🏠', 'Pulpit'], ['squad', '👕', 'Skład'], ['comps', '🏆', 'Rozgrywki'], ['market', '🔍', 'Transfery'], ['club', '🏟️', 'Klub']];
-  $('#nav').innerHTML = T.map(([k, i, n]) => `<button class="${UI.tab === k ? 'on' : ''}" data-act="tab" data-arg="${k}"><i>${i}</i>${n}${k === 'home' && unread ? `<span class="dot">${unread}</span>` : ''}${k === 'market' && S.offers.length ? `<span class="dot">${S.offers.length}</span>` : ''}</button>`).join('');
+  const T = [['home', 'Pulpit'], ['squad', 'Skład'], ['comps', 'Rozgrywki'], ['market', 'Transfery'], ['club', 'Klub']];
+  $('#nav').innerHTML = T.map(([k, n]) => `<button class="${UI.tab === k ? 'on' : ''}" data-act="tab" data-arg="${k}"><i>${navIcon(k, UI.tab === k)}</i>${n}${k === 'home' && unread ? `<span class="dot">${unread}</span>` : ''}${k === 'market' && S.offers.length ? `<span class="dot">${S.offers.length}</span>` : ''}</button>`).join('');
   const vk = [UI.tab, UI.sqTab, UI.compTab, UI.clubTab, UI.mkTab, UI.rkTab].join('/'), v = $('#view');
   v.innerHTML = ({ home: vHome, squad: vSquad, comps: vComps, market: vMarket, club: vClub })[UI.tab]();
-  if (vk !== render._vk) { render._vk = vk; v.classList.remove('uk-fade'); void v.offsetWidth; v.classList.add('uk-fade'); }
+  if (vk !== render._vk) { render._vk = vk; v.classList.remove('uk-fade', 'sw-l', 'sw-r'); void v.offsetWidth; v.classList.add(SWIPE_DIR ? 'sw-' + SWIPE_DIR : 'uk-fade'); }
+  SWIPE_DIR = null;
   for (const t of document.querySelectorAll('#view .tabs')) { const on = t.querySelector('.on'); if (on) t.scrollLeft = Math.max(0, on.offsetLeft - (t.clientWidth - on.offsetWidth) / 2); }
 }
 /* ---------- historia nawigacji (przycisk „wstecz” Androida) ---------- */
@@ -327,7 +337,7 @@ ACT.info = id => {
   const otherPos = p.pos === 'GK' ? [] : POSITIONS.filter(q => q !== 'GK' && q !== p.pos).map(q => [q, ovrAt(p, q)]).sort((a, b) => b[1] - a[1]).slice(0, 4);
   let act = '';
   if (mine) {
-    act = `<h3>Rozmowa indywidualna</h3><div class="btns"><button class="btn sm pri" data-act="chat" data-arg="${p.id}">💬 Porozmawiaj</button>${S.captain === p.id ? '<span class="pill g">©️ Kapitan</span>' : ''}${squadLeaders().includes(p) ? '<span class="pill">👑 Lider szatni</span>' : ''}</div>
+    act = `<div class="btns"><button class="btn sm pri" data-act="chat" data-arg="${p.id}">💬 Porozmawiaj</button></div>
       ${p.loan ? `<p class="mut">Wypożyczony z ${esc(club(p.loan.from).name)} do końca sezonu.</p><div class="btns"><button class="btn sm red" data-act="release" data-arg="${p.id}">Zakończ wypożyczenie</button></div>` : `
       <h3>Kontrakt (${p.con} ${p.con === 1 ? 'rok' : 'lata'})</h3><div class="btns">${[1, 2, 3, 4, 5].map(y => `<button class="btn sm" data-act="renew" data-arg="${p.id}:${y}">${y} l. • ${money(renewDemand(p, y))}/t</button>`).join('')}</div>
       <div class="btns"><button class="btn sm ${p.listed ? 'pri' : ''}" data-act="list" data-arg="${p.id}">${p.listed ? '✔ Na liście transferowej' : 'Wystaw na sprzedaż'}</button><button class="btn sm" data-act="loanout" data-arg="${p.id}">Wypożycz</button><button class="btn sm red" data-act="release" data-arg="${p.id}">Rozwiąż (${money(p.wage * 20 * p.con)})</button></div>`}`;
@@ -339,33 +349,41 @@ ACT.info = id => {
       <button class="btn" data-act="short" data-arg="${p.id}">${S.short.includes(p.id) ? '★ Obserwowany' : '☆ Obserwuj'}</button></div>
       ${k < 100 ? `<div class="btns"><button class="btn sm full" data-act="scoutp" data-arg="${p.id}">🔍 Wyślij skauta (wiedza ${k}%)</button></div>` : ''}`;
   }
-  if (mine || p.tid === -3) act = devBlock(p) + act;
   if (S.nt && p.nat === S.nt && p.tid !== -1) {
     const sq = S.ntTeams[S.nt].sq;
     act += `<div class="btns"><button class="btn sm full" data-act="callup" data-arg="${p.id}">${sq.includes(p.id) ? '✔ Powołany – usuń z kadry' : `${flag(S.nt)} Powołaj do reprezentacji`}</button></div>`;
   }
+  if (UI.pcId !== p.id) { UI.pcId = p.id; UI.pcTab = 'ov'; }
+  const own = mine || p.tid === -3;
+  const TABS = [['ov', 'Przegląd'], ['st', 'Statystyki'], ...(own ? [['dev', 'Rozwój']] : []), ...(mine ? [['ct', 'Kontrakt']] : []), ['hi', 'Historia']];
+  if (!TABS.some(t => t[0] === UI.pcTab)) UI.pcTab = 'ov';
+  const kv = rows => `<div class="kv">${rows.filter(Boolean).map(([l, v]) => `<div><span>${l}</span><b>${v}</b></div>`).join('')}</div>`;
+  const body = {
+    ov: () => `${stTag(p)}${own ? `<small class="mut">Charakter: <b>${pers(p)}</b> – ${PERS_DESC[pers(p)]}</small><div class="fxl">${Object.entries(TRAITS).map(([k, n]) => `<span class="pill">${n}: ${traitWord(traits(p)[k])}</span>`).join(' ')}</div>` : `<small class="mut">Charakter: ? (poznasz go po transferze)</small>`}
+      ${kv([['Wiek', p.age], ['Potencjał', ovrShow(p, true)], ['Kondycja', Math.round(p.fit) + '%'], ['Morale', moraleLabel(p.mor).join(' ')], ['Forma', formLabel(p.form)], ['Rytm meczowy', Math.round(p.shp) + '%'], ['Wartość', money(p.val)], ['Status', playerStatus(p)],
+        !mine && releaseClause(p) ? ['Klauzula odstępnego', money(releaseClause(p))] : null])}
+      ${known && typeof radarSVG === 'function' ? `<div style="text-align:center;margin-top:6px">${radarSVG(at, names, { size: 180 })}</div>` : ''}
+      ${known && otherPos.length ? `<small class="mut">Inne pozycje: ${otherPos.map(([q, v]) => `${POS_PL[q]} ${v}`).join(' • ')}</small>` : ''}`,
+    st: () => `<h3>Bieżący sezon</h3>${kv([['Mecze', p.st.apps], ['Minuty', p.st.mins], ['Gole', p.st.g], ['Asysty', p.st.a], ['Średnia ocena', avgR], ['Kartki', `${p.st.y} 🟨 / ${p.st.r} 🟥`], ['Gole w lidze', p.lg || 0], ['Gole w pucharach', p.eg || 0]])}
+      <h3>Kariera</h3>${kv([['Mecze', p.car.apps], ['Gole', p.car.g], ['Asysty', p.car.a || 0], ['Reprezentacja', `${p.caps} m., ${p.ng} g.`]])}`,
+    dev: () => devBlock(p),
+    ct: () => kv([['Pensja', money(p.wage) + '/t'], ['Kontrakt', p.con + ' l.'], p.sellOn ? ['Odsprzedaż', `${Math.round(p.sellOn.pct * 100)}% dla ${esc(club(p.sellOn.club).short)}`] : null]) + act,
+    hi: () => (p.hist || []).length ? `${p.hist.length >= 2 && typeof sparkSVG === 'function' ? `<div>${sparkSVG(p.hist.map(h => h.ovr).concat(p.ovr), { w: 300, h: 50 })}</div><small class="mut">Rozwój OVR z sezonu na sezon</small>` : ''}<div class="scrollx"><table class="rank"><tr><th>Sezon</th><th>Klub</th><th>OVR</th><th>M</th><th>G</th><th>A</th></tr>${p.hist.slice().reverse().map(h => `<tr><td>${SEASON_LABEL(h.s)}</td><td>${esc(h.c || '–')}</td><td>${h.ovr}</td><td>${h.m}</td><td>${h.g}</td><td>${h.a}</td></tr>`).join('')}</table></div>`
+      : empty('📜', 'Brak historii', 'Historia kariery zapisuje się na koniec każdego sezonu.'),
+  }[UI.pcTab]();
+  const abar = mine ? (UI.pcTab === 'ct' ? '' : `<div class="btns"><button class="btn sm pri" data-act="chat" data-arg="${p.id}">💬 Porozmawiaj</button><button class="btn sm" data-act="pctab" data-arg="ct">📝 Kontrakt i transfer</button></div>`) : act;
   modal(`<div class="fut ${cardCls}">
       <div class="fl"><div class="big">${r[0] === r[1] ? r[0] : r[0] + '–' + r[1]}</div><div>${POS_PL[p.pos]}</div><div class="fg">${flag(p.nat)}</div>${c ? badge(c, 'sm') : ''}</div>
       <div class="fr"><div class="fname">${esc(p.n)}</div>
         <div class="attrs">${names.map((n, i) => `<div><b>${known ? at[i] : '?'}</b> ${n}</div>`).join('')}</div>
         <small>${p.foot === 'L' ? 'Lewa' : 'Prawa'} noga • słabsza ${'★'.repeat(p.wf)} • triki ${'★'.repeat(p.sm)}</small></div></div>
     <div class="row" style="margin:10px 0 4px">${posTag(p.pos)}${(p.alt || []).map(posTag).join('')}<span class="sp mut" style="text-align:right">${esc(clubName(p))}${c ? ' ' + S.countries[c.cc].flag : ''}</span></div>
-    ${stTag(p)}${p.tid === S.user || p.tid === -3 ? `<small class="mut">Charakter: <b>${pers(p)}</b> – ${PERS_DESC[pers(p)]}</small><div class="fxl">${Object.entries(TRAITS).map(([k, n]) => `<span class="pill">${n}: ${traitWord(traits(p)[k])}</span>`).join(' ')}</div>` : `<small class="mut">Charakter: ? (poznasz go po transferze)</small>`}
-    <div class="kv">
-      <div><span>Wiek</span><b>${p.age}</b></div><div><span>Potencjał</span>${ovrShow(p, true)}</div>
-      <div><span>Kondycja</span><b>${Math.round(p.fit)}%</b></div><div><span>Morale</span><b>${moraleLabel(p.mor).join(' ')}</b></div>
-      <div><span>Forma</span><b>${formLabel(p.form)}</b></div><div><span>Rytm meczowy</span><b>${Math.round(p.shp)}%</b></div>
-      <div><span>Wartość</span><b>${money(p.val)}</b></div><div><span>Pensja</span><b>${p.tid === -2 ? '–' : money(p.wage) + '/t'}</b></div>
-      <div><span>Kontrakt</span><b>${p.tid >= 0 ? p.con + ' l.' : '–'}</b></div><div><span>Status</span><b>${playerStatus(p)}</b></div>
-      ${!mine && releaseClause(p) ? `<div><span>Klauzula odstępnego</span><b>${money(releaseClause(p))}</b></div>` : ''}${mine && p.sellOn ? `<div><span>Odsprzedaż</span><b>${Math.round(p.sellOn.pct * 100)}% dla ${esc(club(p.sellOn.club).short)}</b></div>` : ''}
-      <div><span>Mecze / gole</span><b>${p.st.apps} / ${p.st.g}</b></div><div><span>Asysty / ocena</span><b>${p.st.a} / ${avgR}</b></div>
-      <div><span>Kariera</span><b>${p.car.apps} m., ${p.car.g} g.</b></div><div><span>Reprezentacja</span><b>${p.caps} m., ${p.ng} g.</b></div>
-    </div>
-    ${known && typeof radarSVG === 'function' ? `<div style="text-align:center;margin-top:6px">${radarSVG(at, names, { size: 180 })}</div>` : ''}
-    ${(p.hist || []).length ? `<h3>Historia kariery</h3>${p.hist.length >= 2 && typeof sparkSVG === 'function' ? sparkSVG(p.hist.map(h => h.ovr).concat(p.ovr), { w: 300, h: 44 }) : ''}<div class="scrollx"><table class="rank"><tr><th>Sezon</th><th>Klub</th><th>OVR</th><th>M</th><th>G</th><th>A</th></tr>${p.hist.slice().reverse().map(h => `<tr><td>${SEASON_LABEL(h.s)}</td><td>${esc(h.c || '–')}</td><td>${h.ovr}</td><td>${h.m}</td><td>${h.g}</td><td>${h.a}</td></tr>`).join('')}</table></div>` : ''}
-    ${known && otherPos.length ? `<small class="mut">Inne pozycje: ${otherPos.map(([q, v]) => `${POS_PL[q]} ${v}`).join(' • ')}</small>` : ''}
-    ${act}<div class="btns"><button class="btn full" data-act="close">Zamknij</button></div>`);
+    ${mine && (S.captain === p.id || squadLeaders().includes(p)) ? `<div class="fxl">${S.captain === p.id ? '<span class="pill g">©️ Kapitan</span> ' : ''}${squadLeaders().includes(p) ? '<span class="pill">👑 Lider szatni</span>' : ''}</div>` : ''}
+    ${tabs(TABS, UI.pcTab, 'pctab')}<div class="pcbody">${body}</div>
+    <div class="pcbar">${abar}<div class="btns"><button class="btn full" data-act="close">Zamknij</button></div></div>`);
+  const t = $('#modal .tabs'), on = t && t.querySelector('.on'); if (on) t.scrollLeft = Math.max(0, on.offsetLeft - (t.clientWidth - on.offsetWidth) / 2);
 };
+ACT.pctab = k => { UI.pcTab = k; const sc = $('#modal .box') ? $('#modal .box').scrollTop : 0; ACT.info(UI.pcId); const b = $('#modal .box'); if (b) b.scrollTop = Math.min(sc, b.scrollHeight); };
 function devBlock(p) {
   const names = p.pos === 'GK' ? ATTR_GK : ATTR_OUT, ms = S.mentors || [];
   const asPupil = ms.find(x => x.p === p.id), asMentor = ms.find(x => x.m === p.id);
@@ -661,7 +679,13 @@ function mkRow(p) {
   const c = clubOf(p), ds = dealState(p);
   return `<div class="prow" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${flag(p.nat)} ${esc(p.n)}<small>${c ? esc(c.short) + ' ' + S.countries[c.cc].flag : p.tid === -1 ? 'wolny' : 'zagr.'} • ${p.age} l. • ${p.tid === -1 ? 'bez odstępnego' : money(p.val)}${ds[1] ? ` • <span class="${ds[0] === 'g' ? 'good' : ds[0]}">${ds[1]}</span>` : ''}</small></div>${S.short.includes(p.id) ? '<span class="good">★</span>' : ''}${ovrShow(p)}</div>`;
 }
-function vSearch() {
+const FOPT = {
+  pos: () => POSITIONS.map(p => [p, POS_PL[p]]), age: () => [19, 21, 23, 25, 28, 31].map(a => [a, `do ${a} l.`]),
+  ovr: () => [60, 65, 70, 75, 80, 85].map(a => [a, `${a}+`]), price: () => [5e5, 1e6, 3e6, 1e7, 3e7, 8e7].map(v => [v, `do ${money(v)}`]),
+  sort: () => [['ovr', 'wg ogólnej'], ['pot', 'wg potencjału'], ['val', 'wg wartości'], ['age', 'najmłodsi']],
+};
+const FNAME = { cc: 'Kraj', pos: 'Pozycja', age: 'Wiek', ovr: 'Ogólna', price: 'Cena', sort: 'Sortowanie' };
+function searchList() {
   const f = UI.f;
   let list = PALL.filter(p => p.tid !== S.user && p.tid > -2);
   if (f.cc === 'FREE') list = list.filter(p => p.tid === -1); else if (f.cc) list = list.filter(p => p.tid >= 0 && club(p.tid).cc === f.cc);
@@ -671,21 +695,39 @@ function vSearch() {
   if (f.ovr) list = list.filter(p => ovrRange(p)[1] >= f.ovr);
   if (f.q) { const q = f.q.toLowerCase(); list = list.filter(p => p.n.toLowerCase().includes(q)); }
   if (f.real) list = list.filter(p => p.tid !== -2 && ['g', 'warn'].includes(dealState(p)[0]) && dealState(p)[1] !== 'nie na sprzedaż');
+  return list;
+}
+function fLabel(k, v) {
+  if (k === 'cc') return v === 'FREE' ? 'Wolni agenci' : `${S.countries[v].flag} ${S.countries[v].name}`;
+  const o = FOPT[k]().find(x => x[0] === v); return o ? o[1] : v;
+}
+function vSearch() {
+  const f = UI.f, list = searchList();
   const key = f.sort === 'pot' ? (p => know(p) >= 30 ? ovrRange(p, true)[1] : 0) : f.sort === 'val' ? (p => p.val) : f.sort === 'age' ? (p => -p.age) : ovrEst;
   list.sort((a, b) => key(b) - key(a));
-  return `<div class="flt"><input placeholder="Szukaj nazwiska…" value="${esc(f.q)}" data-change="fq" style="flex:1 1 100%">
-    <select data-change="fcc"><option value="">Wszystkie kraje</option><option value="FREE" ${f.cc === 'FREE' ? 'selected' : ''}>Wolni agenci</option>${Object.values(S.countries).map(c => `<option value="${c.code}" ${f.cc === c.code ? 'selected' : ''}>${c.flag} ${c.name}</option>`).join('')}</select>
-    <select data-change="fpos"><option value="">Pozycja</option>${POSITIONS.map(p => `<option value="${p}" ${f.pos === p ? 'selected' : ''}>${POS_PL[p]}</option>`).join('')}</select>
-    <select data-change="fage"><option value="0">Wiek</option>${[19, 21, 23, 25, 28, 31].map(a => `<option value="${a}" ${f.age === a ? 'selected' : ''}>do ${a} l.</option>`).join('')}</select>
-    <select data-change="fovr"><option value="0">Ogólna</option>${[60, 65, 70, 75, 80, 85].map(a => `<option value="${a}" ${f.ovr === a ? 'selected' : ''}>${a}+</option>`).join('')}</select>
-    <select data-change="fprice"><option value="0">Cena</option>${[5e5, 1e6, 3e6, 1e7, 3e7, 8e7].map(v => `<option value="${v}" ${f.price === v ? 'selected' : ''}>do ${money(v)}</option>`).join('')}</select>
-    <button class="btn sm ${f.real ? 'pri' : ''}" data-act="freal">${f.real ? '✔ ' : ''}🎯 Realne cele</button>
-    <select data-change="fsort">${[['ovr', 'wg ogólnej'], ['pot', 'wg potencjału'], ['val', 'wg wartości'], ['age', 'najmłodsi']].map(([k, n]) => `<option value="${k}" ${f.sort === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+  const act = ['cc', 'pos', 'age', 'ovr', 'price'].filter(k => f[k]);
+  return `<div class="flt"><input placeholder="Szukaj nazwiska…" value="${esc(f.q)}" data-change="fq" style="flex:1 1 55%;min-width:0"><button class="btn sm pri" data-act="fsheet">⚙ Filtry${act.length + (f.real ? 1 : 0) ? ` (${act.length + (f.real ? 1 : 0)})` : ''}</button></div>
+    <div class="chipsrow">${f.real ? `<button class="fchip on" data-act="freal">🎯 Realne cele ✕</button>` : `<button class="fchip" data-act="freal">🎯 Realne cele</button>`}${act.map(k => `<button class="fchip on" data-act="fclr" data-arg="${k}">${fLabel(k, f[k])} ✕</button>`).join('')}<button class="fchip" data-act="fsheet">↕ ${fLabel('sort', f.sort || 'ovr')}</button></div>
     <small class="mut">${list.length} zawodników. Zakresy ocen zawężają się dzięki skautingowi.</small>
-    <div class="card list">${list.slice(0, 60).map(mkRow).join('') || '<small>Brak wyników.</small>'}</div>`;
+    <div class="card list">${list.slice(0, 60).map(mkRow).join('') || empty('🔎', 'Brak wyników', 'Poluzuj filtry, żeby zobaczyć więcej zawodników.', '<button class="btn sm" data-act="freset">Wyczyść filtry</button>')}</div>`;
 }
-for (const k of ['cc', 'pos', 'sort']) CHG['f' + k] = v => { UI.f[k] = v; render(); };
-for (const k of ['age', 'ovr', 'price']) CHG['f' + k] = v => { UI.f[k] = +v; render(); };
+function filterSheet() {
+  const f = UI.f, n = searchList().length;
+  const grp = k => `<h3>${FNAME[k]}</h3><div class="chipsrow wrap">${k !== 'sort' ? `<button class="fchip ${!f[k] ? 'on' : ''}" data-act="fset" data-arg="${k}:">Dowolna</button>` : ''}${FOPT[k]().map(([v, l]) => `<button class="fchip ${String(f[k] || (k === 'sort' ? 'ovr' : '')) === String(v) ? 'on' : ''}" data-act="fset" data-arg="${k}:${v}">${l}</button>`).join('')}</div>`;
+  modal(`<h2>⚙ Filtry wyszukiwania</h2>
+    <h3>Kraj</h3><select data-change="fccs" style="width:100%"><option value="">Wszystkie kraje</option><option value="FREE" ${f.cc === 'FREE' ? 'selected' : ''}>Wolni agenci</option>${Object.values(S.countries).map(c => `<option value="${c.code}" ${f.cc === c.code ? 'selected' : ''}>${c.flag} ${c.name}</option>`).join('')}</select>
+    <div class="chipsrow wrap" style="margin-top:10px"><button class="fchip ${f.real ? 'on' : ''}" data-act="frealsheet">🎯 Tylko realne cele (budżet i chęć transferu)</button></div>
+    ${grp('pos')}${grp('age')}${grp('ovr')}${grp('price')}${grp('sort')}
+    <div class="pcbar"><div class="btns"><button class="btn" data-act="fresetsheet">Wyczyść</button><button class="btn pri sp" data-act="close">Pokaż wyniki (${n})</button></div></div>`);
+}
+const NUMF = ['age', 'ovr', 'price'];
+ACT.fsheet = () => filterSheet();
+ACT.fset = a => { const [k, v] = a.split(':'); UI.f[k] = v === '' ? (NUMF.includes(k) ? 0 : '') : NUMF.includes(k) ? +v : v; const b = $('#modal .box'), sc = b ? b.scrollTop : 0; filterSheet(); render(); $('#modal .box').scrollTop = sc; };
+CHG.fccs = v => { UI.f.cc = v; const sc = $('#modal .box').scrollTop; filterSheet(); render(); $('#modal .box').scrollTop = sc; };
+ACT.frealsheet = () => { UI.f.real = !UI.f.real; const sc = $('#modal .box').scrollTop; filterSheet(); render(); $('#modal .box').scrollTop = sc; };
+ACT.fclr = k => { UI.f[k] = NUMF.includes(k) ? 0 : ''; render(); };
+ACT.freset = () => { Object.assign(UI.f, { cc: '', pos: '', age: 0, ovr: 0, price: 0, real: false }); render(); };
+ACT.fresetsheet = () => { ACT.freset(); filterSheet(); };
 CHG.fq = v => { UI.f.q = v; render(); };
 ACT.freal = () => { UI.f.real = !UI.f.real; render(); };
 function vShort() {
@@ -1036,6 +1078,24 @@ function enterApp() { $('#start').classList.add('hidden'); $('#app').classList.r
 
 /* ---------- start ---------- */
 document.addEventListener('click', e => { const el = e.target.closest('[data-act]'); if (!el || el.disabled) return; const fn = ACT[el.dataset.act]; if (fn) fn(el.dataset.arg, el); });
+/* przesuwanie palcem w bok – przełączanie podzakładek */
+(() => {
+  let x0 = 0, y0 = 0, t0 = 0, ok = false;
+  const v = () => $('#view');
+  document.addEventListener('touchstart', e => {
+    const t = e.target; ok = !!(v() && v().contains(t)) && !t.closest('.tabs,.scrollx,.strip,input,select,textarea,.pitch,.pitch2,.uk-pitch,table,.slider') && $('#modal').classList.contains('hidden') && $('#match').classList.contains('hidden');
+    if (!ok) return; x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; t0 = Date.now();
+  }, { passive: true });
+  document.addEventListener('touchend', e => {
+    if (!ok) return; ok = false;
+    const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+    if (Math.abs(dx) < 70 || Math.abs(dy) > Math.abs(dx) * 0.6 || Date.now() - t0 > 600) return;
+    const rows = v().querySelectorAll('.tabs'); if (!rows.length) return;
+    const row = rows[rows.length - 1], bs = [...row.querySelectorAll('button')], i = bs.findIndex(b => b.classList.contains('on'));
+    const nb = bs[i + (dx < 0 ? 1 : -1)]; if (i < 0 || !nb) return;
+    SWIPE_DIR = dx < 0 ? 'l' : 'r'; nb.click();
+  }, { passive: true });
+})();
 document.addEventListener('change', e => { const el = e.target.closest('[data-change]'); if (el && CHG[el.dataset.change]) CHG[el.dataset.change](el.value, el); });
 (async () => {
   busy(true, 'Tworzenie świata…');

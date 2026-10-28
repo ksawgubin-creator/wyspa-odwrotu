@@ -261,3 +261,27 @@ table,.kv b,.mini{font-variant-numeric:tabular-nums}
 .slider .marks{position:relative;height:8px;margin:-4px 10px 4px}
 .slider .marks i{position:absolute;top:0;width:3px;height:8px;background:var(--txt);border-radius:2px;transform:translateX(-50%)}
 .slider .marks i.b{background:var(--warn)}
+
+/* karta zawodnika: zakładki i przyklejony pasek akcji */
+#modal .box .tabs{margin:6px 0 8px}
+.pcbody{min-height:180px}
+.pcbar{position:sticky;bottom:calc(-18px - env(safe-area-inset-bottom));margin:10px -16px calc(-18px - env(safe-area-inset-bottom));padding:8px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(18,28,49,.85),var(--panel) 30%);border-top:1px solid var(--line);backdrop-filter:blur(6px);z-index:2}
+.pcbar .btns{margin-top:6px}
+
+#nav button i{height:24px;display:flex;justify-content:center;margin-bottom:2px}
+#nav button i svg{display:block}
+#nav button.on::before{content:"";position:absolute;top:0;left:30%;right:30%;height:3px;border-radius:0 0 3px 3px;background:var(--acc)}
+#nav button{transition:color .15s}
+
+@keyframes sw-l{from{opacity:.3;transform:translateX(40px)}to{opacity:1;transform:none}}
+@keyframes sw-r{from{opacity:.3;transform:translateX(-40px)}to{opacity:1;transform:none}}
+#view.sw-l{animation:sw-l .22s ease-out}#view.sw-r{animation:sw-r .22s ease-out}
+@media (prefers-reduced-motion:reduce){#view.sw-l,#view.sw-r{animation:none}}
+
+.chipsrow{display:flex;gap:6px;overflow-x:auto;margin:8px 0;padding-bottom:2px}
+.chipsrow.wrap{flex-wrap:wrap;overflow:visible}
+.fchip{flex:none;background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:99px;padding:8px 12px;font-size:13px;font-weight:600;min-height:38px;white-space:nowrap}
+.fchip.on{background:#123d2c;border-color:var(--acc);color:var(--acc)}
+
+#modal .box.noanim{animation:none}
+#modal:not(.hidden):has(.box.noanim){animation:none}

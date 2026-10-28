@@ -459,6 +459,7 @@ ACT.nego = id => {
   const free = p.tid === -1;
   NEG = { pid: p.id, fee: free ? 0 : askPrice(p), stage: free ? 2 : 1, wage: wageDemand(p), years: p.age >= 31 ? 2 : 4 };
   if (!free && !windowOpen()) return toast('Okno transferowe jest zamknięte.');
+  if (userClub().players.length >= 32) return toast('Kadra pełna (maks. 32) – najpierw kogoś sprzedaj lub wypożycz.', 'bad');
   const i = playerInterest(p); if (!i.ok) return toast(i.msg);
   renderNego();
 };
@@ -697,10 +698,14 @@ function dealState(p) {
   const ut = userClub();
   if (p.tid === -1) return ut.bal < 0 ? ['bad', 'długi'] : ['g', 'wolny'];
   if (p.tid < 0) return ['', ''];
+  if (p.loan) return ['bad', 'wypożyczony'];
+  if (p._noTalk > absDay()) return ['bad', 'zerwane rozmowy'];
+  if (clubOf(p).players.length <= 18) return ['bad', 'wąska kadra klubu'];
   if (!playerInterest(p).ok) return ['bad', 'nie chce'];
   if (notForSale(p)) return ['warn', 'nie na sprzedaż'];
   const a = askPrice(p);
-  return a <= ut.tb ? ['g', 'w budżecie'] : a * INST_K * INST_UP <= ut.tb && a >= 1e6 ? ['warn', 'na raty'] : ['bad', 'za drogi'];
+  if (p._disc && p._disc.until > absDay() && a <= Math.min(ut.tb, ut.bal)) return ['g', 'okazja −15%'];
+  return a <= Math.min(ut.tb, ut.bal) ? ['g', 'w budżecie'] : a * INST_K * INST_UP <= ut.tb && a >= 1e6 ? ['warn', 'na raty'] : ['bad', 'za drogi'];
 }
 function mkRow(p) {
   const c = clubOf(p), ds = dealState(p);

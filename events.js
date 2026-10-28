@@ -243,9 +243,9 @@ const EVENTS = [
   { id: 'bonding', cat: 'Szatnia', w: 2, ctx: () => ({}), title: 'Wyjazd integracyjny', text: () => 'Kapitan proponuje wspólny wyjazd integracyjny drużyny w przerwie między meczami.',
     choices: [{ t: 'Zgoda – klub płaci', hint: 'drobne ryzyko', fn: () => ({ team: 6, money: -Math.round(userClub().tv * 0.8) }), r: 'Atmosfera świetna.', alt: { p: () => 0.15, fn: () => ({ team: 3, press: -5, board: -3 }), r: 'Zdjęcia z imprezy wyciekły do mediów.' } },
       { t: 'Nie teraz', fx: { team: -2 }, r: 'Zawodnicy są trochę zawiedzeni.' }] },
-  { id: 'deadline', cat: 'Transfery', w: 2, ext: true, ctx: () => { if (!windowOpen()) return null; const p = PALL.filter(p => p.tid >= 0 && p.tid !== S.user && p.age <= 29 && p.ovr >= teamLevel(userClub()) && p.ovr <= teamLevel(userClub()) + 6 && p.val <= Math.max(userClub().tb, 2e5) && !p.loan && club(p.tid).players.length > 19 && playerInterest(p).ok && !notForSale(p) && !(p._noTalk > absDay())); return p.length ? { p: pick(p.slice(0, 400)) } : null; },
-    title: 'Okazja na rynku', text: c => `Agent dzwoni: ${c.p.n} (${POS_PL[c.p.pos]}, ${clubName(c.p)}) jest do wzięcia, jego klub potrzebuje pieniędzy.`,
-    choices: [{ t: 'Dodaj do obserwowanych i sprawdź', fn: c => { S.short = [c.p.id, ...S.short.filter(x => x !== c.p.id)]; S.know[c.p.id] = Math.max(S.know[c.p.id] || 0, 85); c.p.val = Math.round(c.p.val * 0.85 / 10000) * 10000; return {}; }, r: 'Zawodnik na liście – jego wycena spadła o 15%.' },
+  { id: 'deadline', cat: 'Transfery', w: 2, ext: true, ctx: () => { if (!windowOpen()) return null; const p = PALL.filter(p => p.tid >= 0 && p.tid !== S.user && p.age <= 29 && p.ovr >= teamLevel(userClub()) && p.ovr <= teamLevel(userClub()) + 6 && !p.loan && club(p.tid).players.length > 19 && askPrice(p) * 0.85 <= Math.min(userClub().tb, userClub().bal) && playerInterest(p).ok && !notForSale(p) && !(p._noTalk > absDay())); return p.length ? { p: pick(p) } : null; },
+    title: 'Okazja na rynku', text: c => `Agent dzwoni: ${c.p.n} (${POS_PL[c.p.pos]}, ${clubName(c.p)}) jest do wzięcia – ${club(c.p.tid).bal < c.p.val ? 'jego klub potrzebuje pieniędzy' : 'klub chce odmłodzić i przebudować kadrę'}. Może być taniej, jeśli szybko się zgłosisz.`,
+    choices: [{ t: 'Dodaj do obserwowanych i sprawdź', fn: c => { S.short = [c.p.id, ...S.short.filter(x => x !== c.p.id)]; S.know[c.p.id] = Math.max(S.know[c.p.id] || 0, 85); c.p._disc = { k: 0.85, until: absDay() + 30 }; return {}; }, r: 'Zawodnik na liście obserwowanych – przez 30 dni jego klub zgodzi się na cenę niższą o 15%.' },
       { t: 'Nie interesuje mnie', fx: {}, r: 'Agent zadzwoni do kogoś innego.' }] },
   { id: 'journalist', cat: 'Prasa', w: 2, ctx: () => ({}), title: 'Wywiad na wyłączność', text: () => 'Popularny dziennikarz prosi o długi wywiad o Twojej filozofii pracy.',
     choices: [{ t: 'Zgódź się', hint: 'słowa mogą zostać przekręcone', fx: { press: 6, fans: 2, mgr: 0.2 }, r: 'Świetny materiał – czyta go cały kraj.', alt: { p: () => S.press < 40 ? 0.45 : 0.2, fx: { press: -4, team: -3 }, r: 'Tytuł wyrwał Twoje słowa z kontekstu – zawodnicy poczuli się urażeni.' } },
@@ -344,6 +344,7 @@ function resolveEvent(uid, ci) {
   S.pending = S.pending.filter(e => e !== ev);
   const ctx = ctxDeref(ev.ctx);
   const def = eventDef(ev); if (!def) return { r: 'Sprawa nieaktualna.', fx: [] };
+  if (def.ext && ctx.p && (ctx.p.tid < 0 || ctx.p.tid === S.user)) return { r: 'Sprawa nieaktualna – zawodnik zmienił już klub.', fx: [] };
   if ((ev.ctx.p != null && !ctx.p) || (ctx.p && !def.ext && ctx.p.tid !== S.user && ctx.p.tid !== -3)) return { r: 'Sprawa nieaktualna – zawodnik nie jest już w klubie.', fx: [] };
   const ch = def.choices[ci];
   let o = ch, risky = false;

@@ -613,6 +613,7 @@ function hasUserMatchToday() { return !!userMatchToday(); }
 function processDay(live) {
   const d = curDay(), ut = userClub();
   if (d.t === 'P' && S.pre && !S.pre.chosen) choosePre(0);
+  S.offers = windowOpen() ? S.offers.filter(o => o.exp >= S.day) : [];
   recover(d.gap);
   const list = dayMatches(d);
   let userRes = null;
@@ -802,8 +803,8 @@ function playerStatus(p) {
   return i < 5 ? 'Kluczowy' : i < 12 ? 'Podstawowy' : i < 18 ? 'Rotacyjny' : p.age <= 21 ? 'Perspektywiczny' : 'Rezerwowy';
 }
 function askPrice(p) {
-  const st = playerStatus(p);
-  const r = p.val * (1 + 0.05 * p.con + (st === 'Kluczowy' ? 0.2 : st === 'Podstawowy' ? 0.08 : 0));
+  const st = playerStatus(p), disc = p._disc && p._disc.until > absDay() ? p._disc.k : 1;
+  const r = p.val * disc * (1 + 0.05 * p.con + (st === 'Kluczowy' ? 0.2 : st === 'Podstawowy' ? 0.08 : 0));
   const step = r >= 1e7 ? 5e5 : r >= 1e6 ? 5e4 : 1e4;
   return Math.round(r / step) * step;
 }
@@ -853,7 +854,7 @@ function playerInterest(p) {
 }
 function personalTerms(p, wage, years) {
   const dem = wageDemand(p);
-  if (wage >= dem || (wage >= dem * 0.92 && rnd() < 0.5)) return { ok: true };
+  if (wage >= dem || (wage >= dem * 0.92 && hashN(p.id * 17 + absDay()) < 0.5)) return { ok: true };
   return { ok: false, msg: `${p.n} odrzuca warunki – oczekuje ok. ${money(dem)}/tydz.` };
 }
 function detach(p) {
@@ -903,7 +904,7 @@ function loanIn(pid) {
   const fee = Math.round(p.val * 0.1 / 10000) * 10000, weeklyInc = ut.tv + ut.spons + 0.5 * ut.cap * 0.75 * ut.price;
   if (p.wage > weeklyInc * 0.15) return { ok: false, msg: `Pensja ${p.n} (${money(p.wage)}/tydz.) przekracza możliwości klubu.` };
   if (ut.bal < fee || ut.tb < fee) return { ok: false, msg: `Opłata za wypożyczenie wynosi ${money(fee)} – brak środków.` };
-  if (rnd() < 0.3) return { ok: false, msg: `${c.name} odrzuca prośbę o wypożyczenie.` };
+  if (hashN(p.id * 31 + absDay()) < 0.3) return { ok: false, msg: `${c.name} odrzuca prośbę o wypożyczenie. (spróbuj za kilka dni)` };
   ut.bal -= fee; ut.tb -= fee; c.bal += fee;
   detach(p); attach(p, ut); p.loan = { from: c.id, season: S.season }; S.know[p.id] = 100; refillAI(c);
   rebuildIndex(); fillBench(ut);
@@ -926,6 +927,7 @@ function sellTo(offerId) {
   const o = S.offers.find(x => x.id === offerId); if (!o) return { ok: false, msg: 'Oferta wygasła.' };
   const p = pget(o.pid), ut = userClub(), b = club(o.from);
   if (!windowOpen()) { S.offers = S.offers.filter(x => x !== o); return { ok: false, msg: 'Okno transferowe jest zamknięte – oferta wygasła.' }; }
+  if (b.bal < o.amount) { S.offers = S.offers.filter(x => x !== o); return { ok: false, msg: `${b.name} wycofał ofertę – klub nie ma już tyle pieniędzy.` }; }
   if (ut.players.length <= 16) return { ok: false, msg: 'Kadra nie może liczyć mniej niż 16 zawodników.' };
   detach(p); attach(p, b); p.con = ri(2, 5); p.wage = calcWage(p, b.rep);
   const so = p.sellOn ? Math.round(Math.max(0, o.amount) * p.sellOn.pct) : 0;
@@ -1007,13 +1009,13 @@ function aiTransfers() {
       const p = PALL[ri(0, PALL.length - 1)];
       if (p.tid < 0 || p.tid === b.id || p.tid === S.user || p.loan || p.pos !== pos) continue;
       const sc = club(p.tid);
-      if (sc.rep > b.rep + 3 || sc.players.length <= 20 || p.ovr < wv + 2 || p.ovr > teamLevel(b) + 7 || p.val * 1.2 > b.tb) continue;
+      if (sc.rep > b.rep + 3 || sc.players.length <= 20 || p.ovr < wv + 2 || p.ovr > teamLevel(b) + 7 || p.val * 1.4 > b.tb || p.val * 1.4 > b.bal) continue;
       if (!bestP || p.ovr > bestP.ovr) bestP = p;
     }
     if (!bestP) continue;
     const seller = club(bestP.tid), fee = Math.round(bestP.val * (1.05 + rnd() * 0.3) / 50000) * 50000;
     detach(bestP); attach(bestP, b); bestP.wage = calcWage(bestP, b.rep); bestP.con = ri(2, 5);
-    b.bal -= fee; b.tb -= fee; seller.bal += fee; seller.tb += fee; refillAI(seller);
+    b.bal -= fee; b.tb -= fee; seller.bal += fee; seller.tb += fee; refillAI(seller); refillAI(b);
     if (fee >= 3e6 || seller.cc === userClub().cc || b.cc === userClub().cc) news(`${bestP.n} (${bestP.ovr}) przechodzi z ${seller.name} do ${b.name} za ${money(fee)}.`);
   }
   rebuildIndex();
@@ -1380,7 +1382,7 @@ function endSeason() {
   seasonJobOffers(lines);
   const title = `Podsumowanie sezonu ${SEASON_LABEL(S.season - 1)}`;
   msg(title, lines.join('\n'));
-  autoPick(userClub());
+  autoPick(userClub()); S.offers = [];
   S.summary = { title, lines };
   return S.summary;
 }

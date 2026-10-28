@@ -79,7 +79,7 @@ COUNTRY_DATA.push({
         ['El Bilal Touré', 'ST', 25, 75, 77, 'MLI'],
         ['Mustafa Hekimoğlu', 'ST', 19, 64, 76, 'TUR']
       ]],
-      ['Trabzonspor', 'TRA', '#8B1E3F', '#4FC3F7', 69, 40782, [
+      ['Trabzonspor', 'TRA', '#8B1E3F', '#4FC3F7', 68, 40782, [
         ['André Onana', 'GK', 30, 81, 81, 'CMR', [80, 76, 88, 82, 55, 79]],
         ['Erce Kardeşler', 'GK', 32, 67, 67, 'TUR'],
         ['Onuralp Çevikkan', 'GK', 21, 60, 68, 'TUR'],
@@ -104,7 +104,7 @@ COUNTRY_DATA.push({
         ['Paul Onuachu', 'ST', 32, 77, 77, 'NGA', [62, 78, 55, 66, 40, 86]],
         ['Felipe Augusto', 'ST', 22, 72, 77, 'BRA']
       ]],
-      ['İstanbul Başakşehir', 'IBB', '#E94E0F', '#1B2B5A', 62, 17319, [
+      ['İstanbul Başakşehir', 'IBB', '#E94E0F', '#1B2B5A', 60, 17319, [
         ['Muhammed Şengezer', 'GK', 29, 72, 72, 'TUR'],
         ['Volkan Babacan', 'GK', 38, 67, 67, 'TUR'],
         ['Jerome Opoku', 'CB', 28, 72, 73, 'GHA'],
@@ -150,7 +150,7 @@ COUNTRY_DATA.push({
         ['Polat Yaldır', 'RW', 22, 66, 72, 'TUR'],
         ['Cherif Ndiaye', 'ST', 30, 73, 73, 'SEN']
       ]],
-      ['Göztepe', 'GOZ', '#FFD100', '#E30613', 58, 19713, [
+      ['Göztepe', 'GOZ', '#FFD100', '#E30613', 59, 19713, [
         ['Mateusz Lis', 'GK', 29, 75, 75, 'POL'],
         ['Ekrem Kılıçarslan', 'GK', 29, 64, 64, 'TUR'],
         ['Héliton', 'CB', 30, 72, 72, 'BRA'],
@@ -170,7 +170,7 @@ COUNTRY_DATA.push({
         ['Janderson', 'ST', 27, 70, 71, 'BRA'],
         ['Emersonn', 'ST', 25, 68, 71, 'BRA']
       ]],
-      ['Eyüpspor', 'EYU', '#5C2483', '#FFD100', 56, 14500, [
+      ['Eyüpspor', 'EYU', '#5C2483', '#FFD100', 57, 14500, [
         ['Berke Özer', 'GK', 26, 72, 73, 'TUR'],
         ['Marcos Felipe', 'GK', 30, 68, 68, 'BRA'],
         ['Jankat Yılmaz', 'GK', 22, 62, 68, 'TUR'],
@@ -190,7 +190,7 @@ COUNTRY_DATA.push({
         ['Denis Drăguș', 'ST', 27, 72, 72, 'ROU'],
         ['Mame Thiam', 'ST', 34, 71, 71, 'SEN']
       ]],
-      ['Kasımpaşa', 'KAS', '#003A80', '#FFFFFF', 56, 14234, [
+      ['Kasımpaşa', 'KAS', '#003A80', '#FFFFFF', 57, 14234, [
         ['Andreas Gianniotis', 'GK', 34, 72, 72, 'GRE'],
         ['Ali Emre Yanar', 'GK', 33, 64, 64, 'TUR'],
         ['Attila Szalai', 'CB', 28, 74, 74, 'HUN'],
@@ -209,7 +209,7 @@ COUNTRY_DATA.push({
         ['Mamadou Fall', 'ST', 34, 69, 69, 'SEN'],
         ['Cenk Tosun', 'ST', 35, 70, 70, 'TUR']
       ]],
-      ['Antalyaspor', 'ANS', '#E30613', '#FFFFFF', 55, 32537, [
+      ['Antalyaspor', 'ANS', '#E30613', '#FFFFFF', 56, 32537, [
         ['Abdullah Yiğiter', 'GK', 26, 70, 72, 'TUR'],
         ['Kağan Arıcan', 'GK', 23, 62, 67, 'TUR'],
         ['Veysel Sarı', 'CB', 38, 68, 68, 'TUR'],
@@ -229,7 +229,7 @@ COUNTRY_DATA.push({
         ['Doğukan Sinik', 'RW', 27, 72, 72, 'TUR'],
         ['Adolfo Gaich', 'ST', 27, 70, 70, 'ARG']
       ]],
-      ['Alanyaspor', 'ALN', '#FF6600', '#00843D', 56, 10128, [
+      ['Alanyaspor', 'ALN', '#FF6600', '#00843D', 57, 10128, [
         ['Ertuğrul Taşkıran', 'GK', 37, 69, 69, 'TUR'],
         ['Paulo Victor', 'GK', 39, 66, 66, 'BRA'],
         ['Fidan Aliti', 'CB', 33, 71, 71, 'KOS'],
@@ -246,7 +246,7 @@ COUNTRY_DATA.push({
         ['Güven Yalçın', 'ST', 27, 69, 70, 'TUR'],
         ['Hwang Ui-jo', 'ST', 34, 71, 71, 'KOR']
       ]],
-      ['Konyaspor', 'KON', '#00843D', '#FFFFFF', 55, 42000, [
+      ['Konyaspor', 'KON', '#00843D', '#FFFFFF', 56, 42000, [
         ['Bahadır Güngördü', 'GK', 29, 69, 69, 'TUR'],
         ['Deniz Ertaş', 'GK', 21, 61, 68, 'TUR'],
         ['Adil Demirbağ', 'CB', 29, 72, 72, 'TUR'],
@@ -300,7 +300,7 @@ COUNTRY_DATA.push({
         ['Ali Sowe', 'ST', 32, 70, 70, 'GAM'],
         ['Václav Jurečka', 'ST', 32, 70, 70, 'CZE']
       ]],
-      ['Kayserispor', 'KAY', '#FFD100', '#E30613', 53, 32864, [
+      ['Kayserispor', 'KAY', '#FFD100', '#E30613', 54, 32864, [
         ['Bilal Bayazıt', 'GK', 27, 72, 73, 'TUR'],
         ['Onurcan Piri', 'GK', 32, 65, 65, 'TUR'],
         ['Majid Hosseini', 'CB', 30, 72, 72, 'IRN'],

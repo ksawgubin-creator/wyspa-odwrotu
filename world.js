@@ -25,7 +25,7 @@ const NAT_EXTRA = [
 ];
 for (const [code, name, iso, pool, str, conf] of NAT_EXTRA) if (!NAT[code]) { const n = { code, name, flag: code === 'KOS' ? '🇽🇰' : isoFlag(iso), pool: NAME_POOLS[pool] ? pool : 'EN', str, conf }; NATIONS.push(n); NAT[code] = n; }
 const COEF0 = {"ENG":[21.428,23,17.375,29.464,25],"ESP":[18.428,16.571,16.062,19,18.5],"ITA":[15.714,22.357,21,21.875,18],"GER":[16.214,17.125,19.357,18,18],"FRA":[18.416,12.916,13.5,17.125,16],"POL":[4.625,7.5,4,13.875,10],"POR":[10.5,12,10.833,13.05,12.5],"NED":[19.2,11,13,15.25,12],"BEL":[10,13.4,12.6,13,11.5],"TUR":[6.4,10,12,10.8,10.5],"SCO":[8.375,8.25,4.9,7.15,6],"AUT":[10.5,7.1,7,6.55,7.5],"SUI":[5.875,7.775,3.7,8.975,7],"CZE":[9,9,11.7,9,9.5],"GRE":[6.5,4.7,15.25,8.625,9],"DEN":[9.375,6.375,7.375,8.7,8],"UKR":[3.3,6.4,6.5,4.925,5.5],"CRO":[6.375,4.9,7.125,6.625,6.5],"SRB":[9.125,4,5.75,5.75,6],"NOR":[11,7.375,9,11.687,9],"SWE":[4.875,6.25,6,8.75,6.5]};
-const CTRY = (COUNTRY_DATA.length >= 21 || typeof COUNTRIES === 'undefined' ? COUNTRY_DATA : COUNTRIES)
+const CTRY = (COUNTRY_DATA.length || typeof COUNTRIES === 'undefined' ? COUNTRY_DATA : COUNTRIES)
   .map(c => Object.assign({}, c, { coef: (COEF0[c.code] || [3, 3, 3, 3, 3]).slice(), leagues: c.leagues.slice().sort((a, b) => a.tier - b.tier) }))
   .sort((a, b) => sum(b.coef) - sum(a.coef));
 const club = id => S.clubs[id];
@@ -226,6 +226,31 @@ function genScout() {
 
 /* ---------- kalendarz ---------- */
 const EURO_AFTER = { 5: ['LP', 0], 8: ['LP', 1], 11: ['LP', 2], 14: ['LP', 3], 18: ['LP', 4], 21: ['LP', 5], 25: ['LP', 6], 26: ['LP', 7], 28: ['PO', 1], 29: ['PO', 2], 31: ['R16', 1], 32: ['R16', 2], 35: ['QF', 1], 36: ['QF', 2], 39: ['SF', 1], 40: ['SF', 2] };
+const CUP_AFTER = [6, 12, 17, 23, 33, 37, 43];
+const CUP_NAMES = { ENG: 'FA Cup', ESP: 'Copa del Rey', ITA: 'Coppa Italia', GER: 'DFB-Pokal', FRA: 'Coupe de France', POL: 'Puchar Polski', NED: 'KNVB Beker', POR: 'Taça de Portugal', BEL: 'Croky Cup', TUR: 'Puchar Turcji', SCO: 'Scottish Cup', AUT: 'ÖFB-Cup', SUI: 'Puchar Szwajcarii', CZE: 'MOL Cup', GRE: 'Puchar Grecji', DEN: 'Pokal Danii', NOR: 'NM Cup', SWE: 'Svenska Cupen', UKR: 'Puchar Ukrainy', CRO: 'Puchar Chorwacji', SRB: 'Puchar Serbii' };
+const tierOf = id => S.leagues[club(id).lg].tier;
+function buildCups() {
+  S.cups = {};
+  for (const cc in S.countries) {
+    const ids = S.countries[cc].leagues.flatMap(l => S.leagues[l].clubs);
+    const R = Math.max(1, Math.ceil(Math.log2(ids.length)));
+    S.cups[cc] = { cc, name: CUP_NAMES[cc] || `Puchar kraju (${S.countries[cc].name})`, R, slot0: CUP_AFTER.length - R, teams: ids, rounds: [], byes: [], champion: null };
+  }
+}
+function ensureCupRound(cup, r) {
+  if (cup.rounds[r]) return cup.rounds[r];
+  let playing;
+  if (r === 0) {
+    const m = cup.teams.length - Math.pow(2, cup.R - 1);
+    const sorted = cup.teams.slice().sort((a, b) => tierOf(b) - tierOf(a) || club(a).rep - club(b).rep);
+    playing = sorted.slice(0, 2 * m); cup.byes = sorted.slice(2 * m);
+  } else playing = (r === 1 ? cup.byes : []).concat(cup.rounds[r - 1].map(t => t.w)).filter(x => x != null);
+  playing = shuffle(playing);
+  const ties = [];
+  for (let i = 0; i + 1 < playing.length; i += 2) { const a = playing[i], b = playing[i + 1]; const h = tierOf(a) > tierOf(b) ? a : tierOf(b) > tierOf(a) ? b : a; ties.push({ h, a: h === a ? b : a, w: null, m: null }); }
+  return cup.rounds[r] = ties;
+}
+const cupRoundName = n => n === 2 ? 'Finał' : n === 4 ? 'Półfinał' : n === 8 ? 'Ćwierćfinał' : n === 16 ? '1/8 finału' : n === 32 ? '1/16 finału' : `${n / 2} meczów`;
 const NT_AFTER = { 3: [0, 1], 9: [2, 3], 15: [4, 5], 30: [6, 7] };
 function tournamentType(season) { const y = season + 1; return y % 4 === 0 ? 'EURO' : y % 4 === 2 ? 'WC' : 'NLF'; }
 function buildCalendar() {
@@ -233,6 +258,7 @@ function buildCalendar() {
   const DAY = 864e5;
   for (let ls = 0; ls < LS; ls++) {
     cal.push({ t: 'L', ls, date }); const base = date;
+    const ci = CUP_AFTER.indexOf(ls); if (ci >= 0) cal.push({ t: 'C', slot: ci, date: base + 2 * DAY });
     if (EURO_AFTER[ls]) { const [st, x] = EURO_AFTER[ls]; cal.push(st === 'LP' ? { t: 'E', st, md: x, date: base + 3 * DAY } : { t: 'E', st, leg: x, date: base + 3 * DAY }); }
     if (NT_AFTER[ls]) { const [a, b] = NT_AFTER[ls]; cal.push({ t: 'N', md: a, date: base + 5 * DAY }, { t: 'N', md: b, date: base + 8 * DAY }); date += 7 * DAY; }
     date += 6 * DAY;
@@ -298,11 +324,12 @@ function allocateEurope() {
   for (const w of [W.CL, W.EL]) if (w != null && !used.has(w)) { CL.push(w); used.add(w); }
   if (W.ECL != null && !used.has(W.ECL)) { EL.push(W.ECL); used.add(W.ECL); }
   rank.forEach((r, i) => {
-    const order = tableOf(r.cc).filter(id => !used.has(id));
+    const order = tableOf(r.cc).filter(id => !used.has(id)), cw = S.lastCups ? S.lastCups[r.cc] : null;
     const q = i < 4 ? [4, 2, 1] : i < 6 ? [3, 2, 1] : i < 10 ? [2, 2, 1] : [1, 1, 1];
     if (eps.includes(r.cc)) q[0]++;
-    let k = 0; const take = () => { const id = order[k++]; if (id != null) used.add(id); return id; };
+    let k = 0; const take = () => { while (k < order.length && used.has(order[k])) k++; const id = order[k++]; if (id != null) used.add(id); return id; };
     for (let j = 0; j < q[0]; j++) { const id = take(); if (id != null) (i < 10 ? CL : clPool).push(id); }
+    if (cw != null && !used.has(cw) && q[1] > 0) { used.add(cw); (i < 15 ? EL : elPool).push(cw); q[1]--; }
     for (let j = 0; j < q[1]; j++) { const id = take(); if (id != null) (i < 15 ? EL : elPool).push(id); }
     for (let j = 0; j < q[2]; j++) { const id = take(); if (id != null) ECL.push(id); }
     if (i >= 4) { const id = take(); if (id != null) eclPool.push(id); }
@@ -315,6 +342,9 @@ function allocateEurope() {
   };
   fill(CL, clPool, 36, elPool); fill(EL, elPool, 36, eclPool); fill(ECL, eclPool, 36, null);
   for (const r of rank) { if (ECL.length >= 36) break; const extra = tableOf(r.cc).find(id => !CL.includes(id) && !EL.includes(id) && !ECL.includes(id)); if (extra != null) ECL.push(extra); }
+  const inAny = id => CL.includes(id) || EL.includes(id) || ECL.includes(id);
+  const spare = S.clubs.filter(c => !inAny(c.id)).sort((a, b) => S.leagues[a.lg].tier - S.leagues[b.lg].tier || b.rep - a.rep).map(c => c.id);
+  for (const L of [CL, EL, ECL]) while (L.length < 36 && spare.length) L.push(spare.shift());
   S.cpts = {}; for (const r of rank) S.cpts[r.cc] = { pts: 0, n: 0 };
   S.euro = {};
   for (const [id, list, pots] of [['CL', CL, 4], ['EL', EL, 4], ['ECL', ECL, 6]]) {
@@ -470,7 +500,7 @@ function dayMatches(d) {
       const r = lg.lsMap[d.ls]; if (r == null || r < 0) continue;
       for (const f of lg.fix[r]) clubDesc(f.h, f.a, { comp: 'L', label: lg.name }, m => {
         f.hg = m.home.goals; f.ag = m.away.goals; f.p = 1;
-        const c = club(f.h), fill = clamp(0.55 + c.rep / 250 + (S.leagues[c.lg].tier === 1 ? 0.05 : 0), 0.3, 1);
+        const c = club(f.h), fill = clamp(0.55 + c.rep / 250 + (S.leagues[c.lg].tier === 1 ? 0.05 : 0) + (c.id === S.user && S.fans != null ? (S.fans - 60) / 300 : 0), 0.3, 1);
         const gate = Math.round(c.cap * fill * c.price); c.bal += gate; c.fin.inc += gate; c._gate = gate;
       });
     }
@@ -489,6 +519,16 @@ function dayMatches(d) {
           else clubDesc(t.b, t.a, { comp: comp.id, label: `${lbl} – rewanż`, ko: { aggH: t.m1.ag, aggA: t.m1.hg } }, m => finishTie(comp, d.st, t, m, false));
         }
       }
+    }
+  } else if (d.t === 'C') {
+    for (const cup of Object.values(S.cups)) {
+      const r = d.slot - cup.slot0; if (r < 0 || r >= cup.R) continue;
+      const ties = ensureCupRound(cup, r), rn = cupRoundName(ties.length * 2), fin = ties.length === 1;
+      for (const t of ties) clubDesc(t.h, t.a, { comp: 'C', label: `${cup.name} • ${rn}`, neutral: fin, ko: { aggH: 0, aggA: 0 } }, m => {
+        t.m = { hg: m.home.goals, ag: m.away.goals, pens: m.pens, et: m.et }; t.w = m.winner === 'h' ? t.h : t.a;
+        const prize = Math.round(club(t.w).tv * (fin ? 6 : 1 + r * 0.5)); club(t.w).bal += prize; club(t.w).fin.inc += prize;
+        if (fin) { cup.champion = t.w; if (t.w === S.user) msg(`🏆 ${cup.name}!`, `Zdobyliśmy ${cup.name}! Premia: ${money(prize)}. Zwycięzca pucharu zagra w Lidze Europy.`); }
+      });
     }
   } else if (d.t === 'N') {
     const nc = S.ntc;
@@ -567,6 +607,7 @@ function afterUserClubMatch(m, x) {
   if (m.comp !== 'L') d *= 0.6;
   S.board.conf = clamp(S.board.conf + d, 0, 100);
   mgrGain(gd > 0 ? (opp.t.rep > mine.t.rep ? 0.12 : 0.05) : gd < 0 ? -0.04 : 0.01);
+  if (typeof afterMatchMeta === 'function') afterMatchMeta(m, x, mine, opp, gd);
   for (const e of m.ev) if (e.type === 'injury' && e.side === x.user) msg('Kontuzja', e.text.replace('🚑 ', ''));
 }
 
@@ -597,6 +638,7 @@ function weekly(d) {
   for (const p of S.virt) { p.shp = 70; p.mor = 65; }
   academyWeek(d);
   coachMarket(d);
+  if (typeof eventsWeek === 'function') eventsWeek(d);
   scoutingWeek();
   if (windowOpen()) { genOffers(); aiTransfers(); }
   if (d.ls === 30) { const exp = ut.players.filter(p => p.con <= 1 && !p.loan); if (exp.length) msg('Kontrakty wygasają', `Z końcem sezonu wygasają kontrakty: ${exp.map(shortName).join(', ')}. Przedłuż je w karcie zawodnika.`); }
@@ -728,7 +770,7 @@ function completeTransfer(pid, fee, wage, years) {
   const p = pget(pid), ut = userClub(), seller = clubOf(p);
   detach(p);
   if (seller) { seller.bal += fee; seller.tb += fee; seller.fin.tr += fee; refillAI(seller); }
-  ut.bal -= fee; ut.tb -= fee; ut.fin.tr -= fee;
+  ut.bal -= fee; ut.tb -= fee; ut.fin.tr -= fee; S.bigBuy = Math.max(S.bigBuy || 0, fee);
   attach(p, ut); p.wage = wage; p.con = years; p.mor = clamp(p.mor + 10, 0, 100); p.pt = 0.5;
   S.know[p.id] = 100;
   rebuildIndex(); fillBench(ut);
@@ -774,7 +816,7 @@ function sellTo(offerId) {
   const p = pget(o.pid), ut = userClub(), b = club(o.from);
   if (ut.players.length <= 16) return { ok: false, msg: 'Kadra nie może liczyć mniej niż 16 zawodników.' };
   detach(p); attach(p, b); p.con = ri(2, 5); p.wage = calcWage(p, b.rep);
-  ut.bal += o.amount; ut.tb += o.amount; ut.fin.tr += o.amount; b.bal -= o.amount; b.tb -= o.amount;
+  ut.bal += o.amount; ut.tb += o.amount; ut.fin.tr += o.amount; b.bal -= o.amount; b.tb -= o.amount; S.bigSale = Math.max(S.bigSale || 0, o.amount);
   rebuildIndex(); fillBench(ut);
   news(`${p.n} (${p.ovr}) przechodzi z ${ut.name} do ${b.name} za ${money(o.amount)}.`);
   msg('Sprzedaż', `${p.n} odchodzi do ${b.name} za ${money(o.amount)}.`);
@@ -908,7 +950,7 @@ function promoteYouth(pid) {
   if (!y) return { ok: false, msg: 'Brak zawodnika.' };
   if (ut.players.length >= 32) return { ok: false, msg: 'Kadra pierwszego zespołu pełna (32).' };
   S.acad.youth = S.acad.youth.filter(p => p !== y);
-  y.acad = null; y.con = 3; y.wage = Math.round(calcWage(y, ut.rep) * 0.5 / 100) * 100; attach(y, ut); y.mor = 75;
+  y.acad = null; y.homegrown = true; y.con = 3; y.wage = Math.round(calcWage(y, ut.rep) * 0.5 / 100) * 100; attach(y, ut); y.mor = 75;
   S.know[y.id] = 100; rebuildIndex(); fillBench(ut); saveSoon();
   return { ok: true, msg: `${y.n} awansował do pierwszego zespołu!` };
 }
@@ -945,6 +987,7 @@ function newSeason(first) {
   }
   buildCalendar();
   allocateEurope();
+  buildCups();
   buildNTComps();
   for (const c of S.clubs) { if (c.id !== S.user) autoPick(c); c.fin = { inc: 0, exp: 0, tr: 0 }; }
   if (!first && S.user >= 0) setBoardObjective();
@@ -952,6 +995,7 @@ function newSeason(first) {
 function startCareer(name, clubId, nt, mgrOvr) {
   S.manager = name; S.user = clubId; S.nt = nt || null;
   const ut = userClub(); S.mgr = { ovr: mgrOvr || 50, best: mgrOvr || 50 };
+  S.startClub = ut.id; S.startTier = S.leagues[ut.lg].tier; if (typeof metaInit === 'function') metaInit();
   setBoardObjective(); autoPick(ut);
   msg('Witaj w klubie!', `Zarząd ${ut.name} powierzył Ci stery drużyny. ${S.board.text}${S.board.euro ? ' W Europie: ' + S.board.euro + '.' : ''} Okno transferowe jest otwarte – sprawdź skład, wyślij skautów i wzmocnij zespół.`);
   if (S.nt) msg('Reprezentacja', `Zostałeś także selekcjonerem reprezentacji: ${NAT[S.nt].name}. Powołania znajdziesz w zakładce Klub → Reprezentacja.`);
@@ -983,6 +1027,11 @@ function endSeason() {
     euroOk = reached >= need;
     S.board.conf = clamp(S.board.conf + (reached - need) * 3, 0, 100);
   }
+  // puchary krajowe
+  S.lastCups = {}; for (const cup of Object.values(S.cups || {})) if (cup.champion != null) S.lastCups[cup.cc] = cup.champion;
+  const myCup = S.cups && S.cups[ut.cc];
+  if (myCup && myCup.champion != null) lines.push(`🏆 ${myCup.name}: ${club(myCup.champion).name}.`);
+  if (typeof seasonMeta === 'function') seasonMeta({ finals, upos, wasLg, wasTier, myEuro, myCup, lines });
   // współczynniki
   for (const cc in S.countries) { const c = S.countries[cc], r = S.cpts[cc]; c.coef.shift(); c.coef.push(r && r.n ? Math.round(r.pts / r.n * 1000) / 1000 : 0); }
   for (const id in S.ccoef) { S.ccoef[id].shift(); S.ccoef[id].push(0); }
@@ -1156,6 +1205,6 @@ async function loadSave() {
   try { const db = await idb(); return await new Promise((res, rej) => { const r = db.transaction('s').objectStore('s').get(SAVE_KEY); r.onsuccess = () => res(r.result || null); r.onerror = () => rej(r.error); }); } catch (e) { return null; }
 }
 async function deleteSave() { if (typeof indexedDB === 'undefined') return; try { const db = await idb(); await new Promise(res => { const tx = db.transaction('s', 'readwrite'); tx.objectStore('s').delete(SAVE_KEY); tx.oncomplete = res; }); } catch (e) { } }
-function useSave(s) { S = s; rebuildIndex(); }
+function useSave(s) { S = s; rebuildIndex(); if (typeof metaInit === 'function') metaInit(); }
 
 if (typeof module !== 'undefined') module.exports = { get S() { return S; } };

@@ -213,3 +213,17 @@ label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mut)
 .logo{font-size:48px}
 @media (min-width:700px){#view{padding-top:16px}}
 .club.locked{opacity:.45}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.grid3 .card{margin-bottom:12px;padding:10px}
+.grid3 .stat b{font-size:15px}
+.evcat{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--acc);font-weight:800;margin-bottom:4px}
+.choices{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.choices .btn{text-align:left}
+.fxl{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.quote{font-style:italic;font-size:16px;border-left:3px solid var(--acc);padding-left:10px}
+.httalk{width:100%;display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.httalk small{width:100%;color:var(--mut)}
+.httalk .btn{flex:1}
+.ach{padding:8px 0;border-top:1px solid var(--line);opacity:.45}
+.ach.on{opacity:1}
+.ach small{display:block;color:var(--mut)}

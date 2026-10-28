@@ -53,6 +53,7 @@ function peekUser() {
       else if (c.ko[d.st]) { const t = c.ko[d.st].find(t => t.a === S.user || t.b === S.user); if (t) { const first = d.st === 'F' || d.leg === 1; return { i, d, h: club(first ? t.a : t.b), a: club(first ? t.b : t.a), label: `${c.name} • ${STAGE_NAME[d.st]}${d.st !== 'F' ? (d.leg === 1 ? ' (1. mecz)' : ' (rewanż)') : ''}` }; } }
       else if (c.teams.includes(S.user) && i === S.day) { const x = userMatchToday(); if (x) return { i, d, h: x.h, a: x.a, label: x.opts.label }; }
     }
+    if (d.t === 'C') { const cup = S.cups[userClub().cc], r = d.slot - cup.slot0; if (r >= 0 && r < cup.R) { if (cup.rounds[r]) { const t = cup.rounds[r].find(t => t.h === S.user || t.a === S.user); if (t) return { i, d, h: club(t.h), a: club(t.a), label: `${cup.name} • ${cupRoundName(cup.rounds[r].length * 2)}` }; } else if (cupAlive(cup, r)) return { i, d, h: userClub(), a: { short: '?', name: 'Losowanie', col: ['#334', '#fff'] }, label: `${cup.name} • losowanie` }; } }
     if ((d.t === 'N' || d.t === 'T') && S.nt && i === S.day) { const x = userMatchToday(); if (x) return { i, d, h: x.h, a: x.a, label: x.opts.label, nt: true }; }
     if (d.t === 'N' && S.nt) {
       const g = S.ntc.groups.find(g => g.teams.includes(S.nt));
@@ -76,6 +77,12 @@ function vHome() {
     <div class="fixture"><div class="tm">${badge(nx.h, 'lg')}<span>${esc(nx.h.name)}</span></div><div class="vs">vs</div><div class="tm">${badge(nx.a, 'lg')}<span>${esc(nx.a.name)}</span></div></div>` : '<b>Koniec sezonu</b>'}
     <div class="btns">${today ? `<button class="btn pri sp" data-act="prematch">⚽ Graj mecz</button><button class="btn" data-act="quicksim">⏩ Symuluj</button>` : `<button class="btn pri sp" data-act="cont">▶ Kontynuuj</button>`}</div>
   </div>
+  ${S.pending.length ? `<div class="card hl" data-act="event" data-arg="${S.pending[0].uid}"><div class="row"><span style="font-size:22px">📌</span><b class="sp">Decyzje do podjęcia (${S.pending.length})</b><small>${esc(S.pending[0].title)} ›</small></div></div>` : ''}
+  <div class="grid3">
+    <div class="card stat"><small>🏟️ Kibice</small><b>${Math.round(S.fans)}%</b>${bar(S.fans)}</div>
+    <div class="card stat"><small>📰 Prasa</small><b>${Math.round(S.press)}%</b>${bar(S.press)}</div>
+    <div class="card stat"><small>🧑‍💼 OVR trenera</small><b>${Math.round(S.mgr.ovr)}</b>${bar(S.mgr.ovr)}</div>
+  </div>
   <div class="grid2">
     <div class="card stat"><small>${esc(S.leagues[ut.lg].name)}</small><b>${row.pos}. miejsce</b><small>${row.Pts} pkt • ${row.W}-${row.D}-${row.L}</small><div class="chips">${row.form.slice(-5).map(c => `<span class="chip ${c}">${c === 'W' ? 'Z' : c === 'D' ? 'R' : 'P'}</span>`).join('')}</div></div>
     <div class="card stat"><small>Drużyna</small><b>${moraleLabel(mAvg)[0]} ${moraleLabel(mAvg)[1]}</b><small>Morale ${mAvg} • kondycja ${fAvg}%</small>${bar(fAvg)}</div>
@@ -89,11 +96,29 @@ function vHome() {
   <div class="card"><div class="row"><b>Wiadomości</b><span class="sp"></span><button class="btn sm" data-act="inbox">Wszystkie</button></div>
     ${S.inbox.slice(0, 4).map(m => `<div class="msg ${m.read ? '' : 'new'}"><b>${esc(m.title)}</b><p>${esc(m.body)}</p></div>`).join('')}</div>`;
 }
+function cupAlive(cup, r) {
+  if (r === 0) return !cup.rounds[0] ? cup.teams.includes(S.user) : true;
+  const prev = cup.rounds[r - 1]; if (!prev) return cupAlive(cup, r - 1);
+  if (r === 1 && cup.byes.includes(S.user)) return true;
+  return prev.some(t => t.w === S.user);
+}
 function euroStatus(c) {
   if (c.champion === S.user) return '🏆 Zwycięzca!';
   for (const st of ['F', 'SF', 'QF', 'R16', 'PO']) if (c.ko[st]) { const t = c.ko[st].find(t => t.a === S.user || t.b === S.user); if (t) return t.w == null ? STAGE_NAME[st] : t.w === S.user ? `awans (${STAGE_NAME[st]})` : `odpadli: ${STAGE_NAME[st]}`; }
   const r = lpTable(c).find(r => r.id === S.user); return r ? `faza ligowa: ${r.pos}. m. (${r.Pts} pkt)` : '';
 }
+ACT.event = uid => {
+  const ev = S.pending.find(e => e.uid === +uid); if (!ev) return render();
+  const ctx = ctxDeref(ev.ctx);
+  modal(`<div class="evcat">${esc(ev.cat)}</div><h2>${esc(ev.title)}</h2>${ctx.p ? `<div class="row" style="margin-bottom:8px" data-act="info" data-arg="${ctx.p.id}">${posTag(ctx.p.pos)}<b class="sp">${esc(ctx.p.n)}</b><small class="mut">${pers(ctx.p)} • ${moraleLabel(ctx.p.mor).join(' ')}</small></div>` : ''}
+    <p>${esc(ev.text)}</p><div class="choices">${ev.choices.map((c, i) => `<button class="btn full" data-act="evchoose" data-arg="${ev.uid}:${i}">${esc(c)}</button>`).join('')}</div>`, true);
+};
+ACT.evchoose = a => {
+  const [uid, i] = a.split(':').map(Number); const r = resolveEvent(uid, i); if (!r) return closeModal();
+  modal(`<h2>Decyzja podjęta</h2><p>${esc(r.r)}</p><div class="fxl">${r.fx.map(f => `<span class="pill">${esc(f)}</span>`).join(' ') || '<small class="mut">Bez większych konsekwencji.</small>'}</div>
+    <div class="btns"><button class="btn pri full" data-act="evnext">${S.pending.length ? 'Następna decyzja' : 'OK'}</button></div>`, true);
+};
+ACT.evnext = () => { closeModal(); render(); if (S.pending.length) ACT.event(S.pending[0].uid); };
 ACT.jobs = () => {
   modal(`<h2>📨 Oferty pracy</h2><small class="mut">Twój OVR trenera: ${Math.round(S.mgr.ovr)} (${mgrLabel(S.mgr.ovr)}). Przyjęcie oferty oznacza odejście z ${esc(userClub().name)}.</small>
     ${S.jobs.map(j => { const c = club(j.club), r = table(c.lg).find(x => x.id === c.id); return `<div class="card"><div class="row">${badge(c)}<div class="sp"><b>${esc(c.name)}</b><br><small>${S.countries[c.cc].flag} ${esc(S.leagues[c.lg].name)} • ${r.pos}. miejsce • rep. ${c.rep}</small></div><span class="stars">${stars(c)}</span></div>
@@ -113,18 +138,20 @@ ACT.cont = async () => {
   if (running) return; running = true;
   try {
     if (S.sacked) return showSacked();
+    if (S.pending.length) return ACT.event(S.pending[0].uid);
     if (userMatchToday()) { ACT.prematch(); return; }
     busy(true, 'Symulacja…');
     for (let n = 0; n < 40; n++) {
       const r = processDay(null);
       if (r.summary) { busy(false); await saveNow(); render(); return showSummary(r.summary); }
       if (S.sacked) { busy(false); saveNow(); render(); return showSacked(); }
-      if (userMatchToday()) break;
+      if (userMatchToday() || S.pending.length) break;
       busy(true, `Symulacja… ${fmtDate(curDay().date)}`);
       await new Promise(r => setTimeout(r, 0));
     }
     busy(false); saveNow(); render();
-    if (userMatchToday()) ACT.prematch();
+    if (S.pending.length) ACT.event(S.pending[0].uid);
+    else if (userMatchToday()) ACT.prematch();
   } finally { running = false; busy(false); }
 };
 
@@ -210,7 +237,7 @@ ACT.info = id => {
   const otherPos = p.pos === 'GK' ? [] : POSITIONS.filter(q => q !== 'GK' && q !== p.pos).map(q => [q, ovrAt(p, q)]).sort((a, b) => b[1] - a[1]).slice(0, 4);
   let act = '';
   if (mine) {
-    act = `<h3>Rozmowa</h3><div class="btns"><button class="btn sm" data-act="talk" data-arg="${p.id}:praise">👏 Pochwal</button><button class="btn sm" data-act="talk" data-arg="${p.id}:crit">☝️ Skrytykuj</button><button class="btn sm" data-act="talk" data-arg="${p.id}:promise">🤝 Obiecaj grę</button></div>
+    act = `<h3>Rozmowa indywidualna</h3><div class="btns"><button class="btn sm pri" data-act="chat" data-arg="${p.id}">💬 Porozmawiaj</button>${S.captain === p.id ? '<span class="pill g">©️ Kapitan</span>' : ''}</div>
       ${p.loan ? `<p class="mut">Wypożyczony z ${esc(club(p.loan.from).name)} do końca sezonu.</p><div class="btns"><button class="btn sm red" data-act="release" data-arg="${p.id}">Zakończ wypożyczenie</button></div>` : `
       <h3>Kontrakt (${p.con} ${p.con === 1 ? 'rok' : 'lata'})</h3><div class="btns">${[1, 2, 3, 4, 5].map(y => `<button class="btn sm" data-act="renew" data-arg="${p.id}:${y}">${y} l. • ${money(renewDemand(p, y))}/t</button>`).join('')}</div>
       <div class="btns"><button class="btn sm ${p.listed ? 'pri' : ''}" data-act="list" data-arg="${p.id}">${p.listed ? '✔ Na liście transferowej' : 'Wystaw na sprzedaż'}</button><button class="btn sm" data-act="loanout" data-arg="${p.id}">Wypożycz</button><button class="btn sm red" data-act="release" data-arg="${p.id}">Rozwiąż (${money(p.wage * 20 * p.con)})</button></div>`}`;
@@ -232,7 +259,7 @@ ACT.info = id => {
         <div class="attrs">${names.map((n, i) => `<div><b>${known ? at[i] : '?'}</b> ${n}</div>`).join('')}</div>
         <small>${p.foot === 'L' ? 'Lewa' : 'Prawa'} noga • słabsza ${'★'.repeat(p.wf)} • triki ${'★'.repeat(p.sm)}</small></div></div>
     <div class="row" style="margin:10px 0 4px">${posTag(p.pos)}${(p.alt || []).map(posTag).join('')}<span class="sp mut" style="text-align:right">${esc(clubName(p))}${c ? ' ' + S.countries[c.cc].flag : ''}</span></div>
-    ${stTag(p)}
+    ${stTag(p)}${p.tid === S.user || p.tid === -3 ? `<small class="mut">Charakter: <b>${pers(p)}</b> – ${PERS_DESC[pers(p)]}</small>` : ''}
     <div class="kv">
       <div><span>Wiek</span><b>${p.age}</b></div><div><span>Potencjał</span>${ovrShow(p, true)}</div>
       <div><span>Kondycja</span><b>${Math.round(p.fit)}%</b></div><div><span>Morale</span><b>${moraleLabel(p.mor).join(' ')}</b></div>
@@ -244,6 +271,17 @@ ACT.info = id => {
     </div>
     ${known && otherPos.length ? `<small class="mut">Inne pozycje: ${otherPos.map(([q, v]) => `${POS_PL[q]} ${v}`).join(' • ')}</small>` : ''}
     ${act}<div class="btns"><button class="btn full" data-act="close">Zamknij</button></div>`);
+};
+ACT.chat = id => {
+  const p = pget(+id);
+  const T = [['time', '⏱️ Czas gry'], ['praise', '👏 Pochwała'], ['crit', '☝️ Uwagi o formie'], ['future', '🔮 Przyszłość i ambicje'], ['promise', '🤝 Obietnica gry'], ['captain', '©️ Opaska kapitana']];
+  modal(`<h2>💬 ${esc(p.n)}</h2><small class="mut">${pers(p)} • morale ${moraleLabel(p.mor).join(' ')} • status: ${playerStatus(p)} • minuty: ${Math.round(p.pt * 100)}%</small>
+    <div class="choices">${T.map(([k, n]) => `<button class="btn full" data-act="chatq" data-arg="${p.id}:${k}">${n}</button>`).join('')}</div><div class="btns"><button class="btn full" data-act="close">Zamknij</button></div>`);
+};
+ACT.chatq = a => {
+  const [id, k] = a.split(':'); const p = pget(+id); const r = playerChat(p, k);
+  modal(`<h2>💬 ${esc(p.n)}</h2><p class="quote">${esc(r.t)}</p><div class="fxl">${r.fx.map(f => `<span class="pill">${esc(f)}</span>`).join(' ')}</div><div class="btns"><button class="btn pri sp" data-act="info" data-arg="${p.id}">Karta zawodnika</button><button class="btn" data-act="close">OK</button></div>`);
+  render();
 };
 ACT.talk = a => { const [id, k] = a.split(':'); const r = talkTo(+id, k); toast(r.msg); ACT.info(id); };
 ACT.renew = a => { const [id, y] = a.split(':').map(Number); const r = renewContract(id, y); toast(r.msg); ACT.info(id); render(); };
@@ -311,10 +349,23 @@ ACT.sendterms = () => {
 
 /* ---------- ROZGRYWKI ---------- */
 function vComps() {
-  const head = tabs([['league', 'Ligi'], ['euro', 'Puchary UEFA'], ['rank', 'Ranking UEFA'], ['nt', 'Reprezentacje'], ['hist', 'Historia']], UI.compTab, 'ctab');
-  return head + ({ league: vLeague, euro: vEuro, rank: vRank, nt: vNT, hist: vHist })[UI.compTab]();
+  const head = tabs([['league', 'Ligi'], ['cup', 'Puchary krajowe'], ['euro', 'Puchary UEFA'], ['rank', 'Ranking UEFA'], ['nt', 'Reprezentacje'], ['hist', 'Historia']], UI.compTab, 'ctab');
+  return head + ({ league: vLeague, cup: vCup, euro: vEuro, rank: vRank, nt: vNT, hist: vHist })[UI.compTab]();
 }
 ACT.ctab = a => { UI.compTab = a; render(); };
+function vCup() {
+  if (!UI.cupcc) UI.cupcc = userClub().cc;
+  const cup = S.cups[UI.cupcc];
+  const sel = `<div class="flt"><select data-change="cupcc">${Object.values(S.countries).map(c => `<option value="${c.code}" ${UI.cupcc === c.code ? 'selected' : ''}>${c.flag} ${S.cups[c.code].name}</option>`).join('')}</select></div>`;
+  let body = `<div class="card"><b>${esc(cup.name)}</b><br><small class="mut">${cup.teams.length} klubów ze wszystkich poziomów • ${cup.R} rund • mecze jednym meczem (dogrywka i karne) • zwycięzca gra w Lidze Europy</small>${cup.champion != null ? `<br><b>🏆 ${esc(club(cup.champion).name)}</b>` : ''}</div>`;
+  for (let r = cup.rounds.length - 1; r >= 0; r--) {
+    const ties = cup.rounds[r];
+    body += `<h3>${cupRoundName(ties.length * 2)}</h3><div class="card list">${ties.map(t => fxRow(club(t.h), club(t.a), t.m ? `${t.m.hg} : ${t.m.ag}` : '–', t.h === S.user || t.a === S.user, t.m && (t.m.pens || t.m.et) ? (t.m.pens ? `karne ${t.m.pens.h}:${t.m.pens.a}` : 'po dogrywce') : '')).join('')}</div>`;
+  }
+  if (!cup.rounds.length) body += '<div class="card mut">Pierwsza runda odbędzie się we wrześniu.</div>';
+  return sel + body;
+}
+CHG.cupcc = v => { UI.cupcc = v; render(); };
 function vLeague() {
   const ut = userClub();
   if (!UI.lg) { UI.lg = ut.lg; UI.cc = ut.cc; }
@@ -512,8 +563,8 @@ function vNews() { return `<div class="card">${S.news.map(n => `<div class="msg"
 
 /* ---------- KLUB ---------- */
 function vClub() {
-  const head = tabs([['mgr', 'Trener'], ['acad', 'Akademia'], ['fin', 'Finanse'], ['fac', 'Obiekty'], ['nt', 'Reprezentacja'], ['game', 'Gra']], UI.clubTab, 'cltab');
-  return head + ({ mgr: vMgr, acad: vAcad, fin: vFin, fac: vFac, nt: vNTManage, game: vGame })[UI.clubTab]();
+  const head = tabs([['mgr', 'Trener'], ['troph', 'Gablota'], ['acad', 'Akademia'], ['fin', 'Finanse'], ['fac', 'Obiekty'], ['nt', 'Reprezentacja'], ['game', 'Gra']], UI.clubTab, 'cltab');
+  return head + ({ mgr: vMgr, troph: vTroph, acad: vAcad, fin: vFin, fac: vFac, nt: vNTManage, game: vGame })[UI.clubTab]();
 }
 ACT.cltab = a => { UI.clubTab = a; render(); };
 function vFin() {
@@ -528,6 +579,12 @@ function vFin() {
     ${lf ? `<small class="mut">Ostatni tydzień: bilety ${money(lf.gate)}, TV ${money(lf.tv)}, sponsorzy ${money(lf.spons)}, pensje ${money(lf.wages)} → <b class="${lf.net >= 0 ? 'good' : 'bad'}">${money(lf.net)}</b></small>` : ''}</div>
     <div class="card"><h2>Zarząd</h2>${bar(S.board.conf)}<small>Zaufanie ${Math.round(S.board.conf)}%. ${esc(S.board.text)}${S.board.euro ? ' Europa: ' + esc(S.board.euro) + '.' : ''}</small>
     <div class="kv"><div><span>Menedżer</span><b>${esc(S.manager)}</b></div><div><span>OVR trenera</span><b>${Math.round(S.mgr.ovr)}</b></div></div></div>`;
+}
+function vTroph() {
+  const done = ACH.filter(a => S.ach[a[0]]).length;
+  return `<div class="card"><h2>🏆 Gablota</h2>${S.trophies.length ? S.trophies.slice().reverse().map(t => `<div class="rt"><span>${TROPHY_ICON[t.kind] || '🏆'} ${esc(t.name)}</span><small>${SEASON_LABEL(t.season)}${t.club != null ? ' • ' + esc(club(t.club).short) : ''}</small></div>`).join('') : '<small class="mut">Gablota czeka na pierwsze trofeum.</small>'}</div>
+    <div class="card"><h2>🏅 Osiągnięcia (${done}/${ACH.length})</h2>${ACH.map(([id, n, d]) => `<div class="ach ${S.ach[id] ? 'on' : ''}"><b>${n}</b><small>${d}${S.ach[id] ? ` • ${SEASON_LABEL(S.ach[id])}` : ''}</small></div>`).join('')}</div>
+    <div class="card"><h2>📊 Statystyki</h2><div class="kv"><div><span>Mecze</span><b>${S.stats.games}</b></div><div><span>Zwycięstwa</span><b>${S.stats.wins}</b></div><div><span>Seria bez porażki</span><b>${S.stats.unbeaten}</b></div><div><span>Rekord serii</span><b>${S.stats.bestUnbeaten}</b></div></div></div>`;
 }
 function vMgr() {
   const o = S.mgr.ovr, maxR = maxRepFor(o);
@@ -605,8 +662,10 @@ CHG.import = (v, el) => {
 let M = null, MX = null, MT = null, MS = { speed: 2, paused: true, over: false };
 const SPEED_MS = { 1: 600, 2: 280, 4: 120, 8: 40 };
 const uside = () => MX.user === 'h' ? M.home : M.away;
+let PRESS_DONE = -1, TALK = 'motivate';
 ACT.prematch = () => {
   MX = userMatchToday(); if (!MX) return;
+  if (PRESS_DONE !== S.day) { PRESS_DONE = S.day; const pc = pressConference(MX); if (pc) { PC = pc; return renderPress(); } }
   const mine = MX.user === 'h' ? MX.h : MX.a, opp = MX.user === 'h' ? MX.a : MX.h;
   const msgs = fixLineup(mine, MX.nt ? null : emergencyFor(mine)); if (MX.nt) syncNT(mine);
   const sl = mine.lineup.map(pget), tired = sl.filter(p => p.fit < 65);
@@ -614,21 +673,28 @@ ACT.prematch = () => {
     <div class="fixture"><div class="tm">${badge(MX.h, 'lg')}<span>${esc(MX.h.name)}</span></div><div class="vs">vs</div><div class="tm">${badge(MX.a, 'lg')}<span>${esc(MX.a.name)}</span></div></div>
     <div class="kv"><div><span>Formacja</span><b>${mine.formation}</b></div><div><span>Średnia XI</span><b>${lineupAvg(mine)}</b></div><div><span>Rywal (śr.)</span><b>${Math.round(avg(opp.players.map(p => p.ovr).sort((a, b) => b - a).slice(0, 11)))}</b></div><div><span>Rywal – forma</span><b>${opp.nation ? '–' : table(opp.lg).find(r => r.id === opp.id).form.slice(-5).join('') || '–'}</b></div><div><span>Twój OVR trenera</span><b>${Math.round(S.mgr.ovr)}</b></div><div><span>Trener rywala</span><b>${Math.round(coachOvr(opp))}</b></div></div>
     <h3>Mentalność</h3><div class="seg">${Object.entries(MENT).map(([k, v]) => `<button class="btn sm ${(mine.ment || 'bal') === k ? 'on' : ''}" data-act="prement" data-arg="${k}">${v}</button>`).join('')}</div>
+    <h3>Odprawa przedmeczowa</h3><div class="seg talk">${Object.entries(TALKS).map(([k, v]) => `<button class="btn sm ${TALK === k ? 'on' : ''}" data-act="settalk" data-arg="${k}">${v}</button>`).join('')}</div>
     ${msgs.length ? `<p class="warn">${msgs.map(esc).join('<br>')}</p>` : ''}
     ${tired.length ? `<p class="warn">😮‍💨 Zmęczeni: ${tired.map(p => esc(lastName(p)) + ' ' + Math.round(p.fit) + '%').join(', ')}</p>` : ''}
     <div class="btns"><button class="btn pri sp" data-act="startmatch">▶ Rozpocznij</button><button class="btn" data-act="quicksim">⏩ Symuluj</button></div>
     <div class="btns"><button class="btn full" data-act="goteam">Zmień skład</button></div>`);
 };
+let PC = null;
+function renderPress() {
+  modal(`<div class="evcat">Konferencja prasowa</div><h2>🎤 ${esc(PC.q)}</h2><div class="choices">${PC.a.map((x, i) => `<button class="btn full" data-act="pressans" data-arg="${i}">${esc(x[0])}</button>`).join('')}</div>`, true);
+}
+ACT.pressans = i => { const out = answerPress(PC, +i); toast(out.join(' • ') || 'Dziennikarze zanotowali odpowiedź.'); closeModal(); ACT.prematch(); };
+ACT.settalk = k => { TALK = k; document.querySelectorAll('#modal .talk button').forEach(b => b.classList.toggle('on', b.dataset.arg === k)); };
 ACT.goteam = () => { closeModal(); UI.tab = 'squad'; UI.sqTab = 'pitch'; UI.nt = !!(MX && MX.nt); render(); };
 ACT.prement = k => { const mine = MX.user === 'h' ? MX.h : MX.a; mine.ment = k; if (MX.nt) syncNT(mine); saveSoon(); document.querySelectorAll('#modal .seg button').forEach(b => b.classList.toggle('on', b.dataset.arg === k)); };
 ACT.quicksim = () => {
   closeModal(); MX = userMatchToday(); if (!MX) return;
-  M = createMatch(MX.h, MX.a, { ...MX.opts, user: MX.user, quick: true }); while (!M.over) step(M);
+  M = createMatch(MX.h, MX.a, { ...MX.opts, user: MX.user, quick: true }); doTalk(); while (!M.over) step(M);
   showResult();
 };
 ACT.startmatch = () => {
   closeModal(); MX = userMatchToday(); if (!MX) return;
-  M = createMatch(MX.h, MX.a, { ...MX.opts, user: MX.user });
+  M = createMatch(MX.h, MX.a, { ...MX.opts, user: MX.user }); doTalk();
   MS = { speed: S.settings.speed || 2, paused: false, over: false };
   const el = $('#match'); el.classList.remove('hidden');
   el.innerHTML = `<div class="sb"><small class="lbl">${esc(MX.opts.label)}</small><div class="teams"><div class="tm">${badge(M.home.t, 'lg')}<span>${esc(M.home.t.name)}</span></div><div><div class="score" id="msc">0 : 0</div><div class="min" id="mmin">0'</div></div><div class="tm">${badge(M.away.t, 'lg')}<span>${esc(M.away.t.name)}</span></div></div><div class="scr" id="mscr"></div></div>
@@ -636,6 +702,8 @@ ACT.startmatch = () => {
   ev(M, 'info', null, '📣 Sędzia gwiżdże – zaczynamy!');
   upd(); mctl(); MT = setTimeout(tick, SPEED_MS[MS.speed]);
 };
+function doTalk() { const s = uside(), o = s === M.home ? M.away : M.home; const d = teamTalk(s, TALK, o.t.rep || 50, false, 0); ev(M, 'info', s, `🗣️ Odprawa: ${TALKS[TALK]} – ${d > 2 ? 'zawodnicy są nakręceni!' : d < 0 ? 'w szatni widać nerwowość.' : 'drużyna skupiona.'}`); M.dirty = true; }
+ACT.httalk = k => { const s = uside(), o = s === M.home ? M.away : M.home; const d = teamTalk(s, k, o.t.rep || 50, true, s.goals - o.goals); M.htTalk = true; ev(M, 'info', s, `🗣️ Przerwa: ${TALKS[k]} – ${d > 2 ? 'świetna reakcja zespołu!' : d < 0 ? 'zawodnicy przyjęli to źle.' : 'spokojna reakcja.'}`); M.dirty = true; upd(); mctl(); };
 function tick() {
   if (MS.paused || MS.over) return;
   const r = step(M); upd();
@@ -656,7 +724,8 @@ function upd() {
 function mctl() {
   const c = $('#mctl'); if (!c) return;
   if (MS.over) { c.innerHTML = `<button class="btn pri full" data-act="matchdone">Podsumowanie meczu</button>`; return; }
-  c.innerHTML = `<button class="btn ${MS.paused ? 'pri' : ''}" data-act="mpause">${MS.paused ? '▶ Graj' : '⏸ Pauza'}</button>${[1, 2, 4, 8].map(s => `<button class="btn ${MS.speed === s ? 'on' : ''}" data-act="mspeed" data-arg="${s}">x${s}</button>`).join('')}
+  const htT = MS.paused && M.minute === 45 && !M.htTalk ? `<div class="httalk"><small>Odprawa w przerwie:</small>${Object.entries(TALKS).map(([k, v]) => `<button class="btn sm" data-act="httalk" data-arg="${k}">${v}</button>`).join('')}</div>` : '';
+  c.innerHTML = htT + `<button class="btn ${MS.paused ? 'pri' : ''}" data-act="mpause">${MS.paused ? '▶ Graj' : '⏸ Pauza'}</button>${[1, 2, 4, 8].map(s => `<button class="btn ${MS.speed === s ? 'on' : ''}" data-act="mspeed" data-arg="${s}">x${s}</button>`).join('')}
     <button class="btn" data-act="mtactic">🎯 Taktyka</button><button class="btn" data-act="msubs">🔁 Zmiany ${uside().subs}/${MAX_SUBS}</button><button class="btn" data-act="mskip">⏭ Koniec</button>`;
 }
 ACT.mpause = () => { MS.paused = !MS.paused; mctl(); upd(); if (!MS.paused) { clearTimeout(MT); MT = setTimeout(tick, 50); } };
@@ -699,10 +768,12 @@ ACT.finishday = () => {
   let res = '';
   if (day.t === 'L') { const lg = S.leagues[x.h.lg || userClub().lg]; const rd = lg.fix[lg.lsMap[day.ls]] || []; res = rd.map(f => fxRow(club(f.h), club(f.a), `${f.hg} : ${f.ag}`, f.h === S.user || f.a === S.user)).join(''); }
   else if (day.t === 'E') { const c = Object.values(S.euro).find(c => c.name === label || label.includes(c.name)); if (c) res = day.st === 'LP' ? c.lp[day.md].map(f => fxRow(club(f.h), club(f.a), `${f.hg} : ${f.ag}`, f.h === S.user || f.a === S.user)).join('') : (c.ko[day.st] || []).map(t => koRow(t, day.st === 'F')).join(''); }
+  else if (day.t === 'C') { const cup = S.cups[userClub().cc] || Object.values(S.cups).find(c => label.includes(c.name)); const r = day.slot - cup.slot0; if (cup.rounds[r]) res = cup.rounds[r].map(t => fxRow(club(t.h), club(t.a), `${t.m.hg} : ${t.m.ag}`, t.h === S.user || t.a === S.user, t.m.pens ? `karne ${t.m.pens.h}:${t.m.pens.a}` : t.m.et ? 'po dogrywce' : '')).join(''); }
   else if (day.t === 'N' || day.t === 'T') { res = ''; }
   saveNow(); render();
   if (r.summary) return showSummary(r.summary);
   if (S.sacked) return showSacked();
+  if (S.pending.length && !res) return ACT.event(S.pending[0].uid);
   if (res) modal(`<h2>Wyniki: ${esc(label)}</h2><div class="card list">${res}</div><div class="btns"><button class="btn pri full" data-act="close">OK</button></div>`);
 };
 function showSummary(s) {

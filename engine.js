@@ -98,7 +98,7 @@ function money(n) {
 function calcValue(p) {
   let v = 800000 * Math.exp(0.158 * (p.ovr - 60));
   const a = p.age;
-  v *= a <= 20 ? 1.5 : a <= 23 ? 1.3 : a <= 26 ? 1.1 : a <= 29 ? 1 : a <= 31 ? 0.65 : a <= 33 ? 0.4 : 0.2;
+  v *= a <= 20 ? 1.5 : a <= 23 ? 1.3 : a <= 26 ? 1.1 : a <= 29 ? 1 : a <= 31 ? 0.75 : a <= 33 ? 0.5 : a <= 35 ? 0.3 : 0.15;
   if (a < 25) v *= 1 + Math.max(0, p.pot - p.ovr) * 0.04;
   if (p.pos === 'GK') v *= 0.7;
   const r = v >= 1e7 ? 5e5 : v >= 1e6 ? 5e4 : 1e4;

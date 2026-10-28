@@ -181,7 +181,14 @@ function createWorld() {
     }
   }
   const codes = new Set();
-  for (const cl of S.clubs) { let c = cl.short, k = 1; while (codes.has(c)) c = cl.short.slice(0, 2) + (k++); cl.short = c; codes.add(c); }
+  const fold = t => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ł/g, 'l').replace(/Ł/g, 'L').toUpperCase().replace(/[^A-Z ]/g, '');
+  for (const cl of S.clubs.slice().sort((a, b) => b.rep - a.rep)) {
+    const w = fold(cl.name).split(' ').filter(x => x.length > 2 && !['FC', 'CF', 'AFC', 'SSC', 'SV', 'VFB', 'VFL', 'CLUB', 'REAL', 'SPORTING', 'ATLETICO'].includes(x));
+    const cands = [cl.short, ...(w[0] ? [w[0].slice(0, 3), w[0][0] + w[0].slice(-2)] : []), ...(w[1] ? [w[0][0] + w[1].slice(0, 2), w[1].slice(0, 3)] : [])];
+    let c = cands.find(x => x && x.length === 3 && !codes.has(x)), k = 1;
+    while (!c || codes.has(c)) c = cl.short.slice(0, 2) + (k++);
+    cl.short = c; codes.add(c);
+  }
   for (const cl of S.clubs) { cl.level = teamLevel(cl); setupEconomy(cl); S.ccoef[cl.id] = Array.from({ length: 5 }, () => Math.max(0, Math.round(((cl.rep - 58) * 0.75 + gauss() * 3) * 10) / 10)); }
   for (const n of NATIONS) S.ntTeams[n.code] = { formation: '4-3-3', lineup: [], bench: [], sq: [], ment: 'bal' };
   ensureNationPools();
@@ -323,8 +330,6 @@ function allocateEurope() {
   const strength = id => club(id).rep + clubCoef(id) * 0.3;
   const tableOf = cc => { const top = S.countries[cc].leagues[0]; return (S.lastTables[top] || S.leagues[top].clubs).filter(id => club(id).lg === top || S.leagues[top].clubs.includes(id)); };
   const W = S.lastWinners;
-  for (const w of [W.CL, W.EL]) if (w != null && !used.has(w)) { CL.push(w); used.add(w); }
-  if (W.ECL != null && !used.has(W.ECL)) { EL.push(W.ECL); used.add(W.ECL); }
   rank.forEach((r, i) => {
     const order = tableOf(r.cc).filter(id => !used.has(id)), cw = S.lastCups ? S.lastCups[r.cc] : null;
     const q = i < 4 ? [4, 2, 1] : i < 6 ? [3, 2, 1] : i < 10 ? [2, 2, 1] : [1, 1, 1];
@@ -336,6 +341,10 @@ function allocateEurope() {
     for (let j = 0; j < q[2]; j++) { const id = take(); if (id != null) ECL.push(id); }
     if (i >= 4) { const id = take(); if (id != null) eclPool.push(id); }
   });
+  // obrońcy tytułów: jeśli i tak awansowali z ligi, ich kraj NIE dostaje dodatkowego miejsca (wolne miejsce trafia do puli)
+  const moveTo = (id, L) => { for (const X of [CL, EL, ECL, clPool, elPool, eclPool]) { const j = X.indexOf(id); if (j >= 0) X.splice(j, 1); } L.push(id); used.add(id); };
+  for (const w of [W.CL, W.EL]) if (w != null && !CL.includes(w)) moveTo(w, CL);
+  if (W.ECL != null && !CL.includes(W.ECL) && !EL.includes(W.ECL)) moveTo(W.ECL, EL);
   const fill = (list, pool, n, losers) => {
     pool = pool.filter(id => !list.includes(id));
     while (list.length < n && pool.length) { const w = wpick(pool, id => Math.pow(strength(id), 3)); list.push(w); pool = pool.filter(x => x !== w); }

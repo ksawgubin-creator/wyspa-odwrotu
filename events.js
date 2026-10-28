@@ -194,7 +194,7 @@ const EVENTS = [
     choices: [{ t: 'Przedstaw plan naprawczy', hint: 'zarząd może nie uwierzyć', fx: { board: 6 }, r: 'Zarząd daje Ci jeszcze trochę czasu.', alt: { p: () => S.mem.liar >= 2 ? 0.6 : 0.25, fx: { board: -3 }, r: '„Słyszeliśmy to już wcześniej” – prezes nie dał się przekonać.' } },
       { t: 'Poproś o wzmocnienia', fn: () => rnd() < 0.45 ? { tb: Math.round(userClub().tv * 4), board: -2 } : { board: -5 }, r: 'Rozmowa była napięta.' },
       { t: 'Weź winę na siebie', fx: { board: 3, team: 4, mgr: -0.3 }, r: 'Szatnia docenia, że ich osłaniasz.' }] },
-  { id: 'wonderkid', cat: 'Skauting', w: 2, ctx: () => { const p = PALL.filter(p => p.tid >= 0 && p.tid !== S.user && p.age <= 19 && p.pot >= 78); return p.length ? { p: pick(p) } : null; },
+  { id: 'wonderkid', cat: 'Skauting', w: 2, ext: true, ctx: () => { const p = PALL.filter(p => p.tid >= 0 && p.tid !== S.user && p.age <= 19 && p.pot >= 78); return p.length ? { p: pick(p) } : null; },
     title: 'Cynk o talencie', text: c => `Znajomy agent podsuwa nazwisko: ${c.p.n} (${c.p.age} l., ${clubName(c.p)}). Podobno ogromny potencjał.`,
     choices: [{ t: 'Dodaj do obserwowanych (wiedza 75%)', fn: c => { S.short = [c.p.id, ...S.short.filter(x => x !== c.p.id)]; S.know[c.p.id] = Math.max(S.know[c.p.id] || 0, 75); return {}; }, r: 'Zawodnik trafił na Twoją listę.' },
       { t: 'Zignoruj', fx: {}, r: 'Może kiedyś…' }] },
@@ -331,7 +331,7 @@ function pushEvent(e, ctx) {
   const ev = { uid: S.nextId++, id: e.id, cat: e.cat, title: e.title, text: evText(e.text, ctx), choices: e.choices.map(c => evText(c.t, ctx)), hints: e.choices.map(c => c.hint || ''), ctx: ctxRef(ctx) };
   S.pending.push(ev); S.evSeen[e.id] = S.season; S.evCat[e.cat] = absDay();
   S.evCount = S.evCount || {}; S.evCount[e.id] = (S.evCount[e.id] || 0) + 1;
-  msg(`📌 ${e.title}`, ev.text + ' (wymaga decyzji – Pulpit)');
+  msg(`📌 ${e.title}`, ev.text + ' (wymaga decyzji – Pulpit)'); ev.mid = S.inbox[0].id;
 }
 const ctxRef = c => ({ p: c && c.p ? c.p.id : null, q: c && c.q ? c.q.id : null });
 const ctxDeref = c => ({ p: c.p != null ? pget(c.p) : null, q: c.q != null ? pget(c.q) : null });
@@ -354,6 +354,7 @@ function resolveEvent(uid, ci) {
   const out = applyFx(fx || {}, ctx);
   if (ch.mem) S.mem[ch.mem] = (S.mem[ch.mem] || 0) + 1;
   if (ch.follow && !risky) { const [fid, a, b, pr] = ch.follow; if (rnd() < pr) S.followups.push({ id: fid, due: absDay() + ri(a, b), ctx: ev.ctx }); }
+  const im = ev.mid != null && S.inbox.find(m => m.id === ev.mid); if (im) { im.body = im.body.replace(' (wymaga decyzji – Pulpit)', '') + `\n✔ Decyzja: ${evText(ch.t, ctx)} – ${o.r}`; im.read = true; }
   saveSoon();
   return { r: o.r, fx: out, risky };
 }
@@ -430,7 +431,7 @@ function pressConference(x) {
   metaInit();
   const mine = x.user === 'h' ? x.h : x.a, opp = x.user === 'h' ? x.a : x.h;
   if (x.opts.comp === 'P') return null;
-  const big = x.opts.comp !== 'L' && x.opts.comp !== 'F' || (opp.rep || 50) >= (mine.rep || 50) + 6;
+  const big = x.opts.comp !== 'L' && x.opts.comp !== 'F' || (opp.rep || 50) >= (mine.rep || 50) + 6 || !!(typeof derbyName === 'function' && derbyName(mine.id, opp.id));
   if (!big && rnd() > 0.3) return null;
   const fav = (mine.rep || 50) >= (opp.rep || 50) + 4, ps = mine.players || [], star = ps.slice().sort((a, b) => b.ovr - a.ovr)[0];
   const inj = ps.filter(p => p.inj).sort((a, b) => b.ovr - a.ovr)[0], losing = lastRes(3).filter(r => r === 'L').length >= 2, winning = lastRes(3).filter(r => r === 'W').length >= 3;
@@ -440,6 +441,8 @@ function pressConference(x) {
     { q: 'Jak ocenia Pan atmosferę w zespole?', a: [['„Jesteśmy jak rodzina.”', 'calm', { team: 2, press: 1 }], ['„Wszyscy muszą dać z siebie więcej.”', 'harsh', { team: -2, fans: 2, press: 2 }], ['„To zostaje w szatni.”', 'evasive', { press: -3, team: 1 }]] },
     { q: `Ile zostało do celu zarządu? ${S.board.text}`, a: [['„Idziemy zgodnie z planem.”', 'calm', { board: 2, press: 1 }], ['„Stać nas na więcej niż cel zarządu.”', 'bold', { fans: 4, board: 1, boast: true }], ['„Cele stawia zarząd, ja skupiam się na meczu.”', 'evasive', { board: -2 }]] },
   ];
+  const dn = typeof derbyName === 'function' && mine.id != null ? derbyName(mine.id, opp.id) : null;
+  if (dn) qs.push({ q: `${dn}! Co powie Pan kibicom przed meczem z ${opp.name}?`, a: [['„To dla nas mecz sezonu – damy z siebie wszystko.”', 'calm', { fans: 3, team: 2 }], ['„To miasto/region jest nasze. Pokażemy to na boisku.”', 'bold', { fans: 7, team: 3, press: 2, boast: true }], ['„To tylko trzy punkty, jak w każdym meczu.”', 'evasive', { fans: -5, press: -1 }]] }, { q: `${dn}! Co powie Pan kibicom przed meczem z ${opp.name}?`, a: [['„To dla nas mecz sezonu – damy z siebie wszystko.”', 'calm', { fans: 3, team: 2 }], ['„To miasto/region jest nasze. Pokażemy to na boisku.”', 'bold', { fans: 7, team: 3, press: 2, boast: true }], ['„To tylko trzy punkty, jak w każdym meczu.”', 'evasive', { fans: -5, press: -1 }]] });
   if (losing) qs.push({ q: 'Seria słabych wyników. Czy czuje się Pan zagrożony?', a: [['„Wierzę w ten zespół w 100%.”', 'calm', { team: 3, board: -1 }], ['„Zawodnicy zawodzą – czas na zmiany.”', 'harsh', { team: -5, fans: 3, board: 2 }], ['„Nie będę komentował plotek.”', 'evasive', { press: -4 }]] });
   if (winning) qs.push({ q: 'Seria zwycięstw – czy to drużyna na mistrzostwo?', a: [['„Krok po kroku.”', 'calm', { board: 2 }], ['„Tak, celujemy w tytuł!”', 'bold', { fans: 6, boast: true }], ['„Najpierw utrzymajmy formę.”', 'calm', { team: 1, press: 1 }]] });
   if (star) qs.push({ q: `Czy ${star.n} jest kluczem do sukcesu?`, p: star.id, a: [['„To lider, ale wygrywa drużyna.”', 'calm', { team: 2, player: 2 }], ['„Bez niego bylibyśmy innym zespołem.”', 'bold', { player: 8, team: -3 }], ['„Oczekuję od niego więcej.”', 'harsh', traits(star).pro >= 12 ? { player: 3, form: 4 } : { player: -9 }]] });

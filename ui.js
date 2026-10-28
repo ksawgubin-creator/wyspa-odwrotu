@@ -326,7 +326,13 @@ function vSquadList(t) {
       <span class="mini">${Math.round(p.fit)}%</span>${ovrTag(p.ovr)}<span class="potc">${p.pot}</span></div>`).join('')}</div>`;
 }
 function vTactic(t) {
-  return `<div class="card"><h2>Formacja</h2><div class="seg">${Object.keys(FORMATIONS).map(f => `<button class="btn sm ${t.formation === f ? 'on' : ''}" data-act="setform" data-arg="${f}">${f}</button>`).join('')}</div></div>
+  const sp = t.sp || {}, ps = (t.players || []).filter(p => p.pos !== 'GK').slice().sort((a, b) => b.ovr - a.ovr);
+  const spSel = (k, n, key) => `<div><span>${n}</span><select data-change="setsp" data-k="${k}"><option value="">Automatycznie</option>${ps.map(p => `<option value="${p.id}" ${sp[k] === p.id ? 'selected' : ''}>${esc(lastName(p))} (${key(p)})</option>`).join('')}</select></div>`;
+  const spCard = t._st ? '' : `<div class="card"><h2>Stałe fragmenty gry</h2><div class="kv">
+      ${spSel('pen', '⚽ Rzuty karne', p => 'STR ' + Math.round(p.a[1]))}${spSel('fk', '🎯 Rzuty wolne', p => 'STR ' + Math.round(p.a[1]) + '/POD ' + Math.round(p.a[2]))}${spSel('ck', '🚩 Rzuty rożne', p => 'POD ' + Math.round(p.a[2]))}</div>
+      <small class="mut">Główki po rożnych najczęściej wygrywają silni (FIZ) środkowi obrońcy i napastnicy.</small></div>
+    <div class="card"><h2>Rotacja</h2><div class="row"><span class="sp">Asystent automatycznie wstawia wypoczętych zmienników za zawodników z kondycją poniżej 70%</span><button class="btn sm ${S.settings.autoRot ? 'pri' : ''}" data-act="autorot">${S.settings.autoRot ? 'Włączona' : 'Wyłączona'}</button></div></div>`;
+  return spCard + `<div class="card"><h2>Formacja</h2><div class="seg">${Object.keys(FORMATIONS).map(f => `<button class="btn sm ${t.formation === f ? 'on' : ''}" data-act="setform" data-arg="${f}">${f}</button>`).join('')}</div></div>
     <div class="card"><h2>Mentalność</h2><div class="seg">${Object.entries(MENT).map(([k, v]) => `<button class="btn sm ${(t.ment || 'bal') === k ? 'on' : ''}" data-act="setment" data-arg="${k}">${v}</button>`).join('')}</div>
     <small class="mut">Ofensywna: więcej strzałów, ale też więcej okazji rywala. Defensywna: mniej ryzyka.</small></div>
     ${t._st ? '' : `<div class="card"><h2>Trening</h2><select data-change="training" style="width:100%">${Object.entries({ bal: 'Zrównoważony (pomocnicy)', fit: 'Kondycja (szybsza regeneracja)', att: 'Atak (napastnicy)', def: 'Obrona (obrońcy, bramkarze)' }).map(([k, v]) => `<option value="${k}" ${t.training === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
@@ -879,9 +885,17 @@ function vFin() {
     <div class="card"><h2>Zarząd</h2>${bar(S.board.conf)}<small>Zaufanie ${Math.round(S.board.conf)}%. ${esc(S.board.text)}${S.board.euro ? ' Europa: ' + esc(S.board.euro) + '.' : ''}</small>
     <div class="kv"><div><span>Menedżer</span><b>${esc(S.manager)}</b></div><div><span>OVR trenera</span><b>${Math.round(S.mgr.ovr)}</b></div></div></div>`;
 }
+const AWN = { potm: '🏅 Piłkarz miesiąca', pots: '⭐ Piłkarz sezonu', yots: '🌱 Młodzieżowiec sezonu', boot: '👟 Król strzelców', motm: '🧑‍💼 Trener sezonu' };
+function awardsCard() {
+  const A = (S.awards || []).filter(a => a.k === 'motm' || (pget(a.pid) && (pget(a.pid).tid === S.user || a.club === userClub().short))).slice(-30).reverse();
+  const L = (S.awards || []).filter(a => a.lg === userClub().lg && a.k !== 'potm' && a.k !== 'motm').slice(-8).reverse();
+  return `<div class="card"><h2>🎖️ Nagrody indywidualne</h2>${A.length ? A.map(a => `<div class="rt" ${a.pid ? `data-act="info" data-arg="${a.pid}"` : ''}><span>${AWN[a.k]} • ${esc(a.n)}</span><small>${a.m != null ? MONTHS[a.m] + ' ' : ''}${SEASON_LABEL(a.s)}</small></div>`).join('') : '<small class="mut">Twoi zawodnicy nie zdobyli jeszcze nagród. Piłkarz miesiąca wybierany jest w każdej lidze na początku miesiąca.</small>'}
+    ${L.length ? `<h3>Ostatnie nagrody w lidze</h3>${L.map(a => `<div class="rt" data-act="info" data-arg="${a.pid}"><span>${AWN[a.k]} • ${esc(a.n)} <small class="mut">${esc(a.club)}</small></span><small>${SEASON_LABEL(a.s)}</small></div>`).join('')}` : ''}</div>`;
+}
 function vTroph() {
   const done = ACH.filter(a => S.ach[a[0]]).length;
   return `<div class="card"><h2>🏆 Gablota</h2>${S.trophies.length ? S.trophies.slice().reverse().map(t => `<div class="rt"><span>${TROPHY_ICON[t.kind] || '🏆'} ${esc(t.name)}</span><small>${SEASON_LABEL(t.season)}${t.club != null ? ' • ' + esc(club(t.club).short) : ''}</small></div>`).join('') : '<small class="mut">Gablota czeka na pierwsze trofeum.</small>'}</div>
+    ${awardsCard()}
     <div class="card"><h2>🏅 Osiągnięcia (${done}/${ACH.length})</h2>${ACH.map(([id, n, d]) => `<div class="ach ${S.ach[id] ? 'on' : ''}"><b>${n}</b><small>${d}${S.ach[id] ? ` • ${SEASON_LABEL(S.ach[id])}` : ''}</small></div>`).join('')}</div>
     <div class="card"><h2>📊 Statystyki</h2><div class="kv"><div><span>Mecze</span><b>${S.stats.games}</b></div><div><span>Zwycięstwa</span><b>${S.stats.wins}</b></div><div><span>Seria bez porażki</span><b>${S.stats.unbeaten}</b></div><div><span>Rekord serii</span><b>${S.stats.bestUnbeaten}</b></div></div></div>`;
 }
@@ -991,26 +1005,31 @@ ACT.prematch = () => {
   MX = userMatchToday(); if (!MX) return;
   if (PRESS_DONE !== S.day) { PRESS_DONE = S.day; const pc = pressConference(MX); if (pc) { PC = pc; return renderPress(); } }
   const mine = MX.user === 'h' ? MX.h : MX.a, opp = MX.user === 'h' ? MX.a : MX.h;
+  if (!MX.nt && S.settings.autoRot && PRE_ROT !== S.day) { PRE_ROT = S.day; const r = rotateTired(mine, 70); if (r.length) toast(`Asystent zrotował składem: ${r.length} ${r.length === 1 ? 'zmiana' : 'zmiany'}.`, 'ok'); }
   const msgs = fixLineup(mine, MX.nt ? null : emergencyFor(mine)); if (MX.nt) syncNT(mine);
   const sl = mine.lineup.map(pget), tired = sl.filter(p => p.fit < 65);
   modal(`<h2>Przed meczem</h2><small class="mut">${esc(MX.opts.label)}</small>
     <div class="fixture"><div class="tm">${badge(MX.h, 'lg')}<span>${esc(MX.h.name)}</span></div><div class="vs">vs</div><div class="tm">${badge(MX.a, 'lg')}<span>${esc(MX.a.name)}</span></div></div>
     <div class="kv"><div><span>Formacja</span><b>${mine.formation}</b></div><div><span>Średnia XI</span><b>${lineupAvg(mine)}</b></div><div><span>Rywal (śr.)</span><b>${Math.round(avg(opp.players.map(p => p.ovr).sort((a, b) => b - a).slice(0, 11)))}</b></div><div><span>Rywal – forma</span><b>${opp.nation ? '–' : table(opp.lg).find(r => r.id === opp.id).form.slice(-5).map(f => f === 'W' ? 'Z' : f === 'D' ? 'R' : 'P').join('') || '–'}</b></div><div><span>Twój OVR trenera</span><b>${Math.round(S.mgr.ovr)}</b></div><div><span>Trener rywala</span><b>${Math.round(coachOvr(opp))}</b></div></div>
+    ${MX.nt ? '' : (() => { const dn = derbyName(mine.id, opp.id), r = h2hRec(opp.id), n = r.w + r.d + r.l; return (dn ? `<div class="card hl" style="margin:8px 0"><b>🔥 ${esc(dn)}</b><br><small class="mut">Mecz z odwiecznym rywalem – wynik podwójnie wpłynie na kibiców, zarząd i morale. Stadion wypełni się po brzegi.</small></div>` : '') + (n ? `<small class="mut">Bilans Twoich meczów z tym rywalem: ${r.w} Z • ${r.d} R • ${r.l} P</small>` : ''); })()}
     ${MX.nt ? '' : `<p class="hint">🧑‍💼 ${esc(assistantTip(opp))}</p>`}
     <h3>Mentalność</h3><div class="seg">${Object.entries(MENT).map(([k, v]) => `<button class="btn sm ${(mine.ment || 'bal') === k ? 'on' : ''}" data-act="prement" data-arg="${k}">${v}</button>`).join('')}</div>
     <h3>Odprawa przedmeczowa</h3><div class="seg talk">${Object.entries(TALKS).map(([k, v]) => `<button class="btn sm ${TALK === k ? 'on' : ''}" data-act="settalk" data-arg="${k}">${v}</button>`).join('')}</div>
     ${msgs.length ? `<p class="warn">${msgs.map(esc).join('<br>')}</p>` : ''}
-    ${tired.length ? `<p class="warn">😮‍💨 Zmęczeni: ${tired.map(p => esc(lastName(p)) + ' ' + Math.round(p.fit) + '%').join(', ')}</p>` : ''}
+    ${tired.length ? `<p class="warn">😮‍💨 Zmęczeni: ${tired.map(p => esc(lastName(p)) + ' ' + Math.round(p.fit) + '%').join(', ')}</p>${MX.nt ? '' : '<div class="btns"><button class="btn sm full" data-act="rotate">🔄 Rotuj zmęczonych (wstaw wypoczętych zmienników)</button></div>'}` : ''}
     <div class="btns"><button class="btn pri sp" data-act="startmatch">▶ Rozpocznij</button><button class="btn" data-act="quicksim">⏩ Symuluj</button></div>
     <div class="btns"><button class="btn full" data-act="goteam">Zmień skład</button></div>`);
 };
-let PC = null;
+let PC = null, PRE_ROT = -1;
+ACT.rotate = () => { const mine = MX.user === 'h' ? MX.h : MX.a, r = rotateTired(mine, 72); saveSoon(); toast(r.length ? `Zmiany: ${r.join(', ')}` : 'Brak wypoczętych zmienników na tych pozycjach.', r.length ? 'ok' : 'bad'); ACT.prematch(); };
 function renderPress() {
   modal(`<div class="evcat">Konferencja prasowa</div><h2>🎤 ${esc(PC.q)}</h2><div class="choices">${PC.a.map((x, i) => `<button class="btn full" data-act="pressans" data-arg="${i}">${esc(x[0])}</button>`).join('')}</div>`, true);
 }
 ACT.pressans = i => { const out = answerPress(PC, +i); toast(out.join(' • ') || 'Dziennikarze zanotowali odpowiedź.'); closeModal(); ACT.prematch(); };
 ACT.settalk = k => { TALK = k; document.querySelectorAll('#modal .talk button').forEach(b => b.classList.toggle('on', b.dataset.arg === k)); };
 ACT.goteam = () => { closeModal(); UI.tab = 'squad'; UI.sqTab = 'pitch'; UI.nt = !!(MX && MX.nt); render(); };
+CHG.setsp = (v, el) => { const t = userClub(); t.sp = t.sp || {}; t.sp[el.dataset.k] = v === '' ? null : +v; saveSoon(); toast('Zapisano wykonawcę stałych fragmentów.', 'ok'); };
+ACT.autorot = () => { S.settings.autoRot = !S.settings.autoRot; saveSoon(); render(); };
 ACT.prement = k => { const mine = MX.user === 'h' ? MX.h : MX.a; mine.ment = k; if (MX.nt) syncNT(mine); saveSoon(); document.querySelectorAll('#modal .seg button').forEach(b => b.classList.toggle('on', b.dataset.arg === k)); };
 ACT.quicksim = () => {
   closeModal(); MX = userMatchToday(); if (!MX) return;

@@ -142,6 +142,20 @@ function fillBench(t) {
   t.bench = bench.map(p => p.id);
 }
 /* naprawia skład (np. gracza): niedostępni zastępowani najlepszymi wolnymi */
+// rotacja: zmęczonych zawodników z podstawowego składu zastępuje najlepszy wypoczęty zmiennik na tej pozycji
+function rotateTired(t, thr = 70) {
+  const slots = slotsOf(t.formation), out = [];
+  t.lineup.forEach((id, i) => {
+    const p = pget(id); if (!p || p.fit >= thr) return;
+    const pos = slots[i].pos, cur = ovrAt(p, pos);
+    const cand = t.players.filter(q => !t.lineup.includes(q.id) && isAvail(q) && q.fit >= Math.max(thr + 8, p.fit + 15) && ovrAt(q, pos) >= cur - 7).sort((a, b) => pickScore(b, pos) - pickScore(a, pos))[0];
+    if (!cand) return;
+    t.lineup[i] = cand.id; t.bench = t.bench.filter(x => x !== cand.id); if (!t.bench.includes(p.id)) t.bench.push(p.id);
+    out.push(`${shortName(p)} (${Math.round(p.fit)}%) → ${shortName(cand)} (${Math.round(cand.fit)}%)`);
+  });
+  if (typeof fillBench === 'function') fillBench(t);
+  return out;
+}
 function fixLineup(t, emergency) {
   const slots = slotsOf(t.formation), msgs = [];
   const mine = new Set(t.players.map(p => p.id));
@@ -217,21 +231,31 @@ function doShot(m, A, D) {
   const sh = wpick(c, s => SHOT_W[s.pos] * Math.pow((s.p.pos === 'GK' ? 20 : s.p.a[1]) / 60, 3));
   const gk = D.pitch.find(s => s.pos === 'GK');
   const gkE = gk ? effNow(D, gk, m.minute) : 30;
-  const fin = (0.65 * (sh.p.pos === 'GK' ? 20 : sh.p.a[1]) + 0.35 * sh.ov) * cond(sh.p, fitNow(A, sh, m.minute));
-  const penalty = rnd() < 0.025;
-  const q = fin / (0.5 * gkE + 0.5 * D.str.def);
-  const pg = penalty ? 0.78 : clamp(0.083 * Math.pow(q, FIN_EXP), 0.02, 0.4);
-  A.shots++;
+  // stałe fragmenty: karny (wykonawca z taktyki), rzut wolny, główka po rożnym
+  const sp = A.t.sp || {}, onP = id => id != null && c.find(s => s.p.id === id), r0 = rnd();
+  const kind = r0 < 0.013 ? 'pen' : r0 < 0.055 ? 'fk' : r0 < 0.13 ? 'head' : '';
   let shooter = sh;
-  if (penalty) { shooter = c.slice().sort((x, y) => y.p.a[1] - x.p.a[1])[0]; ev(m, 'info', A, `Rzut karny dla ${A.t.name}! Do piłki podchodzi ${shortName(shooter.p)}...`); }
+  if (kind === 'pen') shooter = onP(sp.pen) || c.slice().sort((x, y) => y.p.a[1] - x.p.a[1])[0];
+  else if (kind === 'fk') shooter = onP(sp.fk) || c.slice().sort((x, y) => (y.p.a[1] * 0.6 + y.p.a[2] * 0.4) - (x.p.a[1] * 0.6 + x.p.a[2] * 0.4))[0];
+  else if (kind === 'head') { const hs = c.filter(s => ['CB', 'ST', 'CDM'].includes(s.pos)); if (hs.length) shooter = wpick(hs, s => Math.pow(s.p.a[5] / 60, 3) * (s.pos === 'ST' ? 1.5 : 1)); }
+  const penalty = kind === 'pen';
+  const fin = (0.65 * (shooter.p.pos === 'GK' ? 20 : kind === 'head' ? (shooter.p.a[5] + shooter.p.a[1]) / 2 : shooter.p.a[1]) + 0.35 * shooter.ov) * cond(shooter.p, fitNow(A, shooter, m.minute));
+  const q = fin / (0.5 * gkE + 0.5 * D.str.def);
+  const pg = penalty ? 0.76 + (shooter.p.a[1] - 70) / 400 : clamp(0.083 * Math.pow(q, FIN_EXP), 0.02, 0.4) * (kind === 'fk' ? 0.75 : kind === 'head' ? 0.85 : 1);
+  A.shots++;
+  if (penalty) ev(m, 'info', A, `Rzut karny dla ${A.t.name}! Do piłki podchodzi ${shortName(shooter.p)}...`);
+  else if (kind === 'fk') ev(m, 'info', A, `Rzut wolny dla ${A.t.name} w dogodnej odległości. Do piłki podchodzi ${shortName(shooter.p)}...`);
+  else if (kind === 'head') A.corners++;
   const nm = shortName(shooter.p), kn = gk ? lastName(gk.p) : 'obrońca';
   if (rnd() < pg) {
     A.sot++; A.goals++;
     let ast = null;
-    if (!penalty && rnd() < 0.75) { const cc = A.pitch.filter(s => s !== shooter && s.pos !== 'GK'); if (cc.length) ast = wpick(cc, s => (LINE[s.pos] === 'DEF' ? 1 : 3) * (s.p.a[2] / 60)).p; }
+    if (kind === 'head') { const tk = onP(sp.ck) || c.slice().sort((x, y) => y.p.a[2] - x.p.a[2])[0]; if (tk && tk !== shooter) ast = tk.p; }
+    else if (!penalty && kind !== 'fk' && rnd() < 0.75) { const cc = A.pitch.filter(s => s !== shooter && s.pos !== 'GK'); if (cc.length) ast = wpick(cc, s => (LINE[s.pos] === 'DEF' ? 1 : 3) * (s.p.a[2] / 60)).p; }
     A.rec[shooter.p.id].g++; if (ast) A.rec[ast.id].a++;
     A.scorers.push({ min: m.minute, name: shortName(shooter.p), pen: penalty, pid: shooter.p.id });
-    ev(m, 'goal', A, `⚽ GOL! ${A.t.name}! ` + pick(GOAL_TXT).replace('{s}', nm) + (ast ? ` Asysta: ${shortName(ast)}.` : penalty ? ' (rzut karny)' : ''), { pid: shooter.p.id });
+    const gt = kind === 'fk' ? `${nm} uderza z rzutu wolnego – piłka ląduje w okienku!` : kind === 'head' ? `${nm} wygrywa pojedynek w powietrzu po rzucie rożnym i główkuje do siatki!` : pick(GOAL_TXT).replace('{s}', nm);
+    ev(m, 'goal', A, `⚽ GOL! ${A.t.name}! ` + gt + (ast ? ` Asysta: ${shortName(ast)}.` : penalty ? ' (rzut karny)' : ''), { pid: shooter.p.id });
     m.dirty = true; m.alert = 'goal';
   } else if (rnd() < 0.42) {
     A.sot++; if (gk) D.rec[gk.p.id].sv++;
@@ -347,7 +371,7 @@ function finishMatch(m) {
       let rating = 6.2 + gd * 0.18 + r.g * 1.1 + r.a * 0.6 - r.r * 1.6 - r.y * 0.15 + r.sv * 0.25 + gauss() * 0.5;
       if (LINE[r.pos] === 'GK' || LINE[r.pos] === 'DEF') rating += (opp.goals === 0 ? 0.5 : 0) - opp.goals * 0.2;
       r.rating = clamp(Math.round(rating * 10) / 10, 3, 10); r.mins = mins;
-      p.fit = clamp(p.fit - mins * (p.pos === 'GK' ? 0.1 : 0.24), 15, 100);
+      p.fit = clamp(p.fit - mins * (p.pos === 'GK' ? 0.08 : 0.19), 15, 100);
       p.form = Math.round(clamp(p.form * 0.65 + clamp((r.rating - 4) / 5 * 100, 0, 100) * 0.35, 0, 100));
       p.mor = clamp(p.mor + (gd > 0 ? 3 : gd < 0 ? -3 : 0) + (r.rating >= 7.5 ? 2 : r.rating <= 5.5 ? -2 : 0), 0, 100);
       if (club) {

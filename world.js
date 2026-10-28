@@ -601,9 +601,9 @@ function dayMatches(d) {
   if (d.t === 'L') {
     for (const lg of Object.values(S.leagues)) {
       const r = lg.lsMap[d.ls]; if (r == null || r < 0) continue;
-      for (const f of lg.fix[r]) clubDesc(f.h, f.a, { comp: 'L', label: lg.name }, m => {
+      for (const f of lg.fix[r]) clubDesc(f.h, f.a, { comp: 'L', label: lg.name + (derbyName(f.h, f.a) ? ' • 🔥 ' + derbyName(f.h, f.a) : '') }, m => {
         f.hg = m.home.goals; f.ag = m.away.goals; f.p = 1;
-        const c = club(f.h), fill = clamp(0.55 + c.rep / 250 + (S.leagues[c.lg].tier === 1 ? 0.05 : 0) + (c.id === S.user && S.fans != null ? (S.fans - 60) / 300 : 0), 0.3, 1) * (c.cap0 ? Math.min(1, c.cap0 * 1.25 / c.cap) : 1);
+        const c = club(f.h), fill = clamp(0.55 + c.rep / 250 + (S.leagues[c.lg].tier === 1 ? 0.05 : 0) + (c.id === S.user && S.fans != null ? (S.fans - 60) / 300 : 0), 0.3, 1) * (c.cap0 ? Math.min(1, c.cap0 * 1.25 / c.cap) : 1) * (derbyName(f.h, f.a) ? 1.15 : 1);
         const gate = Math.round(c.cap * fill * c.price); c.bal += gate; c.fin.inc += gate; c._gate = gate;
       });
     }
@@ -743,12 +743,34 @@ function recover(gap) {
     if (p.inj) { p.inj = Math.max(0, p.inj - gap * (mine ? 0.75 + staffAb('phy') / 40 : 1)); if (!p.inj && c === ut) msg('Powrót do zdrowia', `${p.n} wrócił do pełnej sprawności.`); }
   }
 }
+/* ---------- derby i rywalizacje ---------- */
+const RIVALS = [['Legia Warszawa', 'Polonia Warszawa', 'Derby Warszawy'], ['Wisła Kraków', 'Cracovia', 'Święta Wojna'], ['Legia Warszawa', 'Lech Poznań', 'Klasyk polskiej piłki'], ['Górnik Zabrze', 'Ruch Chorzów', 'Wielkie Derby Śląska'], ['Lechia Gdańsk', 'Arka Gdynia', 'Derby Trójmiasta'], ['ŁKS Łódź', 'Widzew Łódź', 'Derby Łodzi'], ['Legia Warszawa', 'Widzew Łódź', 'Klasyk'],
+  ['Liverpool', 'Everton', 'Derby Merseyside'], ['Manchester City', 'Manchester United', 'Derby Manchesteru'], ['Arsenal', 'Tottenham Hotspur', 'Derby północnego Londynu'], ['Liverpool', 'Manchester United', 'North West Derby'], ['Newcastle United', 'Sunderland', 'Tyne–Wear Derby'], ['Aston Villa', 'Birmingham City', 'Derby Birmingham'],
+  ['Real Madrid', 'FC Barcelona', 'El Clásico'], ['Real Madrid', 'Atlético Madrid', 'Derby Madrytu'], ['Sevilla', 'Real Betis', 'Derby Sewilli'], ['Athletic Club', 'Real Sociedad', 'Derby Basków'],
+  ['Inter', 'AC Milan', 'Derby della Madonnina'], ['AS Roma', 'Lazio', 'Derby della Capitale'], ['Juventus', 'Torino', 'Derby della Mole'], ['Juventus', 'Inter', "Derby d'Italia"], ['Genoa', 'Sampdoria', 'Derby della Lanterna'],
+  ['Borussia Dortmund', 'FC Schalke 04', 'Revierderby'], ['Bayern Monachium', 'Borussia Dortmund', 'Der Klassiker'], ['Hamburger SV', 'FC St. Pauli', 'Derby Hamburga'], ['1. FC Köln', 'Borussia Mönchengladbach', 'Derby Nadrenii'],
+  ['Paris Saint-Germain', 'Olympique Marsylia', 'Le Classique'], ['Olympique Lyon', 'AS Saint-Étienne', 'Derby Rodanu'], ['Ajax', 'Feyenoord', 'De Klassieker'], ['Ajax', 'PSV Eindhoven', 'Topper'],
+  ['Benfica', 'Sporting CP', 'Derby Lizbony'], ['FC Porto', 'Benfica', 'O Clássico'], ['Galatasaray', 'Fenerbahçe', 'Derby Stambułu'], ['Beşiktaş', 'Fenerbahçe', 'Derby Stambułu'], ['Galatasaray', 'Beşiktaş', 'Derby Stambułu'],
+  ['Celtic', 'Rangers', 'Old Firm'], ['Olympiakos Pireus', 'Panathinaikos', 'Derby wiecznych rywali'], ['AEK Ateny', 'PAOK Saloniki', 'Derby Grecji'], ['Crvena zvezda', 'Partizan Belgrad', 'Wieczne derby'], ['Dinamo Zagrzeb', 'Hajduk Split', 'Wieczne derby'],
+  ['Slavia Praga', 'Sparta Praga', 'Derby Pragi'], ['Rapid Wiedeń', 'Austria Wiedeń', 'Derby Wiednia'], ['Club Brugge', 'RSC Anderlecht', 'Klasyk Belgii'], ['RSC Anderlecht', 'Standard Liège', 'Klasyk Belgii'], ['FC Kopenhaga', 'Brøndby IF', 'Derby Kopenhagi'],
+  ['AIK Solna', 'Djurgårdens IF', 'Derby Sztokholmu'], ['Djurgårdens IF', 'Hammarby IF', 'Derby Sztokholmu'], ['Dynamo Kijów', 'Szachtar Donieck', 'Klasyk Ukrainy'], ['FC Basel', 'FC Zürich', 'Klasyk Szwajcarii'], ['Rosenborg BK', 'Molde FK', 'Klasyk Norwegii'],
+  ['Boca Juniors', 'River Plate', 'Superclásico'], ['Flamengo', 'Fluminense', 'Fla-Flu'], ['Corinthians', 'Palmeiras', 'Derby Paulista'], ['LA Galaxy', 'Los Angeles FC', 'El Tráfico'], ['Club América', 'Guadalajara', 'Clásico Nacional'],
+  ['Ferencváros', 'Újpest', 'Derby Budapesztu'], ['FCSB', 'Dinamo Bukareszt', 'Wieczne derby'], ['Maccabi Tel Awiw', 'Hapoel Tel Awiw', 'Derby Tel Awiwu'], ['APOEL Nikozja', 'Omonia Nikozja', 'Derby Nikozji'], ['Lewski Sofia', 'CSKA Sofia', 'Wieczne derby'], ['Linfield', 'Glentoran', 'Big Two'], ['Al-Hilal', 'Al-Nassr', 'Derby Rijadu'], ['Al-Ittihad', 'Al-Ahli', 'Derby Dżuddy']];
+let RIVAL_IDX = null;
+function derbyName(a, b) {
+  if (!RIVAL_IDX) { RIVAL_IDX = {}; const byName = {}; for (const c of S.clubs) byName[c.name] = c.id; for (const [x, y, n] of RIVALS) if (byName[x] != null && byName[y] != null) RIVAL_IDX[Math.min(byName[x], byName[y]) + '-' + Math.max(byName[x], byName[y])] = n; }
+  if (a == null || b == null) return null; return RIVAL_IDX[Math.min(a, b) + '-' + Math.max(a, b)] || null;
+}
+function h2hRec(opp) { const r = (S.h2h || {})[opp]; return r || { w: 0, d: 0, l: 0 }; }
 function afterUserClubMatch(m, x) {
   const mine = x.user === 'h' ? m.home : m.away, opp = x.user === 'h' ? m.away : m.home;
   const gd = mine.goals - opp.goals;
   let d = gd > 0 ? 2 : gd < 0 ? -2.5 : 0;
   d += clamp((opp.t.rep - mine.t.rep) / 25, -1, 1) * (gd > 0 ? 1 : gd < 0 ? 0.6 : 0.5);
   if (m.comp !== 'L') d *= 0.6;
+  const dn = derbyName(mine.t.id, opp.t.id);
+  if (dn) { d *= 1.6; S.fans = clamp(S.fans + (gd > 0 ? 4 : gd < 0 ? -5 : 0), 0, 100); for (const p of mine.t.players) p.mor = clamp(p.mor + (gd > 0 ? 4 : gd < 0 ? -4 : 0), 0, 100); if (gd !== 0) msg(gd > 0 ? `🔥 Wygraliśmy ${dn}!` : `💔 Przegrane ${dn}`, gd > 0 ? 'Miasto należy do nas! Kibice świętują, a zawodnicy są w świetnych nastrojach.' : 'Bolesna porażka z największym rywalem. Kibice nie zapomną tego szybko.'); }
+  S.h2h = S.h2h || {}; const hr = S.h2h[opp.t.id] = S.h2h[opp.t.id] || { w: 0, d: 0, l: 0 }; if (gd > 0) hr.w++; else if (gd < 0) hr.l++; else hr.d++;
   S.board.conf = clamp(S.board.conf + d, 0, 100);
   mgrGain(gd > 0 ? (opp.t.rep > mine.t.rep ? 0.12 : 0.05) : gd < 0 ? -0.04 : 0.01);
   if (typeof afterMatchMeta === 'function') afterMatchMeta(m, x, mine, opp, gd);
@@ -756,8 +778,43 @@ function afterUserClubMatch(m, x) {
 }
 
 /* ---------- tydzień ---------- */
+/* ---------- nagrody: piłkarz miesiąca, nagrody sezonu ---------- */
+const MONTHS = ['styczeń', 'luty', 'marzec', 'kwiecień', 'maj', 'czerwiec', 'lipiec', 'sierpień', 'wrzesień', 'październik', 'listopad', 'grudzień'];
+function monthAwards(d) {
+  const mo = new Date(d.date).getUTCMonth(), ut = userClub(), lg = S.leagues[ut.lg];
+  if (S.moNow == null) S.moNow = mo;
+  if (mo === S.moNow) return;
+  const prevMo = S.moNow; S.moNow = mo;
+  const snap = S.moSnap || {}, ps = lg.clubs.flatMap(id => club(id).players);
+  if (S.moSnap) {
+    const sc = ps.map(p => { const o = snap[p.id] || [0, 0, 0, 0], apps = p.st.apps - o[0]; if (apps < 3) return null; const r = (p.st.rs - o[1]) / apps, g = p.st.g - o[2], a = p.st.a - o[3]; return { p, r, g, a, v: r + g * 0.12 + a * 0.06 }; }).filter(Boolean).sort((x, y) => y.v - x.v);
+    const w = sc[0];
+    if (w) {
+      const p = w.p, c = clubOf(p), mine = p.tid === S.user;
+      (p.awards = p.awards || []).push({ k: 'potm', s: S.season, m: prevMo, lg: lg.name });
+      (S.awards = S.awards || []).push({ k: 'potm', s: S.season, m: prevMo, pid: p.id, n: p.n, club: c ? c.short : '', lg: lg.id });
+      news(`🏅 Piłkarz miesiąca (${MONTHS[prevMo]}) w ${lg.name}: ${p.n} (${c ? c.name : ''}) – śr. ocena ${w.r.toFixed(2)}, ${w.g} goli, ${w.a} asyst.`);
+      if (mine) { p.mor = clamp(p.mor + 10, 0, 100); p.val = Math.round(p.val * 1.05); msg('🏅 Piłkarz miesiąca!', `${p.n} został wybrany piłkarzem miesiąca (${MONTHS[prevMo]}) w ${lg.name}! Średnia ocena ${w.r.toFixed(2)}, ${w.g} goli i ${w.a} asyst. Morale i wartość zawodnika rosną.`); }
+      // trener miesiąca: najlepszy bilans punktowy w miesiącu (tylko gdy to Ty)
+    }
+  }
+  S.moSnap = {}; for (const p of ps) S.moSnap[p.id] = [p.st.apps, p.st.rs, p.st.g, p.st.a];
+}
+function seasonAwards(lgId, finals) {
+  const lg = S.leagues[lgId], ps = lg.clubs.flatMap(id => club(id).players), out = [];
+  const best = (f, min) => ps.filter(p => p.st.apps >= min).sort((a, b) => f(b) - f(a))[0];
+  const rate = p => p.st.rs / Math.max(1, p.st.apps) + p.st.g * 0.04 + p.st.a * 0.025;
+  const add = (k, n, p, val) => { if (!p) return; (p.awards = p.awards || []).push({ k, s: S.season, lg: lg.name }); (S.awards = S.awards || []).push({ k, s: S.season, pid: p.id, n: p.n, club: clubOf(p) ? clubOf(p).short : '', lg: lgId }); out.push(`${n}: ${p.n} (${clubOf(p) ? clubOf(p).name : ''}${val ? ', ' + val : ''})`); if (p.tid === S.user) { p.mor = clamp(p.mor + 12, 0, 100); p.val = Math.round(p.val * 1.08); } };
+  add('pots', '⭐ Piłkarz sezonu', best(rate, Math.round(lg.fix.length * 0.5)), null);
+  add('yots', '🌱 Młodzieżowiec sezonu', best(p => p.age <= 21 ? rate(p) : -1, Math.round(lg.fix.length * 0.35)), null);
+  const gb = ps.slice().sort((a, b) => b.lg - a.lg || b.st.a - a.st.a)[0]; if (gb && gb.lg > 0) add('boot', '👟 Król strzelców', gb, `${gb.lg} goli`);
+  const ch = finals[lgId] && finals[lgId][0];
+  if (ch && ch.id === S.user) { (S.awards = S.awards || []).push({ k: 'motm', s: S.season, n: S.manager, club: userClub().short, lg: lgId }); out.push(`🧑‍💼 Trener sezonu: ${S.manager}`); mgrGain(1); }
+  return out;
+}
 function weekly(d) {
   const ut = userClub();
+  monthAwards(d);
   S.uhist = S.uhist || []; S.uhist.push({ s: S.season, ls: d.ls, elo: eloOf(ut), pos: leaguePos(ut), bal: ut.bal }); if (S.uhist.length > 400) S.uhist.splice(0, S.uhist.length - 400);
   for (const c of S.clubs) {
     const wages = sum(c.players.map(p => p.wage)) + (c.id === S.user ? sum(S.scouts.map(s => s.cost)) + acadCost() + staffCost() : 0);
@@ -1333,6 +1390,7 @@ function endSeason() {
   const finals = {};
   for (const id in S.leagues) finals[id] = table(id);
   const upos = finals[ut.lg].find(r => r.id === ut.id);
+  const aw = seasonAwards(ut.lg, finals);
   const wasLg = ut.lg, wasTier = S.leagues[ut.lg].tier;
   // nagrody pieniężne
   for (const id in finals) { const n = finals[id].length; finals[id].forEach(r => { const c = club(r.id); const pr = Math.round(c.tv * 14 * (n - r.pos + 1) / n); c.bal += pr; c.fin.inc += pr; if (c.id === S.user) { c.tb += pr; lines.push(`Premia za miejsce w lidze: ${money(pr)}.`); } }); }
@@ -1340,6 +1398,7 @@ function endSeason() {
   for (const id in finals) { const champ = finals[id][0].id; (S.champs[id] = S.champs[id] || []).push({ s: S.season, c: champ }); }
   lines.unshift(`Twoja pozycja: ${upos.pos}. miejsce w ${S.leagues[wasLg].name} (${upos.Pts} pkt).`);
   lines.unshift(`🏆 Mistrz ${S.leagues[wasLg].name}: ${club(finals[wasLg][0].id).name}.`);
+  if (aw.length) lines.push(`🏅 Nagrody ${S.leagues[wasLg].name}: ${aw.join(' • ')}.`);
   // puchary
   const eh = { season: S.season };
   for (const c of Object.values(S.euro)) { eh[c.id] = c.champion; if (c.champion != null) lines.push(`🏆 ${c.name}: ${club(c.champion).name}.`); }
@@ -1487,7 +1546,7 @@ function endSeason() {
   seasonJobOffers(lines);
   const title = `Podsumowanie sezonu ${SEASON_LABEL(S.season - 1)}`;
   msg(title, lines.join('\n'));
-  autoPick(userClub()); S.offers = [];
+  autoPick(userClub()); S.offers = []; S.moSnap = null; S.moNow = null;
   S.summary = { title, lines };
   return S.summary;
 }
@@ -1526,7 +1585,7 @@ function coachMarket(d) {
         const old = c.coach; c.coach = genCoach(c.rep);
         news(`${c.name} zwalnia trenera ${old.n}. Nowym szkoleniowcem został ${c.coach.n} (OVR ${c.coach.ovr}).`);
         if (fitsMgr(c) && c.rep > userClub().rep + 4 && rnd() < 0.35 && typeof pushEvent === 'function' && S.pending.length < 4 && S.evSeen && S.evSeen.approach !== S.season) { S.approach = c.id; pushEvent(EVENTS.find(e => e.id === 'approach'), {}); }
-        else if (fitsMgr(c) && rnd() < 0.45) offerJob(c, 'zwolnił trenera i chce Cię zatrudnić');
+        else if (fitsMgr(c) && rnd() < 0.45 && S.jobs.length < 3 && absDay() - (S.lastAiOffer || -999) >= 30) { S.lastAiOffer = absDay(); offerJob(c, 'zwolnił trenera i chce Cię zatrudnić'); }
       }
     }
   }

@@ -34,7 +34,7 @@ const LS = 46;                 // liczba „slotów” ligowych w sezonie
 const SEASON_LABEL = s => `${s}/${String(s + 1).slice(2)}`;
 const COMP_NAME = { CL: 'Liga Mistrzów', EL: 'Liga Europy', ECL: 'Liga Konferencji', L: 'Liga', N: 'Reprezentacja', T: 'Turniej', F: 'Towarzyski' };
 const STAGE_NAME = { LP: 'Faza ligowa', PO: 'Baraże', R16: '1/8 finału', QF: 'Ćwierćfinał', SF: 'Półfinał', F: 'Finał', G: 'Faza grupowa' };
-const PROMO = { BRA: [4], ENG: [3, 3, 4], ESP: [3, 4, 3], ITA: [3, 3, 3], GER: [2, 2, 3], FRA: [2, 2, 3], POL: [3, 3] };
+const PROMO = { TUR: [4], BRA: [4], ENG: [3, 3, 4], ESP: [3, 4, 3], ITA: [3, 3, 3], GER: [2, 2, 3], FRA: [2, 2, 3], POL: [3, 3] };
 const promoN = (cc, tier) => (PROMO[cc] || [])[tier - 1] || 2; // ilu spada z poziomu `tier` / awansuje z tier+1
 const DOM = { USA: .55, MEX: .6, BRA: .9, ARG: .9, KSA: .55, JPN: .85, ENG: .4, ESP: .6, ITA: .45, GER: .5, FRA: .55, POR: .45, NED: .55, BEL: .45, TUR: .55, SCO: .5, AUT: .6, SUI: .55, CZE: .75, GRE: .45, DEN: .65, POL: .65, UKR: .8, CRO: .7, SRB: .75, NOR: .75, SWE: .7 };
 const TVW = { USA: [2.5e5], MEX: [1.5e5], BRA: [2e5, 4e4], ARG: [8e4], KSA: [3e5], JPN: [1.2e5], ENG: [6.5e5, 8e4], ESP: [4.2e5, 5e4], ITA: [4e5, 4e4], GER: [4e5, 6e4], FRA: [2.8e5, 4e4], POR: [8e4], NED: [8e4], BEL: [6e4], TUR: [1e5], SCO: [4e4], AUT: [3e4], SUI: [3.5e4], CZE: [2.5e4], GRE: [3e4], DEN: [3e4], POL: [5e4, 1.5e4], UKR: [2e4], CRO: [2e4], SRB: [1.5e4], NOR: [2.5e4], SWE: [2.5e4] };
@@ -304,6 +304,7 @@ function makeFixtures(ids) {
     }
     rounds.push(rd); arr.splice(1, 0, arr.pop());
   }
+  if (n > 24) return rounds;   // duże ligi (MLS, Argentyna): jedna runda – mieści się w kalendarzu
   return rounds.concat(rounds.map(rd => rd.map(f => ({ h: f.a, a: f.h, hg: 0, ag: 0, p: 0 }))));
 }
 function table(lgId) {
@@ -332,7 +333,9 @@ const isUEFA = c => (S.countries[c.cc].conf || 'UEFA') === 'UEFA';
 // strefy europejskie w tabeli ligi (wg tego samego klucza co allocateEurope)
 function euroZones(cc) {
   if ((S.countries[cc].conf || 'UEFA') !== 'UEFA') return null;
-  const rank = countryRanking(), i = rank.findIndex(r => r.cc === cc); if (i < 0) return null;
+  // ranking prognozowany na przyszły sezon (tak jak po przesunięciu współczynników w endSeason)
+  const rank = Object.values(S.countries).filter(c => (c.conf || 'UEFA') === 'UEFA').map(c => { const r = S.cpts && S.cpts[c.code], now = r && r.n ? r.pts / r.n : 0; return { cc: c.code, tot: sum(c.coef.slice(1)) + now, last: now }; }).sort((a, b) => b.tot - a.tot);
+  const i = rank.findIndex(r => r.cc === cc); if (i < 0) return null;
   const eps = rank.slice().sort((a, b) => b.last - a.last).slice(0, 2).map(r => r.cc);
   const q = i < 4 ? [4, 2, 1] : i < 6 ? [3, 2, 1] : i < 10 ? [2, 2, 1] : [1, 1, 1];
   if (eps.includes(cc)) q[0]++;
@@ -363,13 +366,19 @@ function allocateEurope() {
   const moveTo = (id, L) => { for (const X of [CL, EL, ECL, clPool, elPool, eclPool]) { const j = X.indexOf(id); if (j >= 0) X.splice(j, 1); } L.push(id); used.add(id); };
   for (const w of [W.CL, W.EL]) if (w != null && !CL.includes(w)) moveTo(w, CL);
   if (W.ECL != null && !CL.includes(W.ECL) && !EL.includes(W.ECL)) moveTo(W.ECL, EL);
-  const fill = (list, pool, n, losers) => {
-    pool = pool.filter(id => !list.includes(id));
-    while (list.length < n && pool.length) { const w = wpick(pool, id => Math.pow(strength(id), 3)); list.push(w); pool = pool.filter(x => x !== w); }
-    while (list.length > n) { const worst = list.slice().sort((a, b) => strength(a) - strength(b))[0]; list.splice(list.indexOf(worst), 1); pool.push(worst); }
-    if (losers) losers.push(...pool);
+  // eliminacje: z puli awansują najmocniejsi (siła + współczynnik), przegrani mają GWARANTOWANE miejsce w pucharze niżej
+  const fill = (list, pool, n, down) => {
+    pool = pool.filter(id => !list.includes(id)).sort((a, b) => strength(b) - strength(a) + (rnd() - 0.5) * 6);
+    while (list.length < n && pool.length) list.push(pool.shift());
+    if (down) down.unshift(...pool);
   };
-  fill(CL, clPool, 36, elPool); fill(EL, elPool, 36, eclPool); fill(ECL, eclPool, 36, null);
+  const trim = (list, n, keep) => { const out = []; while (list.length > n) { const c = list.filter(id => !keep.includes(id)).sort((a, b) => strength(a) - strength(b))[0]; if (c == null) break; list.splice(list.indexOf(c), 1); out.push(c); } return out; };
+  const elG = [], eclG = [];
+  fill(CL, clPool, 36, elG);
+  EL.push(...elG.filter(id => !EL.includes(id))); const elCut = trim(EL, 36, elG);
+  fill(EL, elPool, 36, eclG); eclG.unshift(...elCut);
+  ECL.unshift(...eclG.filter(id => !ECL.includes(id))); trim(ECL, 36, eclG);
+  fill(ECL, eclPool, 36, null);
   for (const r of rank) { if (ECL.length >= 36) break; const extra = tableOf(r.cc).find(id => !CL.includes(id) && !EL.includes(id) && !ECL.includes(id)); if (extra != null) ECL.push(extra); }
   const inAny = id => CL.includes(id) || EL.includes(id) || ECL.includes(id);
   const spare = S.clubs.filter(c => !inAny(c.id) && isUEFA(c)).sort((a, b) => S.leagues[a.lg].tier - S.leagues[b.lg].tier || b.rep - a.rep).map(c => c.id);
@@ -557,7 +566,7 @@ function dayMatches(d) {
       for (const t of ties) clubDesc(t.h, t.a, { comp: 'C', label: `${cup.name} • ${rn}`, neutral: fin, ko: { aggH: 0, aggA: 0 } }, m => {
         t.m = { hg: m.home.goals, ag: m.away.goals, pens: m.pens, et: m.et }; t.w = m.winner === 'h' ? t.h : t.a;
         const prize = Math.round(club(t.w).tv * (fin ? 6 : 1 + r * 0.5)); club(t.w).bal += prize; club(t.w).fin.inc += prize;
-        if (fin) { cup.champion = t.w; if (t.w === S.user) msg(`🏆 ${cup.name}!`, `Zdobyliśmy ${cup.name}! Premia: ${money(prize)}. Zwycięzca pucharu zagra w Lidze Europy.`); }
+        if (fin) { cup.champion = t.w; if (t.w === S.user) msg(`🏆 ${cup.name}!`, `Zdobyliśmy ${cup.name}! Premia: ${money(prize)}. ${isUEFA(club(t.w)) ? 'Zwycięzca pucharu ma zapewnione miejsce w europejskich pucharach.' : ''}`); }
       });
     }
   } else if (d.t === 'P') {
@@ -1371,6 +1380,7 @@ function endSeason() {
   seasonJobOffers(lines);
   const title = `Podsumowanie sezonu ${SEASON_LABEL(S.season - 1)}`;
   msg(title, lines.join('\n'));
+  autoPick(userClub());
   S.summary = { title, lines };
   return S.summary;
 }

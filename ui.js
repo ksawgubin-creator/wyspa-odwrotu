@@ -219,8 +219,8 @@ function preCard() {
 }
 ACT.choosepre = i => { choosePre(+i); saveSoon(); render(); };
 function cupAlive(cup, r) {
-  if (r === 0) return !cup.rounds[0] ? cup.teams.includes(S.user) : true;
-  const prev = cup.rounds[r - 1]; if (!prev) return cupAlive(cup, r - 1);
+  if (r === 0) { if (cup.rounds[0]) return true; const m = cup.teams.length - Math.pow(2, cup.R - 1); return cup.teams.slice().sort((a, b) => tierOf(b) - tierOf(a) || club(a).rep - club(b).rep).slice(0, 2 * m).includes(S.user); }
+  const prev = cup.rounds[r - 1]; if (!prev) return cup.teams.includes(S.user);
   if (r === 1 && cup.byes.includes(S.user)) return true;
   return prev.some(t => t.w === S.user);
 }
@@ -519,7 +519,7 @@ function vCup() {
   if (!UI.cupcc) UI.cupcc = userClub().cc;
   const cup = S.cups[UI.cupcc];
   const sel = `<div class="flt"><select data-change="cupcc">${Object.values(S.countries).map(c => `<option value="${c.code}" ${UI.cupcc === c.code ? 'selected' : ''}>${c.flag} ${S.cups[c.code].name}</option>`).join('')}</select></div>`;
-  let body = `<div class="card"><b>${esc(cup.name)}</b><br><small class="mut">${cup.teams.length} klubów ze wszystkich poziomów • ${cup.R} rund • mecze jednym meczem (dogrywka i karne) • zwycięzca gra w Lidze Europy</small>${cup.champion != null ? `<br><b>🏆 ${esc(club(cup.champion).name)}</b>` : ''}</div>`;
+  let body = `<div class="card"><b>${esc(cup.name)}</b><br><small class="mut">${cup.teams.length} klubów ze wszystkich poziomów • ${cup.R} rund • mecze jednym meczem (dogrywka i karne)${isUEFA({ cc: cup.cc }) ? ' • zwycięzca ma zapewnione miejsce w europejskich pucharach' : ''}</small>${cup.champion != null ? `<br><b>🏆 ${esc(club(cup.champion).name)}</b>` : ''}</div>`;
   for (let r = cup.rounds.length - 1; r >= 0; r--) {
     const ties = cup.rounds[r];
     body += `<h3>${cupRoundName(ties.length * 2)}</h3><div class="card list">${ties.map(t => fxRow(club(t.h), club(t.a), t.m ? `${t.m.hg} : ${t.m.ag}` : '–', t.h === S.user || t.a === S.user, t.m && (t.m.pens || t.m.et) ? (t.m.pens ? `karne ${t.m.pens.h}:${t.m.pens.a}` : 'po dogrywce') : '')).join('')}</div>`;

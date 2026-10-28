@@ -153,32 +153,50 @@ COUNTRY_DATA.push({
         ['João Carvalho', 'CAM', 29, 69, 69, 'POR'],
         ['Rafik Guitane', 'CAM', 27, 69, 70, 'FRA'],
         ['Yanis Begraoui', 'ST', 25, 70, 73, 'MAR'],
-        ['Alejandro Marqués', 'ST', 26, 67, 69, 'VEN']
+        ['Alejandro Marqués', 'ST', 26, 67, 69, 'VEN'],
+        ['Kévin Boma', 'CB', 24, 66, 70, 'FRA'],
+        ['Felix Bacher', 'CB', 26, 66, 68, 'AUT']
       ]],
       ['Casa Pia', 'CPA', '#000000', '#FFFFFF', 56, 9000, [
         ['Patrick Sequeira', 'GK', 27, 69, 70, 'CRC'],
         ['Andrian Kraev', 'CM', 27, 66, 67, 'BUL'],
         ['Gaizka Larrazabal', 'RB', 29, 66, 66, 'ESP'],
         ['Rafael Brito', 'CM', 24, 65, 69, 'POR'],
-        ['Cassiano', 'ST', 37, 64, 64, 'BRA']
+        ['Cassiano', 'ST', 37, 64, 64, 'BRA'],
+        ['Ricardo Batista', 'GK', 40, 62, 62, 'POR'],
+        ['Godfried Frimpong', 'RB', 27, 65, 66, 'NED'],
+        ['Jérémy Livolant', 'RW', 28, 66, 66, 'FRA']
       ]],
       ['Moreirense', 'MOR', '#00843D', '#FFFFFF', 56, 6153, [
         ['Kewin', 'GK', 31, 67, 67, 'BRA'],
-        ['André Ferreira', 'GK', 30, 66, 66, 'POR']
+        ['André Ferreira', 'GK', 30, 66, 66, 'POR'],
+        ['Marcelo', 'CB', 37, 63, 63, 'POR'],
+        ['Maracás', 'LB', 31, 65, 65, 'BRA'],
+        ['Dinis Pinto', 'RB', 25, 64, 67, 'POR'],
+        ['Gonçalo Franco', 'CM', 26, 67, 69, 'POR'],
+        ['Ismaila Soro', 'CDM', 28, 66, 66, 'CIV'],
+        ['Kobamelo Kodisang', 'LW', 27, 66, 67, 'RSA'],
+        ['Guilherme Schettine', 'ST', 31, 66, 66, 'BRA']
       ]],
       ['Rio Ave', 'RAV', '#00843D', '#FFFFFF', 56, 12815, [
         ['Cezary Miszta', 'GK', 24, 68, 73, 'POL'],
         ['Jhonatan', 'GK', 35, 64, 64, 'BRA'],
         ['Aderllan Santos', 'CB', 37, 64, 64, 'BRA'],
         ['Brandon Aguilera', 'CAM', 23, 66, 71, 'CRC'],
-        ['Clayton', 'ST', 27, 68, 69, 'BRA']
+        ['Clayton', 'ST', 27, 68, 69, 'BRA'],
+        ['Ole Pohlmann', 'CAM', 25, 66, 69, 'GER'],
+        ['Andreas Ntoi', 'CB', 23, 63, 69, 'GRE']
       ]],
       ['Gil Vicente', 'GIL', '#C8102E', '#FFFFFF', 57, 12046, [
         ['Andrew', 'GK', 25, 70, 73, 'BRA'],
         ['Zé Carlos', 'RB', 31, 66, 66, 'POR'],
         ['Rúben Fernandes', 'CB', 40, 64, 64, 'POR'],
         ['Jonathan Buatu', 'CB', 33, 65, 65, 'ANG'],
-        ['Félix Correia', 'LW', 25, 69, 72, 'POR']
+        ['Félix Correia', 'LW', 25, 69, 72, 'POR'],
+        ['Jesús Castillo', 'CM', 25, 66, 69, 'PER'],
+        ['Facundo Cáseres', 'CDM', 28, 66, 66, 'ARG'],
+        ['Kanya Fujimoto', 'CAM', 22, 66, 73, 'JPN'],
+        ['Pablo Felipe', 'ST', 26, 67, 69, 'BRA']
       ]],
       ['FC Arouca', 'ARO', '#FFD100', '#0047AB', 55, 5600, [
         ['Nico Mantl', 'GK', 26, 68, 71, 'GER'],
@@ -193,7 +211,8 @@ COUNTRY_DATA.push({
       ['CD Nacional', 'NAC', '#000000', '#FFFFFF', 53, 5132, [
         ['Lucas França', 'GK', 30, 65, 65, 'BRA'],
         ['Ivanildo Fernandes', 'CB', 30, 64, 64, 'POR'],
-        ['Zé Vítor', 'CB', 34, 63, 63, 'BRA']
+        ['Zé Vítor', 'CB', 34, 63, 63, 'BRA'],
+        ['Jesús Ramírez', 'ST', 28, 66, 66, 'VEN']
       ]],
       ['Estrela da Amadora', 'EAM', '#C8102E', '#00843D', 52, 9288, [
         ['Kikas', 'ST', 27, 65, 66, 'POR'],

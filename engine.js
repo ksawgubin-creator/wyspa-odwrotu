@@ -157,12 +157,12 @@ function money(n) {
   return s + Math.round(a) + ' €';
 }
 // wartość rynkowa: OVR + potencjał ważony wiekiem (młody z wysokim POT kosztuje jak gotowy zawodnik), wiek, pozycja
-const POT_W = [0.62, 0.62, 0.6, 0.56, 0.5, 0.43, 0.35, 0.26, 0.17, 0.09];   // wiek 16..25
+const POT_W = [0.5, 0.5, 0.5, 0.48, 0.45, 0.4, 0.33, 0.25, 0.17, 0.09];   // wiek 16..25
 const POS_VK = { GK: 0.7, CB: 0.9, LB: 0.88, RB: 0.88, CDM: 0.95, CM: 1, CAM: 1.08, LM: 0.95, RM: 0.95, LW: 1.12, RW: 1.12, ST: 1.18 };
 function calcValue(p) {
   const a = p.age, gap = Math.max(0, (p.pot || p.ovr) - p.ovr);
-  const w = a < 16 ? 0.62 : a > 25 ? 0 : POT_W[a - 16];
-  const eff = p.ovr + gap * w + (a <= 21 && gap >= 15 ? 1.5 : 0);   // „wonderkid premium"
+  const w = a < 16 ? 0.5 : a > 25 ? 0 : POT_W[a - 16];
+  const eff = p.ovr + gap * w + (gap >= 15 ? 1.5 * clamp((23 - a) / 4, 0, 1) : 0);   // „wonderkid premium"
   let v = 800000 * Math.exp(0.158 * (eff - 60));
   v *= a <= 23 ? 1.12 : a <= 26 ? 1.08 : a <= 29 ? 1 : a <= 31 ? 0.75 : a <= 33 ? 0.5 : a <= 35 ? 0.3 : 0.15;
   v *= POS_VK[p.pos] || 1;

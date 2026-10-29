@@ -1192,6 +1192,7 @@ ACT.uncall = id => { const st = S.ntTeams[S.nt]; st.sq = st.sq.filter(x => x !==
 function vGame() {
   return `<div class="card"><h2>Zapis gry</h2><small class="mut">Gra zapisuje się automatycznie w pamięci urządzenia.</small>
     <div class="btns"><button class="btn sp" data-act="savegame">💾 Zapisz teraz</button><button class="btn" data-act="export">⬇️ Eksportuj</button><label class="btn">⬆️ Importuj<input type="file" accept=".json" data-change="import" hidden></label></div></div>
+    <div class="card"><h2>Poziom trudności</h2><div class="row"><b class="sp">${DIFF[S.diff || 'normal'].n}</b>${(S.diff || 'normal') !== 'easy' ? '<button class="btn sm" data-act="difflower">Obniż</button>' : ''}</div><small class="mut">${DIFF[S.diff || 'normal'].d} Poziom można tylko obniżyć – podwyższenie byłoby zbyt łatwym sposobem na „podkręcenie” istniejącej kariery.</small></div>
     <div class="card"><h2>Przerywniki</h2><small class="mut">Ustal, o co gra ma Cię pytać. Asystent przejmie resztę.</small>
       <h3>Konferencje prasowe</h3><div class="seg">${[['on', 'Często'], ['rare', 'Tylko ważne mecze'], ['off', 'Wyłączone']].map(([k, n]) => `<button class="btn sm ${(S.settings.press || 'rare') === k ? 'on' : ''}" data-act="setpress" data-arg="${k}">${n}</button>`).join('')}</div>
       ${[['htAuto', 'Odprawę w przerwie prowadzi asystent', true], ['autoPause', 'Pauza przy czerwonej kartce / kontuzji bez zmiany', true], ['resPopup', 'Okno z wynikami kolejki po meczu', false]].map(([k, n, def]) => `<div class="row" style="margin-top:8px"><span class="sp">${n}</span><button class="btn sm ${(S.settings[k] != null ? S.settings[k] : def) ? 'pri' : ''}" data-act="settog" data-arg="${k}">${(S.settings[k] != null ? S.settings[k] : def) ? 'Tak' : 'Nie'}</button></div>`).join('')}</div>
@@ -1199,6 +1200,7 @@ function vGame() {
     <div class="card"><h2>Kariery</h2><small class="mut">Ta kariera jest w slocie ${SLOT}. W menu głównym możesz wczytać inną karierę albo zacząć nową w wolnym slocie.</small><div class="btns"><button class="btn full" data-act="newgame">🏠 Menu główne (sloty karier)</button></div></div>`;
 }
 ACT.savegame = async () => { await saveNow(); toast('Zapisano grę.'); };
+ACT.difflower = () => { const o = ['easy', 'normal', 'hard', 'expert'], i = o.indexOf(S.diff || 'normal'); if (i <= 0) return; const nx = o[i - 1]; if (!confirm(`Obniżyć poziom trudności na: ${DIFF[nx].n}? Tej zmiany nie można cofnąć.`)) return; S.diff = nx; saveSoon(); toast(`Poziom trudności: ${DIFF[nx].n}`, 'ok'); render(); };
 ACT.setpress = k => { S.settings.press = k; saveSoon(); render(); };
 ACT.settog = k => { const def = { htAuto: true, autoPause: true, resPopup: false }[k]; S.settings[k] = !(S.settings[k] != null ? S.settings[k] : def); saveSoon(); render(); };
 ACT.defspeed = s => { S.settings.speed = +s; saveSoon(); render(); };
@@ -1424,7 +1426,7 @@ let SLOTS_META = {};
 function showMenu() {
   $('#app').classList.add('hidden'); $('#start').classList.remove('hidden'); ST.slot = null;
   const card = n => { const m = SLOTS_META[n];
-    return m ? `<div class="card slot"><div class="row">${badge({ short: m.short || '?', col: m.col, name: m.club })}<div class="sp"><b>${esc(m.club)}</b><br><small class="mut">${esc(m.name || 'Menedżer')} • ${esc(m.lg || '')} • sezon ${SEASON_LABEL(m.season)}${m.date ? ' • ' + fmtDate(m.date) : ''}${m.ovr ? ' • OVR ' + m.ovr : ''}</small></div></div>
+    return m ? `<div class="card slot"><div class="row">${badge({ short: m.short || '?', col: m.col, name: m.club })}<div class="sp"><b>${esc(m.club)}</b><br><small class="mut">${esc(m.name || 'Menedżer')} • ${esc(m.lg || '')} • sezon ${SEASON_LABEL(m.season)}${m.date ? ' • ' + fmtDate(m.date) : ''}${m.ovr ? ' • OVR ' + m.ovr : ''}${m.diff && DIFF[m.diff] ? ' • ' + DIFF[m.diff].n : ''}</small></div></div>
       <div class="btns"><button class="btn pri sp" data-act="slotload" data-arg="${n}">▶ Kontynuuj</button><button class="btn" data-act="slotnew" data-arg="${n}">Nowa</button><button class="btn red" data-act="slotdel" data-arg="${n}">🗑</button></div></div>`
       : `<button class="card slot empty" data-act="slotnew" data-arg="${n}"><b>Slot ${n} – pusty</b><br><small class="mut">＋ Rozpocznij nową karierę</small></button>`; };
   const nClubs = S.clubs.length, nLg = Object.keys(S.leagues).length, nReal = sum(S.clubs.map(c => c.realCount || 0));
@@ -1445,11 +1447,13 @@ function showStart() {
   $('#start').innerHTML = `<div class="in"><button class="btn sm" data-act="tomenu">‹ Menu</button><h1>Nowa kariera <small class="mut" style="font-size:16px">slot ${ST.slot}</small></h1>
     <p class="mut">Zaczynasz jako debiutant (OVR trenera 45) – na start dostępne są kluby niższych lig. Dobre wyniki podnoszą OVR i przynoszą oferty większych klubów.</p>
     <input id="mname" placeholder="Imię i nazwisko menedżera" maxlength="28" style="width:100%;margin-bottom:10px" value="${esc(S.manager || '')}">
+    <h3>Poziom trudności</h3><div class="seg wrap">${Object.entries(DIFF).map(([k, v]) => `<button class="btn sm ${(ST.diff || 'normal') === k ? 'on' : ''}" data-act="stdiff" data-arg="${k}">${v.n}</button>`).join('')}</div>
+    <small class="mut">${DIFF[ST.diff || 'normal'].d}</small>
     <h3>Wybierz klub</h3>
     <div class="flt"><select data-change="stcc">${Object.values(S.countries).map(c => `<option value="${c.code}" ${ST.cc === c.code ? 'selected' : ''}>${c.flag} ${c.name}</option>`).join('')}</select>
     <select data-change="stlg">${S.countries[ST.cc].leagues.map(id => `<option value="${id}" ${ST.lg === id ? 'selected' : ''}>${S.leagues[id].name}</option>`).join('')}</select></div>
     <small class="mut">Dostępne kluby o reputacji do ${maxRepFor(45)}.</small>
-    ${clubs.map(c => { const ok = stAllowed(c); return `<button class="club ${ST.club === c.id ? 'on' : ''} ${ok ? '' : 'locked'}" data-act="stclub" data-arg="${c.id}" ${ok ? '' : 'disabled'}>${badge(c)}<div class="sp"><b>${ok ? '' : '🔒 '}${esc(c.name)}</b><br><small>Budżet: ${money(c.tb)} • średnia ${Math.round(teamLevel(c))} • rep. ${c.rep}</small></div><span class="stars">${stars(c)}</span></button>`; }).join('')}
+    ${clubs.map(c => { const ok = stAllowed(c); return `<button class="club ${ST.club === c.id ? 'on' : ''} ${ok ? '' : 'locked'}" data-act="stclub" data-arg="${c.id}" ${ok ? '' : 'disabled'}>${badge(c)}<div class="sp"><b>${ok ? '' : '🔒 '}${esc(c.name)}</b><br><small>Budżet: ${money(c.tb * DIFF[ST.diff || "normal"].money)} • średnia ${Math.round(teamLevel(c))} • rep. ${c.rep}</small></div><span class="stars">${stars(c)}</span></button>`; }).join('')}
     <h3>Reprezentacja (opcjonalnie)</h3>
     <select data-change="stnt" style="width:100%"><option value="">Bez reprezentacji</option>${NATIONS.filter(n => n.str <= stOvr() + 10).sort((a, b) => a.name.localeCompare(b.name, 'pl')).map(n => `<option value="${n.code}" ${ST.nt === n.code ? 'selected' : ''}>${n.flag} ${n.name}</option>`).join('')}</select>
     <div class="stbar"><button class="btn pri full" data-act="begin" ${ST.club == null ? 'disabled' : ''}>${ST.club == null ? 'Wybierz klub' : `Rozpocznij karierę – ${esc(club(ST.club).name)}`}</button></div></div>`;
@@ -1458,11 +1462,12 @@ const keepName = () => { const el = $('#mname'); if (el) S.manager = el.value; }
 CHG.stcc = v => { keepName(); ST.cc = v; ST.lg = S.countries[v].leagues[Math.min(1, S.countries[v].leagues.length - 1)]; ST.club = null; showStart(); };
 CHG.stlg = v => { keepName(); ST.lg = v; ST.club = null; showStart(); };
 CHG.stnt = v => { ST.nt = v; };
+ACT.stdiff = k => { keepName(); ST.diff = k; const y = window.scrollY; showStart(); window.scrollTo(0, y); };
 ACT.stclub = id => { keepName(); ST.club = +id; const y = window.scrollY; showStart(); window.scrollTo(0, y); };
 ACT.begin = () => {
   if (ST.club == null) return;
   const n = ($('#mname').value || '').trim() || 'Menedżer';
-  SLOT = ST.slot || 1; startCareer(n, ST.club, ST.nt || null, stOvr()); enterApp();
+  SLOT = ST.slot || 1; startCareer(n, ST.club, ST.nt || null, stOvr(), ST.diff || 'normal'); enterApp();
 };
 function enterApp() { $('#start').classList.add('hidden'); $('#app').classList.remove('hidden'); UI.tab = 'home'; render(); window.scrollTo(0, 0); }
 

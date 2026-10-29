@@ -138,7 +138,7 @@ const isAvail = p => !p.inj && !p.susp;
 // rodzaje kontuzji: [nazwa, min dni, max dni, waga]
 const INJ = [['stłuczenie', 3, 10, 30], ['naciągnięcie mięśnia dwugłowego', 10, 28, 20], ['skręcenie stawu skokowego', 10, 35, 18], ['uraz pachwiny', 14, 40, 10], ['naderwanie mięśnia', 21, 49, 8], ['uraz kolana', 30, 70, 6], ['złamanie', 50, 100, 3], ['zerwanie więzadła krzyżowego', 150, 220, 1.2]];
 // ryzyko urazu rośnie przy zmęczeniu, po niedawnym urazie i po przyspieszonym powrocie
-const injRisk = (p, fit) => (typeof S !== 'undefined' && S && S.trInt && p.tid === S.user && typeof TR_INT !== 'undefined' ? TR_INT[S.trInt].inj : 1) * (1 + Math.max(0, 85 - fit) / 30) * (p._rushed && p._rushed > (typeof absDay === 'function' ? absDay() : 0) ? 3 : 1) * (p.injLast && typeof absDay === 'function' && absDay() - p.injLast < 60 ? 1.5 : 1);
+const injRisk = (p, fit) => (typeof S !== 'undefined' && S && S.trInt && p.tid === S.user && typeof TR_INT !== 'undefined' ? TR_INT[S.trInt].inj : 1) * (typeof S !== 'undefined' && S && p.tid === S.user && typeof DF === 'function' ? DF().inj : 1) * (1 + Math.max(0, 85 - fit) / 30) * (p._rushed && p._rushed > (typeof absDay === 'function' ? absDay() : 0) ? 3 : 1) * (p.injLast && typeof absDay === 'function' && absDay() - p.injLast < 60 ? 1.5 : 1);
 function injure(p) {
   const recur = p.injT && p.injLast && typeof absDay === 'function' && absDay() - p.injLast < 60 && rnd() < 0.5;
   const t = recur ? INJ.find(x => x[0] === p.injT) || INJ[1] : wpick(INJ, x => x[3]);
@@ -263,7 +263,7 @@ function makeSide(t, isUser, quick, emergency) {
     duty: isUser && t.duty ? t.duty.slice() : null, pm: isUser && t.pm != null ? t.pm : null, oi: isUser && t.oi ? { mark: (t.oi.mark || []).slice(), hard: !!t.oi.hard } : { mark: [], hard: false }, xg: 0,
     pitch: t.lineup.map((id, i) => { const p = pget(id); return p ? { p, pos: slots[i].pos, ov: ovrAt(p, slots[i].pos), slot: i } : null; }).filter(Boolean),
     bench: t.bench.map(pget).filter(Boolean), subs: 0, goals: 0, shots: 0, sot: 0, poss: 0, fouls: 0, yel: 0, corners: 0,
-    rec: {}, str: null, scorers: [], cf: (1 + ((typeof coachOvr === 'function' ? coachOvr(t) : 60) - 60) * 0.0009) * clamp(1 + gauss() * DAY_VAR, 0.82, 1.18),
+    rec: {}, str: null, scorers: [], cf: (1 + ((typeof coachOvr === 'function' ? coachOvr(t) : 60) - 60) * 0.0009) * clamp(1 + gauss() * DAY_VAR, 0.82, 1.18) * (isUser && typeof DF === 'function' ? DF().cf : 1),
   };
   for (const s of side.pitch) side.rec[s.p.id] = { p: s.p, on: 0, off: null, g: 0, a: 0, y: 0, r: 0, sv: 0, pos: s.pos };
   return side;

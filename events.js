@@ -40,7 +40,11 @@ const traitWord = (v, fem) => { const w = v >= 16 ? 'bardzo wysok' : v >= 12 ? '
    agent – relacja z agentem (Leon Kmita, ±), rival – wojny słowne z rywalami, crit – publiczna krytyka zawodników,
    csr – zaangażowanie społeczne, acad – stawianie na akademię.
    Flagi zawodników (numer dnia): p._crit – publicznie skrytykowany, p._lied – złamana obietnica, p._kept – dotrzymana. */
-const MEM_KEYS = ['strict', 'soft', 'liar', 'honest', 'media', 'spons', 'fanside', 'boardY', 'boardN', 'jour', 'agent', 'rival', 'crit', 'csr', 'acad'];
+/* Dodatkowo: legend – relacja z legendą klubu (Henryk Sawa, ±), ultra – relacja z liderem ultrasów (Rafał „Kaczor” Dudek, ±),
+   clean/shady – postawa w sprawach etyki (doping, ustawianie meczów, „kreatywna księgowość”), ego – ustępowanie gwiazdom.
+   Jednorazowe znaczniki (sezon/1): heat – podgrzewana murawa, wteam – sekcja kobieca, esport – drużyna e-sportowa, anniv – jubileusz.
+   Flagi zawodników: p._ego – gwiazda dostała przywileje (dzień), p._kept/p._lied także przy obietnicach z wydarzeń (np. debiut juniora). */
+const MEM_KEYS = ['strict', 'soft', 'liar', 'honest', 'media', 'spons', 'fanside', 'boardY', 'boardN', 'jour', 'agent', 'rival', 'crit', 'csr', 'acad', 'legend', 'ultra', 'clean', 'shady', 'ego'];
 function metaInit() {
   if (!S) return;
   if (S.fans == null) S.fans = 60;
@@ -164,6 +168,40 @@ const chairNote = () => memv('boardN') >= 2 ? ' Prezes dodaje chłodno, że osta
 const wronaNote = () => memv('jour') >= 2 ? 'Jacek Wrona, z którym masz dobre relacje,' : memv('jour') <= -2 ? 'Jacek Wrona, który wciąż pamięta Twoje odmowy,' : 'Jacek Wrona, znany dziennikarz sportowy,';
 const kmitaNote = () => memv('agent') >= 2 ? ' Kmita przypomina, że „dobrze się Wam razem pracuje”.' : memv('agent') <= -2 ? ' Kmita nie zapomniał, jak ostatnio go potraktowałeś.' : '';
 const grudge = p => p && (since(p._crit) < 150 || since(p._lied) < 200);
+
+/* ---------- pomocnicze dla nowszych wydarzeń: kalendarz, pogoda, Europa, finanse, postacie ---------- */
+const evMonth = () => new Date(curDay().date).getUTCMonth();               // 0 = styczeń
+const evWinter = () => [10, 11, 0, 1, 2].includes(evMonth());
+const evCold = () => [11, 0, 1].includes(evMonth());
+const evHot = () => [6, 7, 4, 5].includes(evMonth());
+const evEuro = () => typeof euroOf === 'function' && S.euro ? euroOf(S.user) : null;
+// najbliższy dzień meczów europejskich w ciągu `days` dni (tylko gdy klub gra w pucharach)
+function evEuroSoon(days = 8) {
+  const ec = evEuro(); if (!ec || S.day >= S.cal.length) return null;
+  const now = curDay().date;
+  for (let i = S.day; i < S.cal.length; i++) { const d = S.cal[i], dd = (d.date - now) / 864e5; if (dd > days) break; if (d.t === 'E') return { ec: ec.name, days: Math.round(dd) }; }
+  return null;
+}
+const evWB = () => sum(uPlayers().map(p => p.wage || 0));                   // tygodniowe pensje zawodników
+const evWb = k => Math.max(1000, Math.round(evWB() * k / 1000) * 1000);
+const evInc = () => userClub().tv + userClub().spons;                       // tygodniowe stałe wpływy
+const evPoor = () => userClub().bal < evInc() * 4;
+const evRich = () => userClub().bal > evInc() * 30;
+const evPres = () => typeof presOf === 'function' ? presOf(userClub()) : 5;
+const evHW = () => ({ easy: 0.7, normal: 1, hard: 1.3, expert: 1.6 })[S.diff || 'normal'] || 1;   // trudność: częstsze złe scenariusze
+const evHome = () => S.countries && S.countries[userClub().cc] ? S.countries[userClub().cc].nat : null;
+const evForeign = p => p && evHome() && p.nat !== evHome();
+const evStar = () => { const p = starPlayer(); return p && !p.loan ? p : null; };
+const evYouth = f => { const l = (S.acad && S.acad.youth || []).filter(f || (() => true)); return l.length ? l : null; };
+const evBig = () => { const L = teamLevel(userClub()); return p => p.ovr >= L; };
+const evShort = id => { S.short = [id, ...(S.short || []).filter(x => x !== id)]; };
+const evAway = () => S.lastMatch && !S.lastMatch.home;
+// powracające postacie: legenda klubu i lider ultrasów (głos i pamięć relacji)
+const sawa = () => memv('legend') >= 2 ? 'Henryk Sawa, legenda klubu, który ostatnio wyraźnie Ci kibicuje,' : memv('legend') <= -2 ? 'Henryk Sawa, legenda klubu, który nie kryje do Ciebie urazy,' : 'Henryk Sawa, legenda klubu i rekordzista występów,';
+const sawaQ = () => pick(memv('legend') <= -2 ? ['„Ja tam swoje wiem, panie trenerze.”', '„Za moich czasów trener słuchał starszych.”'] : memv('legend') >= 2 ? ['„Pan wie, że ja zawsze po Pana stronie.”', '„Ja Panu dobrze życzę, trenerze, Pan wie.”'] : ['„Za moich czasów to się inaczej robiło, panie trenerze.”', '„W tej koszulce, trenerze, się nie odpuszcza.”']);
+const kaczor = () => memv('ultra') >= 2 ? 'Rafał „Kaczor” Dudek, lider ultrasów, z którym masz dobre układy,' : memv('ultra') <= -2 ? 'Rafał „Kaczor” Dudek, lider ultrasów, który ma z Tobą na pieńku,' : 'Rafał „Kaczor” Dudek, lider ultrasów,';
+const kaczorQ = () => pick(memv('ultra') <= -2 ? ['„Trybuna pamięta, trenerze. Wszystko pamięta.”', '„My się już raz zawiedliśmy.”'] : memv('ultra') >= 2 ? ['„Trener jest swój chłop, to i my jesteśmy w porządku.”', '„Szacunek za szacunek – tak było i tak będzie.”'] : ['„Szacunek trzeba mieć, trenerze. Do barw i do ludzi.”', '„My tu byliśmy przed Panem i będziemy po Panu.”']);
+const ethicNote = () => memv('shady') >= 2 ? ' W środowisku mówi się, że klub lubi „chodzić na skróty”.' : memv('clean') >= 2 ? ' Klub ma opinię wyjątkowo przejrzystego.' : '';
 
 const EVENTS = [
   /* ===================== KLUB / OBÓZ ===================== */
@@ -673,6 +711,11 @@ const EVENTS = [
     choices: [{ t: 'Ukarz publicznie', mem: 'strict', outs: [ou(2, { player: -8, fans: 3, crit: true }, 'Kibice zadowoleni, zawodnik obrażony.'), ob(c => trt(c.p, 'tem') >= 13 ? 2 : 0.6, { player: -14, team: -2, crit: true }, 'Zawodnik w odpowiedzi usunął klubowe barwy z profilu.')] },
       { t: 'Porozmawiaj z nim', outs: [ou(c => trt(c.p, 'loy') >= 11 ? 3 : 1.5, { player: 3 }, '„To był żart, trenerze” – wpis zniknął.'), ob(c => trt(c.p, 'amb') >= 15 ? 2 : 1, { player: -4 }, 'Zawodnik przyznał, że marzy o odejściu.')] },
       { t: 'Obróć to w żart na klubowym profilu', outs: [ou(2, { fans: 2, press: 2 }, 'Internet docenił poczucie humoru klubu.'), ob(1.5, { fans: -2, player: -4 }, 'Kibice nie zrozumieli żartu, a zawodnik poczuł się wyśmiany.')] }] },
+
+  /* =====================================================================
+     DRUGA FALA WYDARZEŃ – więcej kategorii, łańcuchy, nowe postacie
+     ===================================================================== */
+  //@@NEW
 ];
 
 /* ---------- hierarchia szatni i grupy ---------- */

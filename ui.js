@@ -72,6 +72,7 @@ const navIcon = (k, on) => { const ln = k === 'cal' || k === 'rank'; return `<sv
 let SWIPE_DIR = null;
 function render() {
   const ut = userClub(), d = curDay();
+  { const r = document.documentElement.style; r.setProperty('--club', (ut.col && ut.col[0]) || '#2ee59d'); r.setProperty('--club2', (ut.col && ut.col[1]) || '#ffffff'); }
   $('#top').innerHTML = `${badge(ut)}<div class="tt"><b>${esc(ut.name)}</b><small>${d ? fmtDate(d.date) : ''} • ${SEASON_LABEL(S.season)}</small></div>
     <div class="money"><small class="mut" style="font-size:10px;display:block;line-height:1">saldo</small>${money(ut.bal)}<small class="${windowOpen() ? 'good' : 'mut'}">${windowOpen() ? '🟢 okno otwarte' : '🔒 okno zamknięte'}</small></div>`;
   const unread = S.inbox.filter(m => !m.read).length;
@@ -1150,24 +1151,66 @@ function vFac() {
   const lvl = n => `<span class="stars">${'★'.repeat(n)}${'☆'.repeat(5 - n)}</span>`;
   const fac = (k, n, d) => `<div class="row" style="margin:10px 0"><div class="sp"><b>${n}</b><br><small class="mut">${d}</small></div>${lvl(facGet(k))}${facGet(k) < 5 ? `<button class="btn sm" data-act="upfac" data-arg="${k}">${money(FAC_COST(facGet(k)))}</button>` : ''}</div>`;
   const com = k => `<div class="row" style="margin:10px 0"><div class="sp"><b>${COMM[k][0]}</b><br><small class="mut">${COMM[k][1]}</small></div>${lvl(commLvl(k))}${commLvl(k) < 5 ? `<button class="btn sm" data-act="upcomm" data-arg="${k}">${money(commCost(k, commLvl(k)))}</button>` : ''}</div>`;
-  return `<div class="card"><h2>⚽ Ośrodek treningowy</h2>${fac('train', 'Boiska i siłownia', 'Szybszy rozwój wszystkich zawodników.')}</div>
+  return stadiumCard(ut) + `<div class="card"><h2>⚽ Ośrodek treningowy</h2>${fac('train', 'Boiska i siłownia', 'Szybszy rozwój wszystkich zawodników.')}</div>
     <div class="card"><h2>🎓 Akademia – obiekty</h2>${fac('fac', ACAD_NAMES.fac, 'Wyższy potencjał wychowanków.')}${fac('coach', ACAD_NAMES.coach, 'Szybszy rozwój juniorów i trafniejsza ocena potencjału.')}${fac('rec', ACAD_NAMES.rec, 'Więcej juniorów co sezon, większa szansa na talent pokolenia.')}<small class="mut">Utrzymanie akademii: ${money(acadCost())}/tydz.</small></div>
-    <div class="card"><h2>💼 Obiekty komercyjne</h2>${com('gastro')}${com('park')}${com('shop')}${com('hotel')}
+    <div class="card"><h2>💼 Obiekty komercyjne</h2>${com('gastro')}${com('park')}${com('shop')}${com('hotel')}</div><div class="card"><h2>🌱 Pielęgnacja i regeneracja</h2>${com('turf')}${com('recov')}
       <small class="mut">${commLvl('hotel') ? `Hotel: ${money(hotelIncome())}/tydz. ` : ''}${commLvl('shop') ? `Sklep: ${money(shopIncome())}/tydz. ` : ''}Obiekty komercyjne zwiększają przychody klubu – zwracają się po kilku sezonach.</small></div>
-    ` + stadiumCard(ut);
+    `;
 }
 ACT.upcomm = k => { const r = upgradeComm(k); toast(r.msg, r.ok ? 'ok' : 'bad'); render(); };
 const stadExp = c => { const add = Math.max(1000, Math.round(c.cap * 0.1 / 500) * 500); return { add, cost: Math.round(add * c.price * 90 / 1e5) * 1e5 }; };
+/* ---------- rysunek stadionu: trybuny rosną z pojemnością, wokół obiekty klubu ---------- */
+function stadiumSVG(c, cap, opt = {}) {
+  cap = cap || c.cap; let col = (c.col && c.col[0]) || '#2a6', col2 = (c.col && c.col[1]) || '#fff'; const W = 340, H = 230, cx = 170, cy = 112;
+  if (typeof uk_dist === 'function' && uk_dist(col, '#2f9a4e') < 110) { const t0 = col; col = col2; col2 = t0; if (uk_dist(col, '#2f9a4e') < 110) col = '#c9d3e6'; }   // krzesełka nie mogą zlać się z murawą
+  const tiers = cap < 5000 ? 1 : cap < 15000 ? 1 : cap < 30000 ? 2 : cap < 50000 ? 2 : 3, four = cap >= 12000, corners = cap >= 25000, roof = cap >= 30000, sides2 = cap >= 5000;
+  const pw = 120, ph = 74, t = tiers === 3 ? 9 : 11, L = lv => opt.fac ? (opt.fac[lv] || 0) : (S.fac && S.fac[lv]) || 0;
+  let o = `<svg viewBox="0 0 ${W} ${H}" width="100%" class="stad" role="img" aria-label="Stadion ${cap} miejsc"><defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b3a2a"/><stop offset="1" stop-color="#10261b"/></linearGradient>
+    <pattern id="mow" width="12" height="74" patternUnits="userSpaceOnUse"><rect width="6" height="74" fill="${L('turf') >= 3 ? '#2f9a4e' : '#2a8a45'}"/><rect x="6" width="6" height="74" fill="${L('turf') >= 3 ? '#35a957' : '#2f9a4e'}"/></pattern></defs>
+    <rect width="${W}" height="${H}" rx="14" fill="url(#sky)"/>`;
+  // drogi
+  o += `<path d="M0 ${H - 24} H${W}" stroke="#2a3346" stroke-width="10"/><path d="M0 ${H - 24} H${W}" stroke="#ffd23f55" stroke-width="1" stroke-dasharray="8 8"/>`;
+  // trybuny
+  const stand = (x, y, w, h, n, vert) => { let s = ''; for (let i = 0; i < n; i++) { const d = i * (t - 1); const X = vert ? (x < cx ? x - d : x + d) : x - d * 0.6, Y = vert ? y - d * 0.6 : (y < cy ? y - d : y + d), Wd = vert ? w : w + d * 1.2, Hd = vert ? h + d * 1.2 : h;
+      s += `<rect x="${X}" y="${Y}" width="${Wd}" height="${Hd}" rx="2" fill="${i % 2 ? col2 : col}" opacity="${0.92 - i * 0.12}" stroke="#0008" stroke-width=".6"/>`;
+      for (let k = 2; k < (vert ? Hd : Wd) - 2; k += 4) s += vert ? `<line x1="${X + 1}" y1="${Y + k}" x2="${X + Wd - 1}" y2="${Y + k}" stroke="#0003" stroke-width=".6"/>` : `<line x1="${X + k}" y1="${Y + 1}" x2="${X + k}" y2="${Y + Hd - 1}" stroke="#0003" stroke-width=".6"/>`; }
+    return s; };
+  const x0 = cx - pw / 2, y0 = cy - ph / 2;
+  o += stand(x0, y0 - t - 2, pw, t, tiers, false);                       // główna (zawsze)
+  if (sides2) o += stand(x0, y0 + ph + 2, pw, t, tiers, false); else o += `<rect x="${x0}" y="${y0 + ph + 2}" width="${pw}" height="${t - 3}" rx="3" fill="#3c6b3f"/>`;
+  if (four) { o += stand(x0 - t - 2, y0, t, ph, tiers, true) + stand(x0 + pw + 2, y0, t, ph, tiers, true); } else o += `<rect x="${x0 - t + 1}" y="${y0}" width="${t - 3}" height="${ph}" rx="3" fill="#3c6b3f"/><rect x="${x0 + pw + 2}" y="${y0}" width="${t - 3}" height="${ph}" rx="3" fill="#3c6b3f"/>`;
+  if (corners) { const R = t * tiers; for (const [qx, qy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { const X = qx < 0 ? x0 - R - 2 : x0 + pw + 2, Y = qy < 0 ? y0 - R - 2 : y0 + ph + 2; o += `<rect x="${X}" y="${Y}" width="${R}" height="${R}" rx="4" fill="${col}" opacity=".75" stroke="#0008" stroke-width=".6"/>`; } }
+  if (roof) { const R = t * tiers + 4; o += `<rect x="${x0 - R - 2}" y="${y0 - R - 2}" width="${pw + 2 * R + 4}" height="${ph + 2 * R + 4}" rx="${corners ? 16 : 6}" fill="none" stroke="#dfe8f5" stroke-opacity=".55" stroke-width="4"/>`; }
+  // boisko
+  o += `<rect x="${x0}" y="${y0}" width="${pw}" height="${ph}" fill="url(#mow)" stroke="#fff" stroke-opacity=".8" stroke-width="1"/><line x1="${cx}" y1="${y0}" x2="${cx}" y2="${y0 + ph}" stroke="#fff" stroke-opacity=".8"/><circle cx="${cx}" cy="${cy}" r="10" fill="none" stroke="#fff" stroke-opacity=".8"/>
+    <rect x="${x0}" y="${cy - 16}" width="16" height="32" fill="none" stroke="#fff" stroke-opacity=".8"/><rect x="${x0 + pw - 16}" y="${cy - 16}" width="16" height="32" fill="none" stroke="#fff" stroke-opacity=".8"/>`;
+  // maszty oświetleniowe
+  const fl = cap >= 8000 ? [[x0 - 22, y0 - 22], [x0 + pw + 22, y0 - 22], [x0 - 22, y0 + ph + 22], [x0 + pw + 22, y0 + ph + 22]] : [[x0 - 8, y0 - 18], [x0 + pw + 8, y0 - 18]];
+  for (const [x, y] of fl) o += `<circle cx="${x}" cy="${y}" r="3.2" fill="#fff6c2"/><circle cx="${x}" cy="${y}" r="7" fill="#fff6c2" opacity=".18"/>`;
+  // obiekty wokół
+  const park = L('park'); if (park) { o += `<rect x="8" y="${H - 64}" width="${Math.min(54, 30 + park * 5)}" height="30" rx="4" fill="#2b3447" stroke="#fff3"/>`; for (let i = 0; i < park * 3; i++) o += `<rect x="${12 + (i % 6) * 7}" y="${H - 60 + Math.floor(i / 6) * 9}" width="5" height="8" rx="1" fill="${['#ff5468', '#4da3ff', '#ffd23f', '#ddd'][i % 4]}"/>`; o += `<text x="10" y="${H - 67}" font-size="8" fill="#9fb0cf">P</text>`; }
+  const gas = L('gastro'); for (let i = 0; i < gas; i++) o += `<rect x="${x0 + 8 + i * 22}" y="${y0 + ph + t * tiers + 8}" width="14" height="9" rx="2" fill="#ffb020"/><text x="${x0 + 11 + i * 22}" y="${y0 + ph + t * tiers + 15}" font-size="6">🍔</text>`;
+  const shop = L('shop'); if (shop) o += `<rect x="${W - 70}" y="${H - 66}" width="${24 + shop * 4}" height="${14 + shop * 2}" rx="3" fill="${col}" stroke="${col2}"/><text x="${W - 66}" y="${H - 56}" font-size="7" fill="${col2}" font-weight="700">SKLEP</text>`;
+  const hot = L('hotel'); if (hot) { const hh = 14 + hot * 9; o += `<rect x="${W - 34}" y="${H - 34 - hh}" width="24" height="${hh}" rx="2" fill="#c9d3e6"/>`; for (let i = 0; i < hot * 2; i++) o += `<rect x="${W - 31 + (i % 2) * 10}" y="${H - 32 - hh + 4 + Math.floor(i / 2) * 9}" width="6" height="5" fill="#ffe680"/>`; o += `<text x="${W - 32}" y="${H - 38 - hh}" font-size="7" fill="#9fb0cf">HOTEL</text>`; }
+  const tr = opt.train != null ? opt.train : (S.fac && S.fac.train) || 1; for (let i = 0; i < Math.min(3, Math.ceil(tr / 2)); i++) o += `<rect x="${8 + i * 30}" y="8" width="26" height="17" rx="1" fill="#2a8a45" stroke="#fff8" stroke-width=".7"/><line x1="${21 + i * 30}" y1="8" x2="${21 + i * 30}" y2="25" stroke="#fff8" stroke-width=".7"/>`;
+  const ac = S.acad ? S.acad.fac : 1; o += `<rect x="${W - 64}" y="8" width="${24 + ac * 6}" height="16" rx="3" fill="#4da3ff" opacity=".85"/><text x="${W - 60}" y="19" font-size="7" fill="#fff" font-weight="700">AKADEMIA</text>`;
+  const rc = L('recov'); if (rc) o += `<rect x="8" y="30" width="${18 + rc * 4}" height="12" rx="6" fill="#19b97a" opacity=".85"/><text x="11" y="39" font-size="7" fill="#fff">SPA</text>`;
+  if (opt.build) { const bx = x0 + pw + t * tiers + 14, by = y0 - 34; o += `<path d="M${bx} ${by + 70} V${by} H${bx + 34} M${bx} ${by + 8} L${bx + 12} ${by}" stroke="#ffb020" stroke-width="2.4" fill="none"/><line x1="${bx + 30}" y1="${by}" x2="${bx + 30}" y2="${by + 18}" stroke="#ffb020"/><rect x="${bx + 26}" y="${by + 18}" width="8" height="6" fill="#ffb020"/>`; }
+  o += `<text x="${cx}" y="${H - 6}" text-anchor="middle" font-size="10" font-weight="800" fill="#e8eefc">${esc(c.stadName || c.name)} • ${cap.toLocaleString('pl-PL')} miejsc</text>`;
+  return o + '</svg>';
+}
+ACT.stadprev = () => { const ut = userClub(), e = stadExp(ut); modal(`<h2>🏗️ Po rozbudowie</h2>${stadiumSVG(ut, ut.cap + e.add)}<small class="mut">Teraz: ${ut.cap.toLocaleString('pl-PL')} miejsc → po rozbudowie ${(ut.cap + e.add).toLocaleString('pl-PL')}. Większe stadiony dostają kolejne poziomy trybun, narożniki i dach.</small><div class="btns"><button class="btn full" data-act="close">Zamknij</button></div>`); };
 function stadiumCard(ut) {
   const e = stadExp(ut), att = attendance(ut, false), dem = Math.round(ticketDemand(ut) * (0.85 + (S.fans != null ? S.fans : 60) / 400) * (1 + commLvl('park') * 0.03) * priceK(ut)), gate = Math.round(GATE_NET * att * ut.price * (1 + commLvl('gastro') * 0.06));
   const full = dem >= ut.cap;
-  return `<div class="card"><h2>🏟️ Stadion</h2>
+  return `<div class="card"><h2>🏟️ Stadion</h2>${stadiumSVG(ut, ut.cap, { build: !!ut.stadBuild })}
     <div class="kv"><div><span>Pojemność</span><b>${ut.cap.toLocaleString('pl-PL')}</b></div><div><span>Popyt na bilety</span><b>${dem.toLocaleString('pl-PL')}</b></div>
     <div><span>Średnia frekwencja</span><b>${att.toLocaleString('pl-PL')} (${Math.round(att / ut.cap * 100)}%)</b></div><div><span>Wpływy z meczu</span><b>${money(gate)}</b></div></div>
     <h3>🎟️ Cena biletu</h3><div class="stepper"><button class="btn" data-act="tkt" data-arg="-1">−</button><b>${ut.price.toFixed(1)} € <small class="mut">(${Math.round(ut.price / basePrice(ut) * 100)}% standardu)</small></b><button class="btn" data-act="tkt" data-arg="1">+</button></div>
     <small class="mut">Wyższa cena = mniejszy popyt, ale więcej z każdego biletu. Gdy stadion jest pełny, podwyżka zwykle się opłaca; przy pustych trybunach – obniżka. Bardzo drogie bilety psują nastroje kibiców.</small>
     <small class="mut">Popyt rośnie z renomą klubu, poziomem ligi, nastrojami kibiców i parkingiem. ${full ? 'Stadion jest za mały – rozbudowa się opłaci.' : 'Na razie stadion nie zapełnia się – rozbudowa nie zwiększy wpływów.'}${ut.stadBuild ? ` Trwa rozbudowa: +${ut.stadBuild.add.toLocaleString('pl-PL')} miejsc od ${SEASON_LABEL(ut.stadBuild.season)}.` : ''}</small>
-    <div class="btns">${ut.stadBuild ? '<span class="pill">🏗️ Budowa w toku</span>' : `<button class="btn sm ${full ? 'pri' : ''}" data-act="stadexp">Rozbuduj (+${e.add.toLocaleString('pl-PL')} miejsc) • ${money(e.cost)}</button>`}</div></div>`;
+    <div class="btns">${ut.stadBuild ? '<span class="pill">🏗️ Budowa w toku</span>' : `<button class="btn sm" data-act="stadprev">👁 Podgląd</button><button class="btn sm ${full ? 'pri' : ''}" data-act="stadexp">Rozbuduj (+${e.add.toLocaleString('pl-PL')} miejsc) • ${money(e.cost)}</button>`}</div></div>`;
 }
 ACT.tkt = d => { const ut = userClub(), b = basePrice(ut); S.tkt = clamp(Math.round(((ut.price / b) + +d * 0.05) * 100) / 100, 0.5, 1.8); ut.price = Math.round(b * S.tkt * 10) / 10; saveSoon(); render(); };
 ACT.stadexp = () => {

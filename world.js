@@ -808,7 +808,7 @@ function recover(gap) {
   const ut = userClub();
   for (const p of PALL) {
     const c = p.tid >= 0 ? S.clubs[p.tid] : null;
-    const mine = c === ut, rate = 2.7 + (c && c.training === 'fit' ? 0.5 : 0) + (mine ? (staffAb('fit') - 10) * 0.04 + TR_INT[S.trInt || 0].fit : 0);
+    const mine = c === ut, rate = 2.7 + (c && c.training === 'fit' ? 0.5 : 0) + (mine ? (staffAb('fit') - 10) * 0.04 + TR_INT[S.trInt || 0].fit + commLvl('recov') * 0.25 : 0);
     p.fit = Math.min(100, p.fit + gap * rate * (p.inj ? 1.4 : 1));
     if (p.inj) { p.inj = Math.max(0, p.inj - gap * (mine ? 0.75 + staffAb('phy') / 40 : 1)); if (!p.inj && c === ut && p.ovr >= teamLevel(ut) - 3) msg('Powrót do zdrowia', `${p.n} wrócił do pełnej sprawności.`); }
   }
@@ -864,7 +864,7 @@ function afterUserClubMatch(m, x) {
   d += clamp((opp.t.rep - mine.t.rep) / 25, -1, 1) * (gd > 0 ? 1 : gd < 0 ? 0.6 : 0.5);
   if (m.comp !== 'L') d *= 0.6;
   const dn = derbyName(mine.t.id, opp.t.id);
-  if (dn) { d *= 1.6; S.fans = clamp(S.fans + (gd > 0 ? 4 : gd < 0 ? -5 : 0), 0, 100); for (const p of mine.t.players) p.mor = clamp(p.mor + (gd > 0 ? 4 : gd < 0 ? -4 : 0), 0, 100); if (gd !== 0) msg(gd > 0 ? `🔥 Wygrana w derbach! (${dn})` : `💔 Porażka w derbach (${dn})`, gd > 0 ? 'Miasto należy do nas! Kibice świętują, a zawodnicy są w świetnych nastrojach.' : 'Bolesna porażka z największym rywalem. Kibice nie zapomną tego szybko.'); }
+  if (dn) { d *= 1.6; S.fans = clamp(S.fans + (gd > 0 ? 4 : gd < 0 ? -5 : 0), 0, 100); for (const p of mine.t.players) p.mor = clamp(p.mor + (gd > 0 ? 4 : gd < 0 ? -4 : 0), 0, 100); if (gd !== 0) msg(gd > 0 ? `🔥 Wygrana: ${dn}!` : `💔 Porażka: ${dn}`, gd > 0 ? 'Miasto należy do nas! Kibice świętują, a zawodnicy są w świetnych nastrojach.' : 'Bolesna porażka z największym rywalem. Kibice nie zapomną tego szybko.'); }
   recordsAfterMatch(m, mine, opp);
   S.h2h = S.h2h || {}; const hr = S.h2h[opp.t.id] = S.h2h[opp.t.id] || { w: 0, d: 0, l: 0 }; if (gd > 0) hr.w++; else if (gd < 0) hr.l++; else hr.d++;
   S.board.conf = clamp(S.board.conf + d, 0, 100);
@@ -1534,9 +1534,9 @@ function msg(title, body, low) { const lo = low != null ? low : MSG_LOW.test(tit
 const FAC_COST = lvl => Math.round(1.5e6 * Math.pow(2.2, lvl - 1));
 const facGet = k => k === 'train' ? S.fac.train : S.acad[k];
 /* ---------- obiekty komercyjne: gastronomia, parking, hotel ---------- */
-const COMM = { gastro: ['🍔 Gastronomia', 'Więcej wpływów z dnia meczowego (+6% za poziom).'], park: ['🅿️ Parking', 'Łatwiejszy dojazd – wyższa frekwencja (+3% za poziom).'], hotel: ['🏨 Hotel klubowy', 'Stały tygodniowy dochód i lepszy wizerunek (sponsorzy +2% za poziom).'], shop: ['🛍️ Sklep klubowy', 'Tygodniowy dochód z koszulek i pamiątek – tym większy, im bardziej zadowoleni kibice.'] };
+const COMM = { gastro: ['🍔 Gastronomia', 'Więcej wpływów z dnia meczowego (+6% za poziom).'], park: ['🅿️ Parking', 'Łatwiejszy dojazd – wyższa frekwencja (+3% za poziom).'], hotel: ['🏨 Hotel klubowy', 'Stały tygodniowy dochód i lepszy wizerunek (sponsorzy +2% za poziom).'], shop: ['🛍️ Sklep klubowy', 'Tygodniowy dochód z koszulek i pamiątek – tym większy, im bardziej zadowoleni kibice.'], turf: ['🌱 Murawa i pielęgnacja', 'Podgrzewana, hybrydowa murawa: mniej kontuzji (−6% za poziom) i silniejszy atut własnego boiska.'], recov: ['🧖 Odnowa biologiczna', 'Kriokomora, baseny, masaże: szybsza regeneracja kondycji po meczach.'] };
 const commLvl = k => (S.fac && S.fac[k]) || 0;
-const commCost = (k, lvl) => Math.round(userClub().cap * ({ gastro: 35, park: 25, hotel: 120, shop: 30 })[k] * Math.pow(1.7, lvl) / 1e4) * 1e4;
+const commCost = (k, lvl) => Math.round(Math.max(8000, userClub().cap) * ({ gastro: 35, park: 25, hotel: 120, shop: 30, turf: 22, recov: 28 })[k] * Math.pow(1.7, lvl) / 1e4) * 1e4;
 function upgradeComm(k) {
   const lvl = commLvl(k), ut = userClub(); if (lvl >= 5) return { ok: false, msg: 'Maksymalny poziom.' };
   const cost = commCost(k, lvl); if (ut.bal < cost) return { ok: false, msg: `Za mało środków (${money(cost)}).` };

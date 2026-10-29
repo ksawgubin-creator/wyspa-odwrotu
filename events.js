@@ -377,6 +377,7 @@ function eventsWeek(d) {
   const merch = Math.round(ut.spons * 0.12 * (S.fans / 60)); ut.bal += merch; ut.fin.inc += merch;
   S.press = clamp(S.press + (55 - S.press) * 0.03, 0, 100);
   // obietnice (3 tygodnie, wymagane ≥55% minut)
+  if (S.leagues[ut.lg].lsMap[d.ls] === -1) for (const pr of S.promises) pr.until += 6;   // bez meczów (przerwa) termin obietnicy stoi
   for (const pr of S.promises.slice()) {
     const p = pget(pr.pid);
     if (!p || p.tid !== S.user) { S.promises = S.promises.filter(x => x !== pr); continue; }
@@ -441,7 +442,8 @@ function pressConference(x) {
   if (x.opts.comp === 'P') return null;
   const big = x.opts.comp !== 'L' && x.opts.comp !== 'F' || (opp.rep || 50) >= (mine.rep || 50) + 6 || !!(typeof derbyName === 'function' && derbyName(mine.id, opp.id));
   const pm = (S.settings && S.settings.press) || 'rare';
-  if (pm === 'off' || (pm === 'rare' && (!big || rnd() > 0.5)) || (pm === 'on' && !big && rnd() > 0.3)) return null;
+  const huge = !!(typeof derbyName === 'function' && derbyName(mine.id, opp.id)) || (x.opts.comp !== 'L' && x.opts.comp !== 'F' && x.opts.comp !== 'P' && /Finał|Półfinał|Ćwierćfinał|faza ligowa 1\//.test(x.opts.label || ''));
+  if (pm === 'off' || (pm === 'rare' && (!huge || rnd() > 0.7)) || (pm === 'on' && !big && rnd() > 0.3)) return null;
   const fav = (mine.rep || 50) >= (opp.rep || 50) + 4, ps = mine.players || [], star = ps.slice().sort((a, b) => b.ovr - a.ovr)[0];
   const inj = ps.filter(p => p.inj).sort((a, b) => b.ovr - a.ovr)[0], losing = lastRes(3).filter(r => r === 'L').length >= 2, winning = lastRes(3).filter(r => r === 'W').length >= 3;
   const listed = ps.find(p => p.listed), young = ps.filter(p => p.age <= 20 && p.st.apps > 0).sort((a, b) => b.ovr - a.ovr)[0];
@@ -484,7 +486,7 @@ function postMatchPress(m, user) {
   if (gd < 0) qs.push({ q: `Porażka ${me.goals}:${op.goals}. Co poszło nie tak?`, a: [['„Biorę odpowiedzialność na siebie.”', 'calm', { team: 3, board: 1, press: 1 }], ['„Zawodnicy nie zrealizowali założeń.”', 'harsh', { team: -4, fans: 2, press: 2 }], ['„Sędzia zdecydował o wyniku.”', 'bold', { fans: 3, press: -3, board: -1 }]] });
   if (gd <= 0 && (me.xg || 0) > (op.xg || 0) + 0.8) qs.push({ q: 'Mieliście dużo więcej sytuacji. Brakuje skuteczności?', a: [['„Gramy dobrze – gole przyjdą.”', 'calm', { team: 2 }], ['„Napastnicy muszą to poprawić.”', 'harsh', { team: -2, press: 1 }], ['„Piłka bywa niesprawiedliwa.”', 'evasive', { press: 1 }]] });
   if (red && gd <= 0) qs.push({ q: `Czerwona kartka dla zawodnika ${red.p.n}. Czy to zaważyło na meczu?`, p: red.p.id, a: [['„Bronię zawodnika – to była walka.”', 'calm', { player: 5, team: 2, press: -1 }], ['„To było nieodpowiedzialne.”', 'harsh', { player: -6, board: 1, press: 2 }], ['„Wyjaśnimy to wewnętrznie.”', 'evasive', { player: 1 }]] });
-  if (dn) qs.push({ q: gd > 0 ? `Wygrane ${dn}! Co to znaczy dla kibiców?` : gd < 0 ? `Przegrane ${dn}. Jak przeprosi Pan kibiców?` : `Remis w ${dn}. Zadowolony?`, a: [['„Ten wynik jest dla kibiców.”', 'calm', { fans: gd >= 0 ? 4 : 1, team: 1 }], [gd >= 0 ? '„To miasto jest nasze.”' : '„Rewanż będzie inny – obiecuję.”', 'bold', { fans: gd >= 0 ? 6 : 3, boast: gd < 0 }], ['„To tylko trzy punkty.”', 'evasive', { fans: -3, press: 1 }]] });
+  if (dn) qs.push({ q: gd > 0 ? `Wygrana w derbach (${dn})! Co to znaczy dla kibiców?` : gd < 0 ? `Porażka w derbach (${dn}). Jak przeprosi Pan kibiców?` : `Remis w derbach (${dn}). Zadowolony?`, a: [['„Ten wynik jest dla kibiców.”', 'calm', { fans: gd >= 0 ? 4 : 1, team: 1 }], [gd >= 0 ? '„To miasto jest nasze.”' : '„Rewanż będzie inny – obiecuję.”', 'bold', { fans: gd >= 0 ? 6 : 3, boast: gd < 0 }], ['„To tylko trzy punkty.”', 'evasive', { fans: -3, press: 1 }]] });
   if (motm && gd >= 0) qs.push({ q: `${motm.n} zawodnikiem meczu. Jak go Pan oceni?`, p: motm.id, a: [['„Wielki występ – zasłużył.”', 'calm', { player: 5, team: 1 }], ['„To dopiero początek jego możliwości.”', 'bold', { player: 7, team: -1 }], [gd > 0 ? '„Wygrała drużyna, nie jeden zawodnik.”' : '„To zasługa całej drużyny, nie jednego zawodnika.”', 'evasive', { team: 2, player: -2 }]] });
   if (!qs.length) qs.push({ q: `Wynik ${me.goals}:${op.goals}. Jak ocenia Pan ten mecz?`, a: [['„Solidny występ, idziemy dalej.”', 'calm', { team: 1, press: 1 }], ['„Stać nas na dużo więcej.”', 'harsh', { team: -1, board: 1 }], ['„Bez komentarza.”', 'evasive', { press: -2 }]] });
   const q = pickFresh(qs);

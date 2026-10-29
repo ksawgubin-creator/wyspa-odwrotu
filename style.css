@@ -359,3 +359,4 @@ tr.cl td,tr.el td,tr.ecl td,tr.up td,tr.dn td{background:rgba(255,255,255,.025)}
 .tick span{color:var(--mut)}.tick span.hot{color:var(--acc);font-weight:800}
 .mleg{display:flex;flex-wrap:wrap;gap:2px 10px;font-size:11px;color:var(--mut);margin:4px 2px}
 .mleg b{color:var(--txt)}
+.btns.stick{position:sticky;bottom:-1px;background:var(--card,#121c33);padding:8px 0;margin-bottom:0;z-index:2;box-shadow:0 -8px 12px rgba(0,0,0,.25)}

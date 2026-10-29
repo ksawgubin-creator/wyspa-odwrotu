@@ -189,6 +189,7 @@ function vHome() {
     ${nx ? `<div class="row"><small>${esc(nx.label)}</small><span class="sp"></span><span class="pill">${fmtDate(nx.d.date)}</span></div>
     ${isTbd(nx) ? `<div class="fixture"><div class="tm">${badge(nx.h, 'lg')}<span>${esc(nx.h.name)}</span></div><div class="vs" style="font-size:15px">🎲<br><small class="mut">rywal zostanie wylosowany</small></div></div>` : `<div class="fixture"><div class="tm">${badge(nx.h, 'lg')}<span>${esc(nx.h.name)}</span></div><div class="vs">vs</div><div class="tm">${badge(nx.a, 'lg')}<span>${esc(nx.a.name)}</span></div></div>`}` : '<b>Koniec sezonu</b>'}
     ${nx && !nx.nt && nx.h.lg && nx.a.lg ? `<div class="row mut" style="font-size:12px;justify-content:space-between"><span>${heroInfo(nx.h)}</span><span>${heroInfo(nx.a)}</span></div>` : ''}
+    ${(() => { const xi = ut.lineup.map(pget).filter(Boolean); if (!xi.length) return ''; const f = Math.round(avg(xi.map(p => p.fit))), bench = ut.players.filter(p => !ut.lineup.includes(p.id) && isAvail(p) && roleOf(p) === 'key'); return `<div class="row" style="font-size:12px;margin-top:4px"><span class="${f < 70 ? 'bad' : f < 82 ? 'warn' : 'mut'}">🔋 Kondycja jedenastki: ${f}%${f < 70 ? ' – rozważ rotację' : ''}</span></div>${bench.length ? `<div class="row" style="font-size:12px"><span class="warn">⚠️ Kluczowy na ławce: ${bench.map(p => esc(lastName(p))).join(', ')}</span></div>` : ''}`; })()}
     <div class="btns">${today && nx.pre && S.pre && !S.pre.chosen ? `<button class="btn sp" disabled>☀️ Najpierw wybierz turniej poniżej</button>` : today ? `<button class="btn pri sp" data-act="prematch">⚽ Graj mecz</button><button class="btn" data-act="quicksim">⏩ Symuluj</button>` : `<button class="btn pri sp" data-act="cont">▶ Kontynuuj</button>`}</div>
   </div>
   ${S.pre && !S.pre.chosen && S.pre.season === S.season && S.cal[S.day] && S.cal[S.day].t === 'P' ? preCard() : ''}
@@ -381,7 +382,7 @@ function vTactic(t) {
   const spCard = t._st ? '' : `<div class="card"><h2>Stałe fragmenty gry</h2><div class="kv">
       ${spSel('pen', '⚽ Rzuty karne', p => 'STR ' + Math.round(p.a[1]))}${spSel('fk', '🎯 Rzuty wolne', p => 'STR ' + Math.round(p.a[1]) + '/POD ' + Math.round(p.a[2]))}${spSel('ck', '🚩 Rzuty rożne', p => 'POD ' + Math.round(p.a[2]))}</div>
       <small class="mut">Główki po rożnych najczęściej wygrywają silni (FIZ) środkowi obrońcy i napastnicy.</small></div>
-    <div class="card"><h2>Rotacja</h2><div class="row"><span class="sp">Asystent automatycznie wstawia wypoczętych zmienników za zawodników z kondycją poniżej 70%</span><button class="btn sm ${S.settings.autoRot ? 'pri' : ''}" data-act="autorot">${S.settings.autoRot ? 'Włączona' : 'Wyłączona'}</button></div></div>`;
+    <div class="card"><h2>Rotacja</h2><div class="row"><span class="sp">Asystent automatycznie wstawia wypoczętych zmienników za zawodników z kondycją poniżej 70%</span><button class="btn sm ${S.settings.autoRot !== false ? 'pri' : ''}" data-act="autorot">${S.settings.autoRot !== false ? 'Włączona' : 'Wyłączona'}</button></div></div>`;
   const dev = clamp(t.lineup.reduce((s0, id, i) => { const pos = slotsOf(t.formation)[i] && slotsOf(t.formation)[i].pos; return s0 + (pos && pos !== 'GK' && t.duty && t.duty[i] != null ? t.duty[i] - DUTY_DEF[pos] : 0); }, 0), -5, 5);
   return `<div class="card"><h2>Styl gry</h2>${presetHtml(t, 'preset')}
       ${(t.tpre || []).length ? `<h3>Własne taktyki</h3>${t.tpre.map((p, i) => `<div class="row"><span class="sp">📁 ${esc(p.n)} <small class="mut">${p.f} • ${MENT[p.ment]}</small></span><button class="btn sm" data-act="cpreload" data-arg="${i}">Wczytaj</button><button class="btn sm" data-act="cpredel" data-arg="${i}">✕</button></div>`).join('')}` : ''}
@@ -1070,9 +1071,9 @@ function vFin() {
     <div><span>Stadion</span><b>${ut.cap.toLocaleString('pl-PL')}</b></div><div><span>Bilet</span><b>${Math.round(ut.price)} €</b></div>
     <div><span>Przychody (sezon)</span><b>${money(ut.fin.inc)}</b></div><div><span>Wydatki (sezon)</span><b>${money(ut.fin.exp)}</b></div>
     <div><span>Bilans transferów</span><b class="${ut.fin.tr < 0 ? 'bad' : 'good'}">${money(ut.fin.tr)}</b></div><div><span>Reputacja</span><b>${ut.rep}</b></div>
-    <div><span>Sztab/tydz.</span><b>${money(staffCost())}</b></div><div><span>Akademia/tydz.</span><b>${money(acadCost())}</b></div>
+    <div><span>Sztab/tydz.</span><b>${money(staffCost())}</b></div><div><span>Akademia/tydz.</span><b>${money(acadCost())}</b></div>${ut.opex ? `<div><span>Koszty operacyjne/tydz.</span><b>${money(ut.opex)}</b></div>` : ''}
     ${(S.debts || []).length ? `<div><span>Raty do spłaty</span><b class="warn">${money(sum(S.debts.map(d => d.amt * d.left)))}</b></div>` : ''}</div>
-    ${lf ? `<small class="mut">Ostatni tydzień: bilety ${money(lf.gate)}, TV ${money(lf.tv)}, sponsorzy ${money(lf.spons)}, pensje i koszty (sztab, akademia, skauci) ${money(lf.wages)} → <b class="${lf.net >= 0 ? 'good' : 'bad'}">${money(lf.net)}</b></small>` : ''}</div>
+    ${lf ? `<small class="mut">Ostatni tydzień: bilety ${money(lf.gate)}, TV ${money(lf.tv)}, sponsorzy ${money(lf.spons)}, pensje i koszty (sztab, akademia, skauci${lf.opex ? ', operacyjne' : ''}) ${money(lf.wages)} → <b class="${lf.net >= 0 ? 'good' : 'bad'}">${money(lf.net)}</b></small>` : ''}</div>
     ${(() => { const h = (S.uhist || []).filter(x => x.s === S.season); return h.length >= 2 && typeof sparkSVG === 'function' ? `<div class="card"><b>Saldo w sezonie</b><div>${sparkSVG(h.map(x => x.bal), { w: 320, h: 60 })}</div><small class="mut">${money(h[0].bal)} → ${money(h[h.length - 1].bal)}</small></div>` : ''; })()}
     <div class="card"><h2>Zarząd</h2>${bar(S.board.conf)}<small>Zaufanie ${Math.round(S.board.conf)}%. ${esc(S.board.text)}${S.board.euro ? ' Europa: ' + esc(S.board.euro) + '.' : ''}</small>
     <div class="kv"><div><span>Menedżer</span><b>${esc(S.manager)}</b></div><div><span>OVR trenera</span><b>${Math.round(S.mgr.ovr)}</b></div></div></div>`;
@@ -1151,7 +1152,7 @@ function vFac() {
 ACT.upcomm = k => { const r = upgradeComm(k); toast(r.msg, r.ok ? 'ok' : 'bad'); render(); };
 const stadExp = c => { const add = Math.max(1000, Math.round(c.cap * 0.1 / 500) * 500); return { add, cost: Math.round(add * c.price * 90 / 1e5) * 1e5 }; };
 function stadiumCard(ut) {
-  const e = stadExp(ut), att = attendance(ut, false), dem = Math.round(ticketDemand(ut) * (0.85 + (S.fans != null ? S.fans : 60) / 400) * (1 + commLvl('park') * 0.03) * priceK(ut)), gate = Math.round(att * ut.price * (1 + commLvl('gastro') * 0.06));
+  const e = stadExp(ut), att = attendance(ut, false), dem = Math.round(ticketDemand(ut) * (0.85 + (S.fans != null ? S.fans : 60) / 400) * (1 + commLvl('park') * 0.03) * priceK(ut)), gate = Math.round(GATE_NET * att * ut.price * (1 + commLvl('gastro') * 0.06));
   const full = dem >= ut.cap;
   return `<div class="card"><h2>🏟️ Stadion</h2>
     <div class="kv"><div><span>Pojemność</span><b>${ut.cap.toLocaleString('pl-PL')}</b></div><div><span>Popyt na bilety</span><b>${dem.toLocaleString('pl-PL')}</b></div>
@@ -1195,14 +1196,14 @@ function vGame() {
     <div class="card"><h2>Poziom trudności</h2><div class="row"><b class="sp">${DIFF[S.diff || 'normal'].n}</b>${(S.diff || 'normal') !== 'easy' ? '<button class="btn sm" data-act="difflower">Obniż</button>' : ''}</div><small class="mut">${DIFF[S.diff || 'normal'].d} Poziom można tylko obniżyć – podwyższenie byłoby zbyt łatwym sposobem na „podkręcenie” istniejącej kariery.</small></div>
     <div class="card"><h2>Przerywniki</h2><small class="mut">Ustal, o co gra ma Cię pytać. Asystent przejmie resztę.</small>
       <h3>Konferencje prasowe</h3><div class="seg">${[['on', 'Często'], ['rare', 'Tylko ważne mecze'], ['off', 'Wyłączone']].map(([k, n]) => `<button class="btn sm ${(S.settings.press || 'rare') === k ? 'on' : ''}" data-act="setpress" data-arg="${k}">${n}</button>`).join('')}</div>
-      ${[['htAuto', 'Odprawę w przerwie prowadzi asystent', true], ['autoPause', 'Pauza przy czerwonej kartce / kontuzji bez zmiany', true], ['resPopup', 'Okno z wynikami kolejki po meczu', false]].map(([k, n, def]) => `<div class="row" style="margin-top:8px"><span class="sp">${n}</span><button class="btn sm ${(S.settings[k] != null ? S.settings[k] : def) ? 'pri' : ''}" data-act="settog" data-arg="${k}">${(S.settings[k] != null ? S.settings[k] : def) ? 'Tak' : 'Nie'}</button></div>`).join('')}</div>
+      ${[['htAuto', 'Odprawę w przerwie prowadzi asystent', true], ['autoSubs', 'Asystent robi zmiany zmęczonych zawodników (mecz na żywo)', true], ['autoPause', 'Pauza przy czerwonej kartce / kontuzji bez zmiany', true], ['resPopup', 'Okno z wynikami kolejki po meczu', false]].map(([k, n, def]) => `<div class="row" style="margin-top:8px"><span class="sp">${n}</span><button class="btn sm ${(S.settings[k] != null ? S.settings[k] : def) ? 'pri' : ''}" data-act="settog" data-arg="${k}">${(S.settings[k] != null ? S.settings[k] : def) ? 'Tak' : 'Nie'}</button></div>`).join('')}</div>
     <div class="card"><h2>Szybkość meczu</h2><div class="seg">${[1, 2, 4, 8].map(s => `<button class="btn sm ${S.settings.speed === s ? 'on' : ''}" data-act="defspeed" data-arg="${s}">x${s}</button>`).join('')}</div></div>
     <div class="card"><h2>Kariery</h2><small class="mut">Ta kariera jest w slocie ${SLOT}. W menu głównym możesz wczytać inną karierę albo zacząć nową w wolnym slocie.</small><div class="btns"><button class="btn full" data-act="newgame">🏠 Menu główne (sloty karier)</button></div></div>`;
 }
 ACT.savegame = async () => { await saveNow(); toast('Zapisano grę.'); };
 ACT.difflower = () => { const o = ['easy', 'normal', 'hard', 'expert'], i = o.indexOf(S.diff || 'normal'); if (i <= 0) return; const nx = o[i - 1]; if (!confirm(`Obniżyć poziom trudności na: ${DIFF[nx].n}? Tej zmiany nie można cofnąć.`)) return; S.diff = nx; saveSoon(); toast(`Poziom trudności: ${DIFF[nx].n}`, 'ok'); render(); };
 ACT.setpress = k => { S.settings.press = k; saveSoon(); render(); };
-ACT.settog = k => { const def = { htAuto: true, autoPause: true, resPopup: false }[k]; S.settings[k] = !(S.settings[k] != null ? S.settings[k] : def); saveSoon(); render(); };
+ACT.settog = k => { const def = { htAuto: true, autoPause: true, resPopup: false, autoSubs: true }[k]; S.settings[k] = !(S.settings[k] != null ? S.settings[k] : def); saveSoon(); render(); };
 ACT.defspeed = s => { S.settings.speed = +s; saveSoon(); render(); };
 ACT.newgame = async () => { if (confirm('Wrócić do menu głównego? Kariera jest zapisana.')) { await saveNow(); location.reload(); } };
 ACT.export = () => {
@@ -1225,7 +1226,7 @@ ACT.prematch = () => {
   MX = userMatchToday(); if (!MX) return;
   if (PRESS_DONE !== S.day) { PRESS_DONE = S.day; const pc = pressConference(MX); if (pc) { PC = pc; return renderPress(); } }
   const mine = MX.user === 'h' ? MX.h : MX.a, opp = MX.user === 'h' ? MX.a : MX.h;
-  if (!MX.nt && S.settings.autoRot && PRE_ROT !== S.day) { PRE_ROT = S.day; const r = rotateTired(mine, 70); if (r.length) toast(`Asystent zrotował składem: ${r.length} ${r.length === 1 ? 'zmiana' : 'zmiany'}.`, 'ok'); }
+  if (!MX.nt && S.settings.autoRot !== false && PRE_ROT !== S.day) { PRE_ROT = S.day; const r = rotateTired(mine, 70); if (r.length) toast(`Asystent zrotował składem: ${r.length} ${r.length === 1 ? 'zmiana' : 'zmiany'}.`, 'ok'); }
   const msgs = fixLineup(mine, MX.nt ? null : emergencyFor(mine)); if (MX.nt) syncNT(mine);
   const sl = mine.lineup.map(pget), tired = sl.filter(p => p.fit < 65);
   modal(`<h2>Przed meczem</h2><small class="mut">${esc(MX.opts.label)}</small>
@@ -1238,7 +1239,7 @@ ACT.prematch = () => {
     <h3>Odprawa przedmeczowa</h3><div class="seg talk">${Object.entries(TALKS).map(([k, v]) => `<button class="btn sm ${TALK === k ? 'on' : ''}" data-act="settalk" data-arg="${k}">${v}</button>`).join('')}</div>
     ${msgs.length ? `<p class="warn">${msgs.map(esc).join('<br>')}</p>` : ''}
     ${tired.length ? `<p class="warn">😮‍💨 Zmęczeni: ${tired.map(p => esc(lastName(p)) + ' ' + Math.round(p.fit) + '%').join(', ')}</p>${MX.nt ? '' : '<div class="btns"><button class="btn sm full" data-act="rotate">🔄 Rotuj zmęczonych (wstaw wypoczętych zmienników)</button></div>'}` : ''}
-    <div class="btns"><button class="btn pri sp" data-act="startmatch">▶ Rozpocznij</button><button class="btn" data-act="quicksim">⏩ Symuluj</button></div>
+    <div class="btns stick"><button class="btn pri sp" data-act="startmatch">▶ Rozpocznij</button><button class="btn" data-act="quicksim">⏩ Symuluj</button></div>
     <div class="btns"><button class="btn full" data-act="goteam">Zmień skład</button></div>`);
 };
 let PC = null, PRE_ROT = -1, LIVEX = [];
@@ -1263,15 +1264,17 @@ ACT.pressans = i => { const out = answerPress(PC, +i); toast(out.join(' • ') |
 ACT.settalk = k => { TALK = k; document.querySelectorAll('#modal .talk button').forEach(b => b.classList.toggle('on', b.dataset.arg === k)); };
 ACT.goteam = () => { closeModal(); UI.tab = 'squad'; UI.sqTab = 'pitch'; UI.nt = !!(MX && MX.nt); render(); };
 CHG.setsp = (v, el) => { const t = userClub(); t.sp = t.sp || {}; t.sp[el.dataset.k] = v === '' ? null : +v; saveSoon(); toast('Zapisano wykonawcę stałych fragmentów.', 'ok'); };
-ACT.autorot = () => { S.settings.autoRot = !S.settings.autoRot; saveSoon(); render(); };
+ACT.autorot = () => { S.settings.autoRot = S.settings.autoRot === false; saveSoon(); render(); };
 ACT.prement = k => { const mine = MX.user === 'h' ? MX.h : MX.a; mine.ment = k; if (MX.nt) syncNT(mine); saveSoon(); document.querySelectorAll('#modal .seg button').forEach(b => b.classList.toggle('on', b.dataset.arg === k)); };
 ACT.quicksim = () => {
   closeModal(); MX = userMatchToday(); if (!MX) return;
+  if (!MX.nt && S.settings.autoRot !== false && PRE_ROT !== S.day) { PRE_ROT = S.day; rotateTired(MX.user === 'h' ? MX.h : MX.a, 70); }
   M = createMatch(MX.h, MX.a, { ...MX.opts, user: MX.user, quick: true }); doTalk(); while (!M.over) step(M);
   showResult();
 };
-ACT.startmatch = () => {
+ACT.startmatch = async () => {
   closeModal(); if (typeof toastClear === 'function') toastClear(); MX = userMatchToday(); if (!MX) return;
+  clearTimeout(saveT); await saveNow();   // zapis przed meczem – po ewentualnym zamknięciu aplikacji gra wraca do tego miejsca
   globalThis.MATCH_LIVE = true; LIVEX = MX.nt ? [] : preSimOthers(MX);
   M = createMatch(MX.h, MX.a, { ...MX.opts, user: MX.user }); doTalk();
   MS = { speed: S.settings.speed || 2, paused: false, over: false };
@@ -1288,7 +1291,9 @@ function doTalk() { const s = uside(), o = s === M.home ? M.away : M.home; const
 ACT.httalk = k => { const s = uside(), o = s === M.home ? M.away : M.home; const r = teamTalk(s, k, o.t.rep || 50, true, s.goals - o.goals); M.htTalk = true; ev(M, 'info', s, `🗣️ Przerwa: ${TALKS[k]} – ${talkMsg(r, true)}${talkDetail(r)}`); M.dirty = true; upd(); mctl(); };
 function tick() {
   if (MS.paused || MS.over) return;
-  const r = step(M); upd();
+  const r = step(M);
+  if (S.settings.autoSubs !== false && [62, 72, 82].includes(M.minute) && uside().subs < 4) { const n0 = uside().subs; aiSubs(M, uside()); if (uside().subs > n0) M.ev[M.ev.length - 1].text += ' (asystent)'; }
+  upd();
   if (r === 'ft') { MS.over = true; mctl(); return; }
   if (r === 'ht' && S.settings.htAuto !== false) { const s = uside(), o = s === M.home ? M.away : M.home, d = s.goals - o.goals, k = d < 0 ? 'motivate' : d > 0 ? 'calm' : 'motivate'; const tr = teamTalk(s, k, o.t.rep || 50, true, d); M.htTalk = true; ev(M, 'info', s, `🗣️ Przerwa (asystent): ${TALKS[k]} – ${talkMsg(tr, true)}`); upd(); }
   else if (r === 'ht' || r === 'et') { MS.paused = true; mctl(); if (r === 'et') toast('Dogrywka!'); document.querySelectorAll('.uk-goal').forEach(e => e.remove()); return; }

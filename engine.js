@@ -129,7 +129,7 @@ function aiStyle(t, d) {
 }
 const MAX_SUBS = 5, BENCH = 9;
 // strojenie silnika: przewaga własnego boiska i „stromość” różnic siły
-let FIN_K = 0.1, SHOT_BASE = 0.25, SHOT_EXP = 1.3, FIN_EXP = 2.2, HOME_ADV = 1.13, AWAY_ADV = 0.9, DAY_VAR = 0.07;
+let UND_K = 0.01, UND_MAX = 0.15, POSS_EXP = 1.5, FIN_K = 0.104, SHOT_BASE = 0.25, SHOT_EXP = 1.15, FIN_EXP = 1.9, HOME_ADV = 1.13, AWAY_ADV = 0.9, DAY_VAR = 0.07;
 
 /* ---------- stan zawodnika ---------- */
 // polska odmiana liczebników: 1 gol, 2 gole, 5 goli
@@ -276,6 +276,7 @@ function createMatch(h, a, opts = {}) {
   };
   const d = (h.rep || 50) - (a.rep || 50);
   if (m.comp === 'C' && Math.abs(d) >= 10) (d > 0 ? m.away : m.home).cf *= 1.07; // magia pucharu: słabszy gra ambitniej
+  { const ah = avg(m.home.pitch.map(x => x.ov)), aa = avg(m.away.pitch.map(x => x.ov)), gap = Math.abs(ah - aa); if (gap > 4) (ah > aa ? m.away : m.home).cf *= 1 + Math.min(UND_MAX, (gap - 4) * UND_K); }   // słabszy mobilizuje się – mniej pogromów
   if (m.home.ai && !m.home.user) m.home.ment = d > 10 ? 'att' : d < -12 ? 'def' : 'bal';
   if (m.away.ai && !m.away.user) m.away.ment = d < -10 ? 'att' : d > 12 ? 'def' : 'bal';
   // AI przeciw użytkownikowi gra swoim stylem i czasem kryje najgroźniejszego zawodnika
@@ -401,7 +402,7 @@ function step(m) {
   const TH = H.tac || {}, TA = A.tac || {};
   // pressing słabiej działa na cierpliwy zespół z dobrym podaniem; ostry odbiór psuje grę rywala
   const pe = (T, O, OS) => 0.05 * (T.press || 0) * (1 - ((O.tempo || 0) < 0 ? 0.5 : 0));
-  const hm = Math.pow(H.str.mid, 2) * (m.neutral ? 1 : 1.06) * (1 + pe(TH, TA)) * (A.oi.hard ? 0.95 : 1), am = Math.pow(A.str.mid, 2) * (1 + pe(TA, TH)) * (H.oi.hard ? 0.95 : 1);
+  const hm = Math.pow(H.str.mid, POSS_EXP) * (m.neutral ? 1 : 1.06) * (1 + pe(TH, TA)) * (A.oi.hard ? 0.95 : 1), am = Math.pow(A.str.mid, POSS_EXP) * (1 + pe(TA, TH)) * (H.oi.hard ? 0.95 : 1);
   const att = rnd() < hm / (hm + am) ? H : A, def = att === H ? A : H;
   att.poss++;
   // odbiór piłki: zasługa obrońcy/pomocnika drużyny, która przejęła posiadanie
@@ -413,7 +414,7 @@ function step(m) {
   const ha = m.neutral ? 1 : att === H ? HOME_ADV : AWAY_ADV;
   const ta = att.tac || {}, td = def.tac || {};
   const pShot = clamp(SHOT_BASE * Math.pow(aS / dS, SHOT_EXP) * mAtt * mOpp * ha * (1 + 0.1 * (ta.tempo || 0) + 0.04 * (td.tempo || 0) + 0.05 * (ta.line || 0) + 0.03 * ((td.line || 0) < 0 ? 1 : 0)), 0.03, 0.7);
-  const shot = rnd() < pShot * (att.goals - def.goals >= 3 ? 0.7 : 1); if (shot) doShot(m, att, def);   // przy wysokim prowadzeniu drużyna zwalnia
+  const lead = att.goals - def.goals, shot = rnd() < pShot * (lead >= 3 ? 0.6 : lead >= 2 ? 0.8 : lead <= -2 ? 1.12 : 1); if (shot) doShot(m, att, def);   // przy wysokim prowadzeniu drużyna zwalnia
   (m.mom || (m.mom = [])).push((att === H ? 1 : -1) * (shot ? 2.5 : 0.7) * (att.ment === 'att' ? 1.2 : 1));
   const club = isClubComp(m.comp);
   for (const side of [H, A]) {
@@ -501,7 +502,7 @@ function fastSim(h, a, opts = {}) {
   // zmiany: 3 najbardziej zmęczonych w 65. minucie
   for (const side of [H, A]) for (let k = 0; k < 3; k++) { m.minute = 62 + k * 6; aiSubs(m, side); }
   m.minute = 45; calcStr(H, 45); calcStr(A, 45);
-  const hm = Math.pow(H.str.mid, 2) * (m.neutral ? 1 : 1.06), am = Math.pow(A.str.mid, 2), ph = hm / (hm + am);
+  const hm = Math.pow(H.str.mid, POSS_EXP) * (m.neutral ? 1 : 1.06), am = Math.pow(A.str.mid, POSS_EXP), ph = hm / (hm + am);
   const xg = (S1, S2, poss) => {
     const aS = 0.7 * S1.str.att + 0.3 * S1.str.mid, dS = 0.65 * S2.str.def + 0.35 * S2.str.mid;
     const mA = S1.ment === 'att' ? 1.18 : S1.ment === 'def' ? 0.82 : 1, mO = S2.ment === 'att' ? 1.12 : S2.ment === 'def' ? 0.88 : 1;

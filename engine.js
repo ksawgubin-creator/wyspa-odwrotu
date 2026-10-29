@@ -292,7 +292,7 @@ function weatherFor(date, cc, seed) {
   const tot = Object.values(W).reduce((a, b) => a + b, 0); let r = (((seed * 2654435761) >>> 0) % 10007) / 10007 * tot;
   for (const k in W) { r -= W[k]; if (r <= 0) return k; } return 'sun';
 }
-const matchWeather = (h, date) => weatherFor(date, h.cc || 'ENG', Math.floor(date / 864e5) * 7919 + (h.id || 0) * 31 + 17);
+const matchWeather = (h, date) => { const nc = typeof h.nation === 'string' ? h.nation : null; return weatherFor(date, h.cc || nc || 'ENG', Math.floor(date / 864e5) * 7919 + (h.id != null ? h.id : nc ? nc.charCodeAt(0) * 97 + nc.charCodeAt(1) * 13 + nc.charCodeAt(2) : 0) * 31 + 17); };
 function createMatch(h, a, opts = {}) {
   const m = {
     comp: opts.comp || 'L', label: opts.label || '', neutral: !!opts.neutral, ko: opts.ko || null,

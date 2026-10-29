@@ -193,7 +193,7 @@ function vHome() {
     ${nx && !nx.nt && nx.h.lg && nx.a.lg ? `<div class="row mut" style="font-size:12px;justify-content:space-between"><span>${heroInfo(nx.h)}</span><span>${heroInfo(nx.a)}</span></div>` : ''}
     ${(() => { const xi = ut.lineup.map(pget).filter(Boolean); if (!xi.length) return ''; const f = Math.round(avg(xi.map(p => p.fit))), bench = ut.players.filter(p => !ut.lineup.includes(p.id) && isAvail(p) && roleOf(p) === 'key' && p.fit >= 75 && p.ovr >= lineupAvg(ut) + 2); return `<div class="row" style="font-size:12px;margin-top:4px"><span class="${f < 70 ? 'bad' : f < 82 ? 'warn' : 'mut'}">🔋 Kondycja jedenastki: ${f}%${f < 70 ? ' – rozważ rotację' : ''}</span></div>${bench.length ? `<div class="row" style="font-size:12px"><span class="warn">⚠️ Kluczowy na ławce: ${bench.map(p => esc(lastName(p))).join(', ')}</span></div>` : ''}`; })()}
     <div class="btns">${today && nx.pre && S.pre && !S.pre.chosen ? `<button class="btn sp" disabled>☀️ Najpierw wybierz turniej poniżej</button>` : today ? `<button class="btn pri sp" data-act="prematch">⚽ Graj mecz</button><button class="btn" data-act="quicksim">⏩ Symuluj</button>` : `<button class="btn pri sp" data-act="cont">▶ Do meczu</button>`}</div>
-    <div class="btns simrow"><button class="btn sm" data-act="simdays" data-arg="1">+1 dzień</button><button class="btn sm" data-act="simdays" data-arg="3">+3 dni</button><button class="btn sm" data-act="simdays" data-arg="7">+7 dni</button><button class="btn sm" data-act="gocal">📅 Kalendarz</button></div>
+    <div class="btns simrow">${today ? '<small class="mut" style="width:100%;text-align:center">Dziś mecz – symulacja dni po rozegraniu</small>' : ''}<button class="btn sm" data-act="simdays" data-arg="1" ${today ? 'disabled' : ''}>+1 dzień</button><button class="btn sm" data-act="simdays" data-arg="3" ${today ? 'disabled' : ''}>+3 dni</button><button class="btn sm" data-act="simdays" data-arg="7" ${today ? 'disabled' : ''}>+7 dni</button><button class="btn sm" data-act="gocal">📅 Kalendarz</button></div>
   </div>
   ${windowBanner()}
   ${S.pre && !S.pre.chosen && S.pre.season === S.season && S.cal[S.day] && S.cal[S.day].t === 'P' ? preCard() : ''}
@@ -276,7 +276,7 @@ ACT.evchoose = a => {
   modal(`<h2>${r.risky ? '😬 Nie poszło po myśli' : 'Decyzja podjęta'}</h2><p>${esc(r.r)}</p><div class="fxl">${r.fx.map(f => `<span class="pill">${esc(f)}</span>`).join(' ') || '<small class="mut">Bez większych konsekwencji.</small>'}</div>
     <div class="btns"><button class="btn pri full" data-act="evnext">${S.pending.length ? 'Następna decyzja' : 'OK'}</button></div>`, true);
 };
-ACT.evnext = () => { closeModal(); render(); if (S.pending.length) ACT.event(S.pending[0].uid); };
+ACT.evnext = () => { closeModal(); render(); if (S.pending.length) ACT.event(S.pending[0].uid); else winPopups(); };
 ACT.jobs = () => {
   modal(`<h2>📨 Oferty pracy</h2><small class="mut">Twój OVR trenera: ${Math.round(S.mgr.ovr)} (${mgrLabel(S.mgr.ovr)}). Przyjęcie oferty oznacza odejście z ${esc(userClub().name)}.</small>
     ${S.jobs.map(j => { const c = club(j.club), r = table(c.lg).find(x => x.id === c.id); return `<div class="card"><div class="row">${badge(c)}<div class="sp"><b>${esc(c.name)}</b><br><small>${S.countries[c.cc].flag} ${esc(S.leagues[c.lg].name)} • ${r.pos}. miejsce • rep. ${c.rep}</small></div><span class="stars">${stars(c)}</span></div>
@@ -298,6 +298,7 @@ ACT.cont = async () => {
     if (S.sacked) return showSacked();
     if (S.pending.length) return ACT.event(S.pending[0].uid);
     S.now = null;
+    if (winPopups()) return;
     if (userMatchToday()) { ACT.prematch(); return; }
     busy(true, 'Symulacja…');
     for (let n = 0; n < 40; n++) {
@@ -324,25 +325,28 @@ async function simTo(target) {
       if (S.day >= S.cal.length) break;
       if (curDay().date > target) { S.now = target; break; }
       S.now = null;
+      if (popPending()) { stop = 'pop'; break; }
       if (userMatchToday()) { stop = 'match'; break; }
       const r = processDay(null);
       if (r.summary) { busy(false); await saveNow(); render(); return showSummary(r.summary); }
       if (S.sacked) { busy(false); saveNow(); render(); return showSacked(); }
-      if (S.pending.length || S.winPop === S.day || S.ddPop === S.day) { stop = 'ev'; if (curDay().date > target && S.winPop !== S.day && S.ddPop !== S.day) S.now = target; break; }
+      if (S.pending.length) { stop = 'ev'; if (curDay().date > target) S.now = target; break; }
       busy(true, `Symulacja… ${fmtDate(curDay().date)}`);
       await new Promise(r => setTimeout(r, 0));
     }
     busy(false); saveSoon(); render();
     if (S.pending.length) ACT.event(S.pending[0].uid);
     else if (winPopups()) {}
-    else if (stop === 'match') { toast('Dzień meczowy – symulacja zatrzymana.'); ACT.prematch(); }
+    else if (stop === 'match') { toast('⚽ Dzień meczowy'); ACT.prematch(); }
   } finally { running = false; busy(false); }
 }
 ACT.simdays = n => simTo(todayMs() + +n * 864e5);
 ACT.simto = ms => { closeModal(); simTo(+ms); };
 ACT.gocal = () => { navPush(); UI.tab = 'comps'; UI.compTab = 'cal'; UI.calM = null; render(); };
 /* wyskakujące okna: otwarcie zimowego okna i Deadline Day (raz) */
+const popPending = () => S.day < S.cal.length && ((S.ddPop === S.day && S._ddShown !== S.day + S.season * 1000) || (S.winPop === S.day && S._wpShown !== S.day + S.season * 1000));
 function winPopups() {
+  if (!atEntry() || S.pending.length) return false;
   if (S.ddPop === S.day && S._ddShown !== S.day + S.season * 1000) { S._ddShown = S.day + S.season * 1000; const dl = (S.dl ? S.dl.deals : []).map(pget).filter(Boolean);
     modal(`<div class="ddhead">⏰ DEADLINE DAY</div><p>Dziś o północy zamyka się okno transferowe! Agenci dzwonią bez przerwy, kluby szukają ostatnich wzmocnień.</p>
       <div class="kv"><div><span>Oferty za Twoich zawodników</span><b>${S.offers.length}</b></div><div><span>Budżet transferowy</span><b>${money(userClub().tb)}</b></div></div>
@@ -872,7 +876,7 @@ ACT.calday = ms => {
   if (k === dKey(w.sum[1]) || k === dKey(w.win[1])) notes.push('⏰ Deadline Day – ostatni dzień okna transferowego.');
   if (k === dKey(w.win[0])) notes.push('🟢 Otwarcie zimowego okna transferowego.');
   const isToday = k === dKey(todayMs());
-  modal(`<h2>📅 ${fmtDate(ms)}</h2>${xs.map(x => `<div class="row">${badge(x.h, 'sm')}<b class="sp">${esc(x.h.name)} – ${esc(x.a.name)}</b>${badge(x.a, 'sm')}</div><small class="mut">${esc(x.label || '')} • prognoza: ${WX[matchWeather(x.h, x.d.date)][0]} ${WX[matchWeather(x.h, x.d.date)][1]}</small>`).join('')}
+  modal(`<h2>📅 ${fmtDate(ms)}</h2>${xs.map(x => `<div class="row">${badge(x.h, 'sm')}<b class="sp">${esc(x.h.name)} – ${esc(x.a.name)}</b>${badge(x.a, 'sm')}</div><small class="mut">${esc(x.label || '')} • ${isTbd(x) || x.a.id == null ? 'prognoza po losowaniu' : `prognoza: ${WX[matchWeather(x.h, x.d.date)][0]} ${WX[matchWeather(x.h, x.d.date)][1]}`}</small>`).join('')}
     ${notes.map(n => `<p>${n}</p>`).join('')}${!xs.length && !notes.length ? '<small class="mut">Brak wydarzeń w tym dniu.</small>' : ''}
     <div class="btns">${isToday ? '' : `<button class="btn pri sp" data-act="simto" data-arg="${ms}">⏩ Symuluj do tego dnia</button>`}<button class="btn" data-act="close">Zamknij</button></div>
     <small class="mut">Symulacja zatrzyma się wcześniej przy Twoim meczu, ważnej decyzji, otwarciu okna i w Deadline Day.</small>`);
@@ -1399,6 +1403,7 @@ const SPEED_MS = { 1: 600, 2: 280, 4: 120, 8: 40 };
 const uside = () => MX.user === 'h' ? M.home : M.away;
 let PRESS_DONE = -1, TALK = 'motivate';
 ACT.prematch = () => {
+  if (globalThis.MATCH_LIVE || STARTING) return;
   MX = userMatchToday(); if (!MX) return;
   if (PRESS_DONE !== S.day) { PRESS_DONE = S.day; const pc = pressConference(MX); if (pc) { PC = pc; return renderPress(); } }
   const mine = MX.user === 'h' ? MX.h : MX.a, opp = MX.user === 'h' ? MX.a : MX.h;
@@ -1450,9 +1455,11 @@ ACT.quicksim = () => {
   M = createMatch(MX.h, MX.a, { ...MX.opts, user: MX.user, quick: true }); doTalk(); while (!M.over) step(M);
   showResult();
 };
+let STARTING = false;
 ACT.startmatch = async () => {
+  if (globalThis.MATCH_LIVE || STARTING) return;
   closeModal(); if (typeof toastClear === 'function') toastClear(); MX = userMatchToday(); if (!MX) return;
-  clearTimeout(saveT); await saveNow();   // zapis przed meczem – po ewentualnym zamknięciu aplikacji gra wraca do tego miejsca
+  STARTING = true; busy(true, 'Zapisywanie…'); clearTimeout(saveT); try { await saveNow(); } finally { STARTING = false; busy(false); }   // zapis przed meczem – po ewentualnym zamknięciu aplikacji gra wraca do tego miejsca
   globalThis.MATCH_LIVE = true; LIVEX = MX.nt ? [] : preSimOthers(MX);
   M = createMatch(MX.h, MX.a, { ...MX.opts, user: MX.user }); doTalk();
   MS = { speed: S.settings.speed || 2, paused: false, over: false };
@@ -1576,8 +1583,9 @@ ACT.finishday = () => {
   if (S.sacked) return showSacked();
   if (S.pending.length && !res) return ACT.event(S.pending[0].uid);
   if (res && S.settings.resPopup) modal(`<h2>Wyniki: ${esc(label)}</h2>${tchg}<div class="card list">${res}</div><div class="btns"><button class="btn pri full" data-act="close">OK</button></div>`);
-  else if (res && pos1 != null && pos1 !== pos0) toast(`Tabela: ${pos0}. → ${pos1}. miejsce`, pos1 < pos0 ? 'ok' : 'bad');
+  else if (res && pos1 != null && pos1 !== pos0) { toast(`Tabela: ${pos0}. → ${pos1}. miejsce`, pos1 < pos0 ? 'ok' : 'bad'); winPopups(); }
   else if (S.pending.length) ACT.event(S.pending[0].uid);
+  else winPopups();
 };
 function showSummary(s) {
   const M = s.meta, G = { res: [], you: [], squad: [], fin: [], world: [] };
@@ -1652,7 +1660,7 @@ ACT.begin = () => {
   const n = ($('#mname').value || '').trim() || 'Menedżer';
   SLOT = ST.slot || 1; startCareer(n, ST.club, ST.nt || null, stOvr(), ST.diff || 'normal'); enterApp();
 };
-function enterApp() { $('#start').classList.add('hidden'); $('#app').classList.remove('hidden'); UI.tab = 'home'; render(); window.scrollTo(0, 0); }
+function enterApp() { $('#start').classList.add('hidden'); $('#app').classList.remove('hidden'); UI.tab = 'home'; render(); window.scrollTo(0, 0); if (S && !S.sacked) setTimeout(() => winPopups(), 300); }
 
 /* ---------- start ---------- */
 document.addEventListener('click', e => { const el = e.target.closest('[data-act]'); if (!el || el.disabled) return; const fn = ACT[el.dataset.act]; if (fn) fn(el.dataset.arg, el); });

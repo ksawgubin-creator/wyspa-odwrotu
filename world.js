@@ -651,7 +651,7 @@ function dayMatches(d) {
       const r = lg.lsMap[d.ls]; if (r == null || r < 0) continue;
       for (const f of lg.fix[r]) clubDesc(f.h, f.a, { comp: 'L', label: lg.name + (derbyName(f.h, f.a) ? ' • 🔥 ' + derbyName(f.h, f.a) : '') }, m => {
         f.hg = m.home.goals; f.ag = m.away.goals; f.p = 1;
-        const c = club(f.h), att0 = attendance(c, !!derbyName(f.h, f.a)), bad = ['rain', 'storm', 'snow', 'cold', 'wind'].includes(m.wx), rs = c.std ? roofCount(c) / 4 : c.rep >= 75 ? 1 : 0.4;
+        const c = club(f.h), att0 = attendance(c, !!derbyName(f.h, f.a)), bad = ['rain', 'storm', 'snow', 'cold', 'wind'].includes(m.wx), rs = c.std ? roofCount(c) / 4 : c.cap >= 30000 ? 1 : c.cap >= 12000 ? 0.25 : 0;
         const att = bad ? Math.round(att0 * (1 - (m.wx === 'storm' || m.wx === 'snow' ? 0.12 : 0.06) * (1 - rs))) : att0;   // zła pogoda: dachy chronią frekwencję
         c._att = att;
         const gate = Math.round(GATE_NET * att * c.price * (c.id === S.user ? (1 + commLvl('gastro') * 0.06) * stadGateK(c) : 1)); c.bal += gate; c.fin.inc += gate; c._gate = gate;

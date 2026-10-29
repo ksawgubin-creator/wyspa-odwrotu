@@ -398,7 +398,7 @@ h3{color:#8ea3c7;font-weight:800}
 @supports not (color:color-mix(in srgb,red,blue)){body{background:var(--bg)}#top{background:#0b1220ee}.card.hl{background:linear-gradient(160deg,#12263a,#121c30)}}
 
 /* pogoda na boisku */
-#mpitch{position:relative;overflow:hidden;border-radius:12px}
+#mpitch{position:relative;overflow:hidden;border-radius:12px;flex:none}
 #mpitch.wx-rain::after,#mpitch.wx-storm::after,#mpitch.wx-snow::after,#mpitch.wx-fog::after,#mpitch.wx-heat::after,#mpitch.wx-cold::after{content:"";position:absolute;inset:0;pointer-events:none}
 #mpitch.wx-rain::after{background:repeating-linear-gradient(105deg,transparent 0 9px,rgba(190,215,255,.22) 9px 10px);background-size:40px 40px;animation:wxrain .5s linear infinite}
 #mpitch.wx-storm::after{background:repeating-linear-gradient(110deg,transparent 0 6px,rgba(190,215,255,.32) 6px 7px);background-size:30px 30px;animation:wxrain .35s linear infinite,wxflash 7s infinite}

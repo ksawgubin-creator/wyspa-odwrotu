@@ -61,6 +61,7 @@ function navCur() {
   return sub ? sub[0] : UI.tab;
 }
 ACT.nav = k => {
+  if ($('#modal') && !$('#modal').classList.contains('hidden')) closeModal();
   const n = NAV.find(x => x[0] === k); if (!n) return;
   const same = navCur() === k && (!n[3] || UI[n[3][0]] === n[3][1]);
   navPush(); UI.tab = n[2]; if (n[3]) UI[n[3][0]] = n[3][1]; UI.sel = null; render(); window.scrollTo(0, 0);
@@ -73,7 +74,7 @@ let SWIPE_DIR = null;
 function render() {
   const ut = userClub(), d = curDay();
   { const r = document.documentElement.style; r.setProperty('--club', (ut.col && ut.col[0]) || '#2ee59d'); r.setProperty('--club2', (ut.col && ut.col[1]) || '#ffffff'); }
-  $('#top').innerHTML = `${badge(ut)}<div class="tt"><b>${esc(ut.name)}</b><small>${d ? fmtDate(d.date) : ''} • ${SEASON_LABEL(S.season)}</small></div>
+  $('#top').innerHTML = `${badge(ut)}<div class="tt"><b>${esc(ut.name)}</b><small>${d ? fmtDate(todayMs()) : ''} • ${SEASON_LABEL(S.season)}</small></div>
     <div class="money"><small class="mut" style="font-size:10px;display:block;line-height:1">saldo</small>${money(ut.bal)}<small class="${windowOpen() ? 'good' : 'mut'}">${windowOpen() ? '🟢 okno otwarte' : '🔒 okno zamknięte'}</small></div>`;
   const unread = S.inbox.filter(m => !m.read).length;
   const cur = navCur();
@@ -180,7 +181,7 @@ function vSquadStats(t) {
 }
 ACT.stsort = k => { UI.stSort = k; render(); };
 function vHome() {
-  const ut = userClub(), nx = peekUser(), today = nx && nx.i === S.day;
+  const ut = userClub(), nx = peekUser(), today = nx && nx.i === S.day && atEntry();
   const tb = table(ut.lg), row = tb.find(r => r.id === ut.id);
   const out = ut.players.filter(p => p.inj || p.susp);
   const conf = S.board.conf, ec = euroOf(ut.id);
@@ -191,8 +192,10 @@ function vHome() {
     ${isTbd(nx) ? `<div class="fixture"><div class="tm">${badge(nx.h, 'lg')}<span>${esc(nx.h.name)}</span></div><div class="vs" style="font-size:15px">🎲<br><small class="mut">rywal zostanie wylosowany</small></div></div>` : `<div class="fixture"><div class="tm">${badge(nx.h, 'lg')}<span>${esc(nx.h.name)}</span></div><div class="vs">vs</div><div class="tm">${badge(nx.a, 'lg')}<span>${esc(nx.a.name)}</span></div></div>`}` : '<b>Koniec sezonu</b>'}
     ${nx && !nx.nt && nx.h.lg && nx.a.lg ? `<div class="row mut" style="font-size:12px;justify-content:space-between"><span>${heroInfo(nx.h)}</span><span>${heroInfo(nx.a)}</span></div>` : ''}
     ${(() => { const xi = ut.lineup.map(pget).filter(Boolean); if (!xi.length) return ''; const f = Math.round(avg(xi.map(p => p.fit))), bench = ut.players.filter(p => !ut.lineup.includes(p.id) && isAvail(p) && roleOf(p) === 'key' && p.fit >= 75 && p.ovr >= lineupAvg(ut) + 2); return `<div class="row" style="font-size:12px;margin-top:4px"><span class="${f < 70 ? 'bad' : f < 82 ? 'warn' : 'mut'}">🔋 Kondycja jedenastki: ${f}%${f < 70 ? ' – rozważ rotację' : ''}</span></div>${bench.length ? `<div class="row" style="font-size:12px"><span class="warn">⚠️ Kluczowy na ławce: ${bench.map(p => esc(lastName(p))).join(', ')}</span></div>` : ''}`; })()}
-    <div class="btns">${today && nx.pre && S.pre && !S.pre.chosen ? `<button class="btn sp" disabled>☀️ Najpierw wybierz turniej poniżej</button>` : today ? `<button class="btn pri sp" data-act="prematch">⚽ Graj mecz</button><button class="btn" data-act="quicksim">⏩ Symuluj</button>` : `<button class="btn pri sp" data-act="cont">▶ Kontynuuj</button>`}</div>
+    <div class="btns">${today && nx.pre && S.pre && !S.pre.chosen ? `<button class="btn sp" disabled>☀️ Najpierw wybierz turniej poniżej</button>` : today ? `<button class="btn pri sp" data-act="prematch">⚽ Graj mecz</button><button class="btn" data-act="quicksim">⏩ Symuluj</button>` : `<button class="btn pri sp" data-act="cont">▶ Do meczu</button>`}</div>
+    <div class="btns simrow"><button class="btn sm" data-act="simdays" data-arg="1">+1 dzień</button><button class="btn sm" data-act="simdays" data-arg="3">+3 dni</button><button class="btn sm" data-act="simdays" data-arg="7">+7 dni</button><button class="btn sm" data-act="gocal">📅 Kalendarz</button></div>
   </div>
+  ${windowBanner()}
   ${S.pre && !S.pre.chosen && S.pre.season === S.season && S.cal[S.day] && S.cal[S.day].t === 'P' ? preCard() : ''}
   ${upcomingStrip(nx)}
   ${S.intake && S.intake.length && (!S.intakeDay || absDay() - S.intakeDay < 45) ? `<div class="card hl" data-act="intake"><div class="row"><span style="font-size:22px">🎓</span><b class="sp">Dzień naboru do akademii!</b><small>Poznaj juniorów ›</small></div></div>` : ''}
@@ -294,21 +297,70 @@ ACT.cont = async () => {
   try {
     if (S.sacked) return showSacked();
     if (S.pending.length) return ACT.event(S.pending[0].uid);
+    S.now = null;
     if (userMatchToday()) { ACT.prematch(); return; }
     busy(true, 'Symulacja…');
     for (let n = 0; n < 40; n++) {
       const r = processDay(null);
       if (r.summary) { busy(false); await saveNow(); render(); return showSummary(r.summary); }
       if (S.sacked) { busy(false); saveNow(); render(); return showSacked(); }
-      if (userMatchToday() || S.pending.length) break;
+      if (userMatchToday() || S.pending.length || S.winPop === S.day || S.ddPop === S.day) break;
       busy(true, `Symulacja… ${fmtDate(curDay().date)}`);
       await new Promise(r => setTimeout(r, 0));
     }
     busy(false); saveSoon(); render();
     if (S.pending.length) ACT.event(S.pending[0].uid);
-    else if (userMatchToday()) ACT.prematch();
+    else if (!winPopups() && userMatchToday()) ACT.prematch();
   } finally { running = false; busy(false); }
 };
+/* symulacja do wybranego dnia: zatrzymuje się na meczach, decyzjach, otwarciu okna i w Deadline Day */
+async function simTo(target) {
+  if (running) return; running = true;
+  try {
+    if (S.sacked) return showSacked();
+    if (S.pending.length) return ACT.event(S.pending[0].uid);
+    busy(true, 'Symulacja…'); let stop = '';
+    for (let n = 0; n < 400; n++) {
+      if (S.day >= S.cal.length) break;
+      if (curDay().date > target) { S.now = target; break; }
+      S.now = null;
+      if (userMatchToday()) { stop = 'match'; break; }
+      const r = processDay(null);
+      if (r.summary) { busy(false); await saveNow(); render(); return showSummary(r.summary); }
+      if (S.sacked) { busy(false); saveNow(); render(); return showSacked(); }
+      if (S.pending.length || S.winPop === S.day || S.ddPop === S.day) { stop = 'ev'; if (curDay().date > target && S.winPop !== S.day && S.ddPop !== S.day) S.now = target; break; }
+      busy(true, `Symulacja… ${fmtDate(curDay().date)}`);
+      await new Promise(r => setTimeout(r, 0));
+    }
+    busy(false); saveSoon(); render();
+    if (S.pending.length) ACT.event(S.pending[0].uid);
+    else if (winPopups()) {}
+    else if (stop === 'match') { toast('Dzień meczowy – symulacja zatrzymana.'); ACT.prematch(); }
+  } finally { running = false; busy(false); }
+}
+ACT.simdays = n => simTo(todayMs() + +n * 864e5);
+ACT.simto = ms => { closeModal(); simTo(+ms); };
+ACT.gocal = () => { navPush(); UI.tab = 'comps'; UI.compTab = 'cal'; UI.calM = null; render(); };
+/* wyskakujące okna: otwarcie zimowego okna i Deadline Day (raz) */
+function winPopups() {
+  if (S.ddPop === S.day && S._ddShown !== S.day + S.season * 1000) { S._ddShown = S.day + S.season * 1000; const dl = (S.dl ? S.dl.deals : []).map(pget).filter(Boolean);
+    modal(`<div class="ddhead">⏰ DEADLINE DAY</div><p>Dziś o północy zamyka się okno transferowe! Agenci dzwonią bez przerwy, kluby szukają ostatnich wzmocnień.</p>
+      <div class="kv"><div><span>Oferty za Twoich zawodników</span><b>${S.offers.length}</b></div><div><span>Budżet transferowy</span><b>${money(userClub().tb)}</b></div></div>
+      ${dl.length ? `<h3>🔥 Okazje last minute (−20%)</h3><div class="list">${dl.map(p => `<div class="prow" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${esc(p.n)}<small>${esc(clubName(p))} • ${p.age} l.</small></div>${ovrTag(p.ovr)}<b>${money(askPrice(p))}</b></div>`).join('')}</div>` : ''}
+      <div class="btns"><button class="btn pri sp" data-act="nav" data-arg="market">💼 Transfery</button><button class="btn" data-act="close">Później</button></div>`); return true; }
+  if (S.winPop === S.day && S._wpShown !== S.day + S.season * 1000) { S._wpShown = S.day + S.season * 1000; const w = winDates();
+    modal(`<h2>🟢 Zimowe okno transferowe otwarte!</h2><p>Od dziś do <b>${fmtDate(w.win[1])}</b> możesz kupować, sprzedawać i wypożyczać zawodników. Ostatni dzień okna to Deadline Day – wtedy pojawią się okazje last minute.</p>
+      <div class="btns"><button class="btn pri sp" data-act="nav" data-arg="market">💼 Transfery</button><button class="btn" data-act="close">OK</button></div>`); return true; }
+  return false;
+}
+function windowBanner() {
+  if (S.day >= S.cal.length) return '';
+  const w = winDates(), t = todayMs(), D = 864e5;
+  if (isDeadline() && windowOpen()) return `<div class="card ddcard" data-act="nav" data-arg="market"><div class="row"><span style="font-size:24px">⏰</span><div class="sp"><b>DEADLINE DAY – okno zamyka się dziś!</b><br><small>Oferty: ${S.offers.length} • okazje last minute w Transferach</small></div><small>›</small></div></div>`;
+  if (windowOpen()) { const end = curLs() <= 3 ? w.sum[1] : w.win[1], dd = Math.max(0, Math.round((end - t) / D)); return `<div class="card"><div class="row"><span style="font-size:20px">🟢</span><div class="sp"><b>Okno transferowe otwarte</b><br><small class="mut">Zamknięcie: ${fmtDate(end)} (za ${plural(dd, 'dzień', 'dni', 'dni')})</small></div></div></div>`; }
+  if (S.day < w.wo) { const dd = Math.round((w.win[0] - t) / D); if (dd <= 21) return `<div class="card"><div class="row"><span style="font-size:20px">🔒</span><div class="sp"><b>Zimowe okno za ${plural(dd, 'dzień', 'dni', 'dni')}</b><br><small class="mut">Otwarcie: ${fmtDate(w.win[0])}</small></div></div></div>`; }
+  return '';
+}
 
 /* ---------- SKŁAD ---------- */
 function ctxTeam() { if (UI.nt && S.nt) { const t = ntTeam(S.nt); fixLineup(t); syncNT(t); return t; } const t = userClub(); fixLineup(t, emergencyFor(t)); return t; }
@@ -792,6 +844,39 @@ CHG.eurosel = v => ACT.euro(v);
 ACT.euro = a => { UI.euro = a; UI.md = null; render(); };
 ACT.eutab = a => { if (a !== UI.euroTab) navPush(); UI.euroTab = a; render(); };
 ACT.md = d => { const c = S.euro[UI.euro]; if (!c.lp) return; UI.md = clamp(UI.md + +d, 0, c.lp.length - 1); render(); };
+const MONTHS_PL = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'];
+const dKey = ms => Math.floor(ms / 864e5);
+function calGrid(items) {
+  const D = 864e5, t = todayMs(), w = winDates(), first = S.cal[0].date, last = S.cal[S.cal.length - 1].date;
+  const mk = ms => { const d = new Date(ms); return d.getUTCFullYear() * 12 + d.getUTCMonth(); };
+  const m0 = mk(first), m1 = mk(last); let cm = UI.calM != null ? UI.calM : mk(t); cm = clamp(cm, m0, m1); UI.calM = cm;
+  const y = Math.floor(cm / 12), mo = cm % 12, start = Date.UTC(y, mo, 1), days = new Date(Date.UTC(y, mo + 1, 0)).getUTCDate(), off = (new Date(start).getUTCDay() + 6) % 7;
+  const byDay = {}; for (const x of items) (byDay[dKey(x.d.date)] = byDay[dKey(x.d.date)] || []).push(x);
+  const inWin = k => (k >= dKey(w.sum[0]) && k <= dKey(w.sum[1])) || (k >= dKey(w.win[0]) && k <= dKey(w.win[1]));
+  const dd = new Set([dKey(w.sum[1]), dKey(w.win[1])]);
+  let cells = ''; for (let i = 0; i < off; i++) cells += '<div class="cd e"></div>';
+  for (let dn = 1; dn <= days; dn++) {
+    const ms = start + (dn - 1) * D, k = dKey(ms), xs = byDay[k] || [], past = k < dKey(t), now = k === dKey(t);
+    const x = xs[0], opp = x ? (x.h.id === S.user ? x.a : x.h) : null, res = x && x.sc ? ((x.h.id === S.user ? x.sc[0] - x.sc[1] : x.sc[1] - x.sc[0])) : null;
+    cells += `<div class="cd ${past ? 'p' : ''} ${now ? 'now' : ''} ${inWin(k) ? 'win' : ''} ${x ? 'm' + (x.h.id === S.user ? ' hm' : ' aw') : ''} ${res != null ? (res > 0 ? 'W' : res < 0 ? 'L' : 'D') : ''}" ${!past ? `data-act="calday" data-arg="${ms}"` : ''}>
+      <span class="dn">${dn}</span>${x ? `<span class="op">${opp && opp.short ? esc(opp.short) : '⚽'}</span>` : ''}${dd.has(k) ? '<span class="dl">⏰</span>' : ''}</div>`;
+  }
+  return `<div class="card"><div class="row"><button class="btn sm" data-act="calm" data-arg="-1" ${cm <= m0 ? 'disabled' : ''}>‹</button><b class="sp" style="text-align:center">${MONTHS_PL[mo]} ${y}</b><button class="btn sm" data-act="calm" data-arg="1" ${cm >= m1 ? 'disabled' : ''}>›</button></div>
+    <div class="calg">${['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'].map(d => `<div class="cdh">${d}</div>`).join('')}${cells}</div>
+    <small class="mut">Dotknij dnia, aby przesymulować grę do tej daty. <span class="lg win">okno transferowe</span> <span class="lg hm">u siebie</span> <span class="lg aw">wyjazd</span> ⏰ Deadline Day</small></div>`;
+}
+ACT.calm = d => { UI.calM += +d; render(); };
+ACT.calday = ms => {
+  ms = +ms; const k = dKey(ms), xs = []; for (let i = 0; i < S.cal.length; i++) { const x = fixtureAt(i); if (x && !x.nt && dKey(x.d.date) === k) xs.push(x); }
+  const w = winDates(), notes = [];
+  if (k === dKey(w.sum[1]) || k === dKey(w.win[1])) notes.push('⏰ Deadline Day – ostatni dzień okna transferowego.');
+  if (k === dKey(w.win[0])) notes.push('🟢 Otwarcie zimowego okna transferowego.');
+  const isToday = k === dKey(todayMs());
+  modal(`<h2>📅 ${fmtDate(ms)}</h2>${xs.map(x => `<div class="row">${badge(x.h, 'sm')}<b class="sp">${esc(x.h.name)} – ${esc(x.a.name)}</b>${badge(x.a, 'sm')}</div><small class="mut">${esc(x.label || '')} • prognoza: ${WX[matchWeather(x.h, x.d.date)][0]} ${WX[matchWeather(x.h, x.d.date)][1]}</small>`).join('')}
+    ${notes.map(n => `<p>${n}</p>`).join('')}${!xs.length && !notes.length ? '<small class="mut">Brak wydarzeń w tym dniu.</small>' : ''}
+    <div class="btns">${isToday ? '' : `<button class="btn pri sp" data-act="simto" data-arg="${ms}">⏩ Symuluj do tego dnia</button>`}<button class="btn" data-act="close">Zamknij</button></div>
+    <small class="mut">Symulacja zatrzyma się wcześniej przy Twoim meczu, ważnej decyzji, otwarciu okna i w Deadline Day.</small>`);
+};
 function vCal() {
   UI.calAll = UI.calAll || false;
   const items = []; for (let i = 0; i < S.cal.length; i++) { const x = fixtureAt(i); if (x && !x.nt) items.push(x); }
@@ -799,7 +884,7 @@ function vCal() {
   const row = x => { const home = x.h.id === S.user, opp = home ? x.a : x.h, sc = x.sc;
     const res = sc ? (home ? sc[0] - sc[1] : sc[1] - sc[0]) : null, cls = res == null ? '' : res > 0 ? 'W' : res < 0 ? 'L' : 'D';
     return `<div class="prow ${x.i === S.day ? 'me' : ''}" ${opp.id != null ? `data-act="clubv" data-arg="${opp.id}"` : ''}><span class="mini" style="min-width:52px">${fmtDate(x.d.date).replace(/ \d{4}$/, '')}</span>${badge(opp, 'sm')}<div class="pn">${esc(opp.name)} <small>(${home ? 'D' : 'W'})</small><small>${esc(x.label)}</small></div>${sc ? `<span class="chip ${cls}">${sc[0]}:${sc[1]}</span>` : ''}</div>`; };
-  return `<div class="card"><b>📅 Terminarz – ${SEASON_LABEL(S.season)}</b><br><small class="mut">D – u siebie, W – na wyjeździe. Mecze pucharowe pojawiają się po losowaniu.</small></div>
+  return calGrid(items) + `<div class="card"><b>📅 Terminarz – ${SEASON_LABEL(S.season)}</b><br><small class="mut">D – u siebie, W – na wyjeździe. Mecze pucharowe pojawiają się po losowaniu.</small></div>
     <h3>Najbliższe mecze</h3><div class="card list">${next.slice(0, UI.calAll ? 99 : 8).map(row).join('') || '<small class="mut">Brak meczów do końca sezonu.</small>'}</div>
     ${next.length > 8 ? `<div class="btns"><button class="btn sm full" data-act="calall">${UI.calAll ? 'Pokaż mniej' : `Pokaż wszystkie (${next.length})`}</button></div>` : ''}
     ${past.length ? `<h3>Rozegrane</h3><div class="card list">${past.slice().reverse().map(row).join('')}</div>` : ''}`;
@@ -1320,7 +1405,9 @@ ACT.prematch = () => {
   if (!MX.nt && S.settings.autoRot !== false && PRE_ROT !== S.day) { PRE_ROT = S.day; const r = rotateTired(mine, 70); if (r.length) toast(`Asystent zrotował składem: ${r.length} ${r.length === 1 ? 'zmiana' : 'zmiany'}.`, 'ok'); }
   const msgs = fixLineup(mine, MX.nt ? null : emergencyFor(mine)); if (MX.nt) syncNT(mine);
   const sl = mine.lineup.map(pget), tired = sl.filter(p => p.fit < 65);
+  const wxk = matchWeather(MX.h, curDay().date), wx = WX[wxk];
   modal(`<h2>Przed meczem</h2><small class="mut">${esc(MX.opts.label)}</small>
+    <div class="row wxrow"><span style="font-size:24px">${wx[0]}</span><div class="sp"><b>Prognoza: ${wx[1]}</b><br><small class="mut">${wx[5]}</small></div></div>
     <div class="fixture"><div class="tm">${badge(MX.h, 'lg')}<span>${esc(MX.h.name)}</span></div><div class="vs">vs</div><div class="tm">${badge(MX.a, 'lg')}<span>${esc(MX.a.name)}</span></div></div>
     <div class="kv"><div><span>Formacja</span><b>${mine.formation}</b></div><div><span>Średnia XI</span><b>${lineupAvg(mine)}</b></div><div><span>Rywal (śr.)</span><b>${Math.round(avg(opp.players.map(p => p.ovr).sort((a, b) => b - a).slice(0, 11)))}</b></div><div><span>Rywal – forma</span><b>${opp.nation ? '–' : table(opp.lg).find(r => r.id === opp.id).form.slice(-5).map(f => f === 'W' ? 'Z' : f === 'D' ? 'R' : 'P').join('') || '–'}</b></div><div><span>Twój OVR trenera</span><b>${Math.round(S.mgr.ovr)}</b></div><div><span>Trener rywala</span><b>${Math.round(coachOvr(opp))}</b></div></div>
     ${MX.nt ? '' : (() => { const dn = derbyName(mine.id, opp.id), r = h2hRec(opp.id), n = r.w + r.d + r.l; return (dn ? `<div class="card hl" style="margin:8px 0"><b>🔥 ${esc(dn)}</b><br><small class="mut">Mecz z odwiecznym rywalem – wynik podwójnie wpłynie na kibiców, zarząd i morale. Stadion wypełni się po brzegi.</small></div>` : '') + (n ? `<small class="mut">Bilans Twoich meczów z tym rywalem: ${r.w} Z • ${r.d} R • ${r.l} P</small>` : ''); })()}
@@ -1370,8 +1457,8 @@ ACT.startmatch = async () => {
   M = createMatch(MX.h, MX.a, { ...MX.opts, user: MX.user }); doTalk();
   MS = { speed: S.settings.speed || 2, paused: false, over: false };
   const el = $('#match'); el.classList.remove('hidden');
-  el.innerHTML = `<div class="sb"><small class="lbl">${esc(MX.opts.label)}</small><div class="teams"><div class="tm">${badge(M.home.t, 'lg')}<span>${esc(M.home.t.name)}</span></div><div><div class="score" id="msc">0 : 0</div><div class="min" id="mmin">0'</div></div><div class="tm">${badge(M.away.t, 'lg')}<span>${esc(M.away.t.name)}</span></div></div><div class="scr" id="mscr"></div><div class="tick" id="mtick"></div></div>
-    <div id="mpitch"></div><div class="mleg" id="mleg"></div><div id="mmom" style="margin:6px 0"></div>
+  el.innerHTML = `<div class="sb"><small class="lbl">${esc(MX.opts.label)} • ${WX[M.wx || 'sun'][0]} ${WX[M.wx || 'sun'][1]}</small><div class="teams"><div class="tm">${badge(M.home.t, 'lg')}<span>${esc(M.home.t.name)}</span></div><div><div class="score" id="msc">0 : 0</div><div class="min" id="mmin">0'</div></div><div class="tm">${badge(M.away.t, 'lg')}<span>${esc(M.away.t.name)}</span></div></div><div class="scr" id="mscr"></div><div class="tick" id="mtick"></div></div>
+    <div id="mpitch" class="wx-${M.wx || 'sun'}"></div><div class="mleg" id="mleg"></div><div id="mmom" style="margin:6px 0"></div>
     <div class="mstats" id="mst"></div><div class="feed" id="mfeed"></div><div class="ctl" id="mctl"></div>`;
   ev(M, 'info', null, '📣 Sędzia gwiżdże – zaczynamy!');
   upd(); mctl(); MT = setTimeout(tick, SPEED_MS[MS.speed]);

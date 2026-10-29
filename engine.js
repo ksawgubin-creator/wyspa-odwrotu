@@ -273,6 +273,26 @@ function makeSide(t, isUser, quick, emergency) {
   for (const s of side.pitch) side.rec[s.p.id] = { p: s.p, on: 0, off: null, g: 0, a: 0, y: 0, r: 0, sv: 0, pos: s.pos };
   return side;
 }
+/* ---------- POGODA: zależy od miesiąca i klimatu kraju gospodarza (prognoza = pogoda w dniu meczu) ---------- */
+// [ikona, nazwa, mnożnik goli, mnożnik zmęczenia, wyrównanie sił (słabszemu łatwiej), opis]
+const WX = { sun: ['☀️', 'Słonecznie', 1, 1, 1, 'Idealne warunki do gry.'], cloud: ['⛅', 'Pochmurno', 1, 1, 1, 'Dobre warunki.'], rain: ['🌧️', 'Deszcz', 1.05, 1.04, 0.99, 'Śliska murawa – więcej błędów bramkarzy i strzałów z dystansu.'],
+  storm: ['⛈️', 'Ulewa', 0.92, 1.08, 0.97, 'Kałuże na boisku – trudno o płynną grę, faworyt traci atut techniki.'], snow: ['🌨️', 'Śnieg', 0.9, 1.1, 0.96, 'Ciężkie boisko, piłka grzęźnie – mecz walki, mniej goli.'],
+  fog: ['🌫️', 'Mgła', 0.94, 1, 0.98, 'Słaba widoczność – trudniej o celne podania i strzały.'], wind: ['💨', 'Silny wiatr', 0.95, 1.03, 0.98, 'Wiatr znosi dośrodkowania i długie piłki.'],
+  heat: ['🥵', 'Upał', 0.98, 1.2, 1, 'Zawodnicy szybciej opadają z sił – rotacja i zmiany będą ważne.'], cold: ['🥶', 'Mróz', 0.96, 1.06, 0.99, 'Zmrożona murawa – twarda, szybka gra, łatwiej o uraz.'] };
+const WX_COLD = new Set(['POL', 'NOR', 'SWE', 'FIN', 'DEN', 'ISL', 'UKR', 'CZE', 'SVK', 'SCO', 'NIR', 'IRL', 'WAL', 'AUT', 'SUI', 'HUN', 'ROU', 'BUL', 'SRB', 'BIH', 'SVN', 'GER', 'NED', 'BEL', 'GEO', 'JPN', 'USA']);
+const WX_HOT = new Set(['ESP', 'POR', 'ITA', 'GRE', 'CYP', 'TUR', 'ISR', 'KSA', 'MEX', 'BRA', 'ARG', 'ALB', 'MNE', 'MKD']);
+const WX_SOUTH = new Set(['BRA', 'ARG']);
+function weatherFor(date, cc, seed) {
+  let mo = new Date(date).getUTCMonth(); if (WX_SOUTH.has(cc)) mo = (mo + 6) % 12;
+  const cl = WX_COLD.has(cc) ? 'c' : WX_HOT.has(cc) ? 'h' : 'm', win = mo === 11 || mo <= 1, sh = mo === 2 || mo === 10, sum = mo >= 5 && mo <= 7;
+  const W = win ? (cl === 'c' ? { snow: 24, cold: 24, cloud: 20, fog: 10, sun: 10, storm: 4, wind: 8 } : cl === 'm' ? { rain: 30, cloud: 30, sun: 14, fog: 10, wind: 10, cold: 6 } : { sun: 35, cloud: 30, rain: 25, wind: 10 })
+    : sh ? (cl === 'c' ? { cloud: 30, rain: 25, cold: 14, snow: 8, sun: 13, fog: 10 } : cl === 'm' ? { cloud: 30, rain: 30, sun: 20, wind: 10, fog: 10 } : { sun: 45, cloud: 30, rain: 20, wind: 5 })
+    : sum ? (cl === 'h' ? { sun: 50, heat: 30, cloud: 15, storm: 5 } : { sun: 50, cloud: 25, rain: 13, storm: 6, heat: cl === 'm' ? 10 : 6 })
+    : (cl === 'h' ? { sun: 55, cloud: 30, rain: 10, heat: 5 } : { sun: 33, cloud: 35, rain: 20, wind: 6, storm: 6 });
+  const tot = Object.values(W).reduce((a, b) => a + b, 0); let r = (((seed * 2654435761) >>> 0) % 10007) / 10007 * tot;
+  for (const k in W) { r -= W[k]; if (r <= 0) return k; } return 'sun';
+}
+const matchWeather = (h, date) => weatherFor(date, h.cc || 'ENG', Math.floor(date / 864e5) * 7919 + (h.id || 0) * 31 + 17);
 function createMatch(h, a, opts = {}) {
   const m = {
     comp: opts.comp || 'L', label: opts.label || '', neutral: !!opts.neutral, ko: opts.ko || null,
@@ -292,10 +312,14 @@ function createMatch(h, a, opts = {}) {
     if (st === 'bus') S1.ment = 'def';
     if (rnd() < 0.35) { const top = S2.pitch.filter(x => LINE[x.pos] === 'ATT' || x.pos === 'CAM').sort((x, y) => y.ov - x.ov)[0]; if (top) S1.oi.mark = [top.p.id]; }
   }
+  { const dt = typeof S !== 'undefined' && S && S.cal && typeof curDay === 'function' ? curDay().date : Date.now(); m.wx = opts.wx || matchWeather(h, dt); const w = WX[m.wx] || WX.sun;
+    m.wxG = w[2]; m.home.wxF = m.away.wxF = w[3];
+    if (w[4] < 1) { const ah = avg(m.home.pitch.map(x => x.ov)), aa = avg(m.away.pitch.map(x => x.ov)); if (Math.abs(ah - aa) > 2) (ah > aa ? m.home : m.away).cf *= w[4]; }
+    if (m.home.user || m.away.user) ev(m, 'info', null, `${w[0]} Pogoda: ${w[1]}. ${w[5]}`); }
   if (m.ko && (m.ko.aggH || m.ko.aggA)) ev(m, 'info', null, `Pierwszy mecz: ${m.away.t.name} ${m.ko.aggA}:${m.ko.aggH} ${m.home.t.name}.`);
   return m;
 }
-const fitNow = (side, s, minute) => Math.max(25, s.p.fit - Math.max(0, minute - side.rec[s.p.id].on) * (s.p.pos === 'GK' ? 0.08 : 0.2 * (1 + 0.15 * ((side.tac && side.tac.press) || 0))));
+const fitNow = (side, s, minute) => Math.max(25, s.p.fit - Math.max(0, minute - side.rec[s.p.id].on) * (s.p.pos === 'GK' ? 0.08 : 0.2 * (side.wxF || 1) * (1 + 0.15 * ((side.tac && side.tac.press) || 0))));
 const effNow = (side, s, minute) => s.ov * cond(s.p, fitNow(side, s, minute));
 function calcStr(side, minute) {
   const g = { GK: [], DEF: [], MID: [], ATT: [] };
@@ -337,7 +361,7 @@ function doShot(m, A, D) {
   const at = A.tac || {}, dt = D.tac || {};
   // wysoka linia rywala + szybcy napastnicy = sam na sam; kontra (szybkie tempo z niskiego bloku) na rywala grającego wysoko/ofensywnie
   const counter = at.tempo > 0 && at.line < 0 ? 1 + 0.07 * ((dt.line || 0) > 0) + 0.06 * (D.ment === 'att') : 1;
-  const pg = penalty ? 0.76 + (shooter.p.a[1] - 70) / 400 : clamp(FIN_K * Math.pow(q, FIN_EXP), 0.02, 0.45) * (kind === 'fk' ? 0.75 : kind === 'head' ? 0.85 * (1 + 0.1 * (at.width || 0)) : 1) * (kind ? 1 : (1 - 0.08 * (at.tempo || 0)) * (1 + 0.08 * (dt.line || 0) * clamp((A.pace || 60) / 65, 0.7, 1.4)) * counter);
+  const pg = penalty ? 0.76 + (shooter.p.a[1] - 70) / 400 : clamp(FIN_K * Math.pow(q, FIN_EXP), 0.02, 0.45) * (m.wxG || 1) * (kind === 'fk' ? 0.75 : kind === 'head' ? 0.85 * (1 + 0.1 * (at.width || 0)) : 1) * (kind ? 1 : (1 - 0.08 * (at.tempo || 0)) * (1 + 0.08 * (dt.line || 0) * clamp((A.pace || 60) / 65, 0.7, 1.4)) * counter);
   A.shots++; { const x = Math.min(0.95, pg); A.xg = (A.xg || 0) + x; const r = A.rec[shooter.p.id]; if (r) r.xg = (r.xg || 0) + x; }
   const pmW = x => A.pm != null && x.slot === A.pm ? 2.5 : 1;
   { const kc = c.filter(x => x !== shooter); if (kc.length && !penalty) { const k = wpick(kc, x => (LINE[x.pos] === 'MID' ? 2 : LINE[x.pos] === 'ATT' ? 1.5 : 0.6) * Math.pow(x.p.a[2] / 60, 2) * pmW(x)); const r = A.rec[k.p.id]; if (r) r.kp = (r.kp || 0) + 1; } }
@@ -477,7 +501,7 @@ function finishMatch(m) {
       let rating = 6.0 + gd * 0.15 + r.g * 1.0 + r.a * 0.55 - r.r * 1.6 - r.y * 0.15 + Math.min(r.sv, 7) * 0.2 + Math.min(r.tk || 0, 12) * 0.05 + Math.min(r.kp || 0, 8) * 0.09 + gauss() * 0.4;
       if (LINE[r.pos] === 'GK' || LINE[r.pos] === 'DEF') rating += (opp.goals === 0 ? 0.5 : 0) - opp.goals * 0.2;
       r.rating = clamp(Math.round(rating * 10) / 10, 3, 10); r.mins = mins;
-      p.fit = clamp(p.fit - mins * (p.pos === 'GK' ? 0.08 : 0.19 * (1 + 0.12 * ((side.tac && side.tac.press) || 0))), 15, 100);
+      p.fit = clamp(p.fit - mins * (p.pos === 'GK' ? 0.08 : 0.19 * (side.wxF || 1) * (1 + 0.12 * ((side.tac && side.tac.press) || 0))), 15, 100);
       p.form = Math.round(clamp(p.form * 0.65 + clamp((r.rating - 4) / 5 * 100, 0, 100) * 0.35, 0, 100));
       p.mor = clamp(p.mor + (gd > 0 ? 3 : gd < 0 ? -3 : 0) + (r.rating >= 7.5 ? 2 : r.rating <= 5.5 ? -2 : 0), 0, 100);
       if (club) {
@@ -517,6 +541,7 @@ function fastSim(h, a, opts = {}) {
     return { shots, g: shots * clamp(FIN_K * Math.pow(q, F_FIN), 0.02, 0.45) * FAST_K };
   };
   const xh = xg(H, A, ph), xa = xg(A, H, 1 - ph);
+  xh.g *= m.wxG || 1; xa.g *= m.wxG || 1;
   if (!m.neutral) { xh.g *= HOME_ADV; xa.g *= AWAY_ADV; }
   { const mg = (xh.g + xa.g) / 2; xh.g = xh.g * (1 - FAST_BLEND) + mg * FAST_BLEND; xa.g = xa.g * (1 - FAST_BLEND) + mg * FAST_BLEND; xh.g = Math.min(4.2, F_POW_K * Math.pow(xh.g, F_POW)); xa.g = Math.min(4.2, F_POW_K * Math.pow(xa.g, F_POW)); }   // mniej pogromów
   const addGoals = (side, n, from, to) => {

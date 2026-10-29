@@ -396,3 +396,38 @@ h3{color:#8ea3c7;font-weight:800}
 .fixture .vs{font-weight:900;letter-spacing:.05em}
 #modal .box{background:linear-gradient(180deg,#15223c,#101a2d);border-color:#ffffff14;box-shadow:0 -10px 30px #0008}
 @supports not (color:color-mix(in srgb,red,blue)){body{background:var(--bg)}#top{background:#0b1220ee}.card.hl{background:linear-gradient(160deg,#12263a,#121c30)}}
+
+/* pogoda na boisku */
+#mpitch{position:relative;overflow:hidden;border-radius:12px}
+#mpitch.wx-rain::after,#mpitch.wx-storm::after,#mpitch.wx-snow::after,#mpitch.wx-fog::after,#mpitch.wx-heat::after,#mpitch.wx-cold::after{content:"";position:absolute;inset:0;pointer-events:none}
+#mpitch.wx-rain::after{background:repeating-linear-gradient(105deg,transparent 0 9px,rgba(190,215,255,.22) 9px 10px);background-size:40px 40px;animation:wxrain .5s linear infinite}
+#mpitch.wx-storm::after{background:repeating-linear-gradient(110deg,transparent 0 6px,rgba(190,215,255,.32) 6px 7px);background-size:30px 30px;animation:wxrain .35s linear infinite,wxflash 7s infinite}
+#mpitch.wx-snow::after{background-image:radial-gradient(#fff 1.2px,transparent 1.6px),radial-gradient(#fff 1px,transparent 1.4px);background-size:26px 26px,17px 17px;background-position:0 0,8px 11px;opacity:.75;animation:wxsnow 3s linear infinite}
+#mpitch.wx-fog::after{background:linear-gradient(180deg,rgba(220,225,235,.35),rgba(220,225,235,.15),rgba(220,225,235,.35))}
+#mpitch.wx-heat::after{background:radial-gradient(ellipse at top,rgba(255,190,90,.22),transparent 70%)}
+#mpitch.wx-cold::after{background:linear-gradient(180deg,rgba(200,230,255,.18),transparent);box-shadow:inset 0 0 18px rgba(220,240,255,.35)}
+@keyframes wxrain{to{background-position:-12px 40px}}
+@keyframes wxsnow{to{background-position:6px 26px,14px 28px}}
+@keyframes wxflash{0%,96%,100%{filter:none}97%{filter:brightness(2.2)}}
+.wxrow{margin:6px 0;padding:8px 10px;border-radius:12px;background:var(--panel2)}
+
+/* kalendarz */
+.calg{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin:8px 0}
+.cdh{font-size:10px;text-align:center;color:var(--mut,#9fb0cf);font-weight:700}
+.cd{min-height:44px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);padding:2px 3px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;font-size:11px;position:relative;cursor:pointer}
+.cd.e{background:none;border:none}
+.cd.p{opacity:.45}
+.cd.now{outline:2px solid var(--club,#2ee59d)}
+.cd.win{border-bottom:3px solid #19b97a}
+.cd .dn{font-weight:700}
+.cd .op{font-size:9px;font-weight:800;margin-top:2px;padding:1px 3px;border-radius:4px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cd.hm .op{background:var(--club,#2ee59d);color:#000}
+.cd.aw .op{background:#4da3ff33;color:#cfe3ff;border:1px solid #4da3ff}
+.cd.W .op{background:#19b97a;color:#fff}.cd.L .op{background:#c2384b;color:#fff}.cd.D .op{background:#8a93a8;color:#fff}
+.cd .dl{position:absolute;right:1px;top:0;font-size:9px}
+.lg{display:inline-block;padding:0 4px;border-radius:4px;font-size:10px;margin-left:4px}
+.lg.win{border-bottom:3px solid #19b97a}.lg.hm{background:var(--club,#2ee59d);color:#000}.lg.aw{border:1px solid #4da3ff}
+.simrow .btn{flex:1;white-space:nowrap;font-size:13px;padding-left:4px;padding-right:4px}
+.ddcard{background:linear-gradient(135deg,#7a1020,#c2384b)!important;color:#fff;animation:ddp 1.6s ease-in-out infinite}
+@keyframes ddp{50%{box-shadow:0 0 18px #ff546888}}
+.ddhead{font-size:26px;font-weight:900;text-align:center;padding:10px;border-radius:12px;background:linear-gradient(135deg,#7a1020,#ff5468);color:#fff;letter-spacing:1px;margin-bottom:8px}

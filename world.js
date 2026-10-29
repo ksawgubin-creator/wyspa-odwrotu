@@ -651,7 +651,8 @@ function dayMatches(d) {
       const r = lg.lsMap[d.ls]; if (r == null || r < 0) continue;
       for (const f of lg.fix[r]) clubDesc(f.h, f.a, { comp: 'L', label: lg.name + (derbyName(f.h, f.a) ? ' • 🔥 ' + derbyName(f.h, f.a) : '') }, m => {
         f.hg = m.home.goals; f.ag = m.away.goals; f.p = 1;
-        const c = club(f.h), att = attendance(c, !!derbyName(f.h, f.a));
+        const c = club(f.h), att0 = attendance(c, !!derbyName(f.h, f.a)), bad = ['rain', 'storm', 'snow', 'cold', 'wind'].includes(m.wx), rs = c.std ? roofCount(c) / 4 : c.rep >= 75 ? 1 : 0.4;
+        const att = bad ? Math.round(att0 * (1 - (m.wx === 'storm' || m.wx === 'snow' ? 0.12 : 0.06) * (1 - rs))) : att0;   // zła pogoda: dachy chronią frekwencję
         c._att = att;
         const gate = Math.round(GATE_NET * att * c.price * (c.id === S.user ? (1 + commLvl('gastro') * 0.06) * stadGateK(c) : 1)); c.bal += gate; c.fin.inc += gate; c._gate = gate;
       });
@@ -772,8 +773,13 @@ function processDay(live) {
   if (d.t === 'E' && d.st === 'Q' && S.euro.CL && S.euro.CL.q && d.r === qLast(S.euro.CL.q) && d.leg === 2 && S.user >= 0 && typeof setBoardObjective === 'function') { const ec = Object.values(S.euro).find(c => c.teams.includes(S.user)); if (ec) S.board.euro = euroGoal(ec); }
   if (d.t === 'E' && d.st === 'LP' && d.md === 7) for (const c of Object.values(S.euro)) lpBonus(c);
   if (d.t === 'E' && d.st === 'LP' && d.md === 5 && S.euro.ECL) lpBonus(S.euro.ECL);
-  S.day++;
+  const wasOpen = windowOpen();
+  S.day++; S.now = null;
   if (S.day < S.cal.length && !windowOpen()) S.offers = [];
+  if (S.day < S.cal.length && S.user >= 0) {
+    if (!wasOpen && windowOpen()) { S.winPop = S.day; msg('🟢 Otwiera się zimowe okno transferowe', `Zimowe okno transferowe jest otwarte do ${fmtDate(winDates().win[1])}. Kluby znów mogą kupować i sprzedawać zawodników.`); }
+    if (isDeadline()) deadlineDay();
+  }
   let summary = null;
   if (S.day >= S.cal.length) summary = endSeason();
   return { userRes, summary, day: d };
@@ -970,7 +976,6 @@ function weekly(d) {
   if (d.ls === 4) msg('Okno zamknięte', 'Letnie okno transferowe zostało zamknięte. Wolnych agentów możesz podpisywać zawsze.');
   if (d.ls === 2 || d.ls === 22) deadlineDays(ut);
   if (d.ls >= 20 && d.ls % 3 === 0) autoRenewals(ut);
-  if (d.ls === 20) msg('Zimowe okno transferowe', 'Otwiera się zimowe okno transferowe (do kolejki 24).');
   if (WINTER[ut.cc] && S.campS !== S.season && S.leagues[ut.lg].lsMap[d.ls] === -1 && winterSlots(WINTER[ut.cc] === 'long' ? 12 : 22, WINTER[ut.cc] === 'long' ? 3 : 12).includes(d.ls) && typeof pushEvent === 'function') {
     S.campS = S.season; news(`❄️ ${S.leagues[ut.lg].name}: przerwa zimowa – liga wraca ${WINTER[ut.cc] === 'long' ? 'na początku lutego' : 'w połowie stycznia'}.`);
     pushEvent(EVENTS.find(e => e.id === 'wintercamp'), {});
@@ -1500,6 +1505,23 @@ function preContract(pid, wage, years, x = {}) {
   msg('📝 Prekontrakt', `${p.n} (${POS_PL[p.pos]}, ${p.ovr}) podpisał prekontrakt – dołączy do klubu po sezonie za darmo. Umowa: ${plural(years, 'rok', 'lata', 'lat')}, ${money(wage)}/tydz.`);
   news(`📝 ${p.n} (${club(p.tid).name}) podpisuje prekontrakt z ${ut.name}.`); saveSoon();
   return { ok: true, msg: `${p.n} dołączy po sezonie!` };
+}
+/* ---------- KALENDARZ: wirtualny „dziś” między terminami (symulacja dzień po dniu) ---------- */
+const todayMs = () => S.day >= S.cal.length ? S.cal[S.cal.length - 1].date : S.now != null ? Math.min(S.now, curDay().date) : curDay().date;
+const atEntry = () => S.now == null || S.day >= S.cal.length || S.now >= curDay().date;
+function winDates() {
+  const c = S.cal, li = ls => c.findIndex(d => d.t === 'L' && d.ls === ls), i4 = li(4), i20 = li(20), i24 = li(24);
+  return { sum: [c[0].date, c[Math.max(0, i4 - 1)].date], win: [c[i20].date, c[Math.max(0, i24 - 1)].date], si: i4 - 1, wi: i24 - 1, wo: i20 };
+}
+const isDeadline = () => { if (S.day >= S.cal.length) return false; const w = winDates(); return S.day === w.si || S.day === w.wi; };
+/* Deadline Day (jak w FIFA): ostatni dzień okna – lawina ofert i ruchów AI */
+function deadlineDay() {
+  if (S.ddDone === S.season * 100 + S.day) return; S.ddDone = S.season * 100 + S.day;
+  const n0 = S.offers.length; genOffers(); genOffers(); aiTransfers();
+  const ut = userClub(), lv = teamLevel(ut);
+  if (!S.dl || absDay() - S.dl.day > 5) { const lvl = PALL.filter(p => p.tid >= 0 && p.tid !== ut.id && !p.loan && Math.abs(p.ovr - lv) <= 4 && p.age <= 30 && club(p.tid).players.length > 22 && !notForSale(p)); const deals = shuffle(lvl).slice(0, 4); for (const p of deals) p._disc = { k: 0.8, until: absDay() + 3 }; S.dl = { day: absDay(), deals: deals.map(p => p.id) }; }
+  S.ddPop = S.day;
+  msg('⏰ DEADLINE DAY!', `Dziś o północy zamyka się okno transferowe. Nowe oferty za Twoich zawodników: ${S.offers.length - n0}. Okazje last minute czekają w zakładce Transfery.`);
 }
 function genOffers() {
   const ut = userClub();

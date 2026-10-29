@@ -592,21 +592,17 @@ ACT.nego = id => {
   renderNego();
 };
 function feeStep(v) { return v >= 2e7 ? 1e6 : v >= 5e6 ? 5e5 : v >= 1e6 ? 1e5 : 25000; }
-/* premia za podpis + prowizja agenta (wspólne dla transferu i przedłużenia) */
+/* prowizja agenta (wspólne dla transferu i przedłużenia) */
 function extrasHtml(o, agDem, bDem, k) {
   if (o.agent == null) o.agent = agDem;
-  if (o.bonus == null) o.bonus = 0;
-  const tot = o.bonus + o.agent, tb = userClub().tb;
-  return `<h3>Premia za podpis</h3><div class="numrow"><span>Jednorazowo (€):</span><input class="numin" type="number" inputmode="numeric" min="0" step="10000" value="${o.bonus}" data-change="${k}bonus"></div>
-    <small class="mut">Nieobowiązkowa (sugerowana: ${money(bDem)}). Premia liczy się ok. 1,3× bardziej niż ta sama kwota w pensji – możesz nią obniżyć pensję tygodniową.</small>
-    <h3>Prowizja agenta</h3><div class="numrow"><span>Jednorazowo (€):</span><input class="numin" type="number" inputmode="numeric" min="0" step="10000" value="${o.agent}" data-change="${k}agent"></div>
+  o.bonus = 0;
+  const tot = o.agent, tb = userClub().tb;
+  return `<h3>Prowizja agenta</h3><div class="numrow"><span>Jednorazowo (€):</span><input class="numin" type="number" inputmode="numeric" min="0" step="10000" value="${o.agent}" data-change="${k}agent"></div>
     <small class="mut">Agent oczekuje ok. ${money(agDem)}. Mniej – zawodnik będzie mniej chętny (poniżej 50% agent zrywa rozmowy), więcej – nieco łatwiej o zgodę.</small>
-    <div class="row"><span class="sp mut">Koszt jednorazowy razem</span><b class="${tot > tb ? 'bad' : ''}">${money(tot)}</b></div><small class="mut">Budżet transferowy: ${money(tb)}${NEG && o === NEG && NEG.fee ? ' (płatne obok kwoty transferu)' : ''}</small>`;
+    <div class="row"><span class="sp mut">Prowizja razem</span><b class="${tot > tb ? 'bad' : ''}">${money(tot)}</b></div><small class="mut">Budżet transferowy: ${money(tb)}${NEG && o === NEG && NEG.fee ? ' (płatne obok kwoty transferu)' : ''}</small>`;
 }
 const exNum = v => Math.max(0, Math.round(+v || 0));
-CHG.negbonus = v => { NEG.bonus = exNum(v); setTimeout(() => renderNego()); };
 CHG.negagent = v => { NEG.agent = exNum(v); setTimeout(() => renderNego()); };
-CHG.renbonus = v => { REN.bonus = exNum(v); setTimeout(() => renderRen()); };
 CHG.renagent = v => { REN.agent = exNum(v); setTimeout(() => renderRen()); };
 function renderNego(note) {
   const p = pget(NEG.pid), ut = userClub(), c = clubOf(p);
@@ -683,7 +679,7 @@ ACT.sendterms = () => {
   if (NEG.pre) { const r = preContract(p.id, NEG.wage, NEG.years, NEG); if (r.ok) { closeModal(); toast(r.msg, 'ok'); render(); } else renderNego({ cls: 'bad', t: r.msg }); return; }
   if (p.tid === -1) { const r = signFree(p.id, NEG.wage, NEG.years, NEG); if (r.ok) { p.role = NEG.role; closeModal(); toast(r.msg); render(); } else renderNego({ cls: 'bad', t: r.msg }); return; }
   if (NEG.wage > wageDemand(p) * 1.5 && !confirm(`Pensja ${money(NEG.wage)}/tydz. to dużo więcej, niż żąda zawodnik. Na pewno?`)) return;
-  if (upfront(NEG.fee, NEG) + NEG.bonus + NEG.agent > Math.max(0, userClub().tb) + 1) return renderNego({ cls: 'bad', t: `Kwota transferu z premią i prowizją przekracza budżet transferowy (${money(userClub().tb)}).` });
+  if (upfront(NEG.fee, NEG) + NEG.bonus + NEG.agent > Math.max(0, userClub().tb) + 1) return renderNego({ cls: 'bad', t: `Kwota transferu z prowizją przekracza budżet transferowy (${money(userClub().tb)}).` });
   const t = personalTerms(p, NEG.wage, NEG.years, NEG.role, NEG);
   if (!t.ok && t.budget) return renderNego({ cls: 'bad', t: t.msg });
   if (!t.ok) { NEG.tries = (NEG.tries || 0) + 1; if (NEG.tries >= 4) { p._noTalk = absDay() + 14; closeModal(); return toast(`${p.n} kończy rozmowy – „nie traktujecie mnie poważnie”.`, 'bad'); } return renderNego({ cls: 'bad', t: t.msg + ` (cierpliwość: jeszcze ${4 - NEG.tries})` }); }
@@ -1064,6 +1060,11 @@ function vOffice() {
 }
 ACT.offtab = a => { if (a !== UI.offTab) navPush(); UI.offTab = a; render(); };
 ACT.cltab = a => { if (a !== UI.clubTab) navPush(); UI.clubTab = a; render(); };
+function boardReqHtml() {
+  return `<div class="card list"><h2>🏛️ Prośby do zarządu</h2><small class="mut">Zaufanie zarządu: ${Math.round(S.board.conf)}%. Odmowa nieco psuje relacje; o to samo możesz prosić co ~3 miesiące.</small>
+    ${Object.keys(BREQ).map(k => { const i = boardReqInfo(k); return `<div class="prow"><div class="pn">${BREQ[k][0]}<small>${BREQ[k][1]}${i.amt ? ` Kwota: ${money(i.amt)}${k === 'wb' ? '/tydz.' : ''}.` : ''}${i.cost ? ` Koszt klubu: ${money(Math.round(i.cost / 2))}.` : ''} ${i.lock ? '🔒 ' + i.lock : 'Szanse: ' + appChanceTxt(i.p) + '.'}</small></div><button class="btn sm" data-act="breq" data-arg="${k}" ${i.lock ? 'disabled' : ''}>Poproś</button></div>`; }).join('')}</div>`;
+}
+ACT.breq = k => { const r = boardRequest(k); toast(r.msg, r.ok ? 'ok' : 'bad'); render(); };
 function vFin() {
   const ut = userClub(), lf = ut.lastFin, bill = sum(ut.players.map(p => p.wage)), sc = sum(S.scouts.map(s => s.cost));
   const wb = S.board.wb || 0, room = wageRoom(), maxUp = Math.floor(Math.max(0, ut.tb) / 52 / 500) * 500, maxDn = Math.max(0, Math.floor(room / 500) * 500);
@@ -1072,6 +1073,7 @@ function vFin() {
     <small class="mut">Przesuń suwak: w prawo – więcej na pensje (z budżetu transferowego), w lewo – więcej na transfery (z niewykorzystanych płac). 1 000 €/tydz. pensji = 52 000 € transferów.</small>
     <input type="range" style="width:100%;margin:10px 0" min="${-maxDn}" max="${maxUp}" step="500" value="0" data-change="wbslide">
     <div class="seg wrap">${[-10000, -2000, 2000, 10000].map(v => `<button class="btn sm" data-act="wbshift" data-arg="${v}" ${v > 0 ? (v > maxUp ? 'disabled' : '') : (-v > maxDn ? 'disabled' : '')}>${v > 0 ? '+' : '−'}${money(Math.abs(v))}/tydz. płac</button>`).join('')}</div></div>
+  ${boardReqHtml()}
   <div class="card"><h2>Finanse</h2>
     <div class="kv"><div><span>Saldo</span><b class="${ut.bal < 0 ? 'bad' : ''}">${money(ut.bal)}</b></div><div><span>Budżet transf.</span><b>${money(ut.tb)}</b></div>
     <div><span>Pensje/tydz.</span><b>${money(bill)}</b></div><div><span>Skauci/tydz.</span><b>${money(sc)}</b></div>
@@ -1117,8 +1119,18 @@ function vMgr() {
     ${bar(o)}<small class="mut">OVR trenera rośnie za wygrane (zwłaszcza z silniejszymi), realizację celów, awanse, trofea i sukcesy w pucharach. Wpływa też lekko na grę Twojej drużyny.</small></div>
     <div class="card"><h2>Rynek pracy</h2><small class="mut">Oferty mogą składać kluby o reputacji do <b>${maxR}</b>. Dostępne kluby: poziom 1: ${cnt(1)} • poziom 2: ${cnt(2)} • poziom 3: ${cnt(3)} • poziom 4: ${cnt(4)}.</small>
     <div class="btns"><button class="btn sm" data-act="jobs" ${S.jobs.length ? '' : 'disabled'}>Oferty pracy (${S.jobs.length})</button></div></div>
+    ${vacHtml()}
     <div class="card list"><h2>Najlepsi trenerzy</h2>${coaches.map(x => `<div class="prow" data-act="clubv" data-arg="${x.c.id}">${badge(x.c, 'sm')}<div class="pn">${esc(x.c.coach.n)}<small>${esc(x.c.name)}</small></div>${ovrTag(x.o)}</div>`).join('')}</div>`;
 }
+function vacHtml() {
+  const V = vacancies().sort((a, b) => b.c.rep - a.c.rep), A = S.apps || [];
+  const st = a => a.st === 'wait' ? '<span class="pill">⏳ czeka na decyzję</span>' : a.st === 'ok' ? '<span class="pill g">✅ oferta</span>' : '<span class="pill r">❌ odmowa</span>';
+  return `<div class="card list"><h2>🪑 Wolne posady</h2><small class="mut">Kluby, które zwolniły trenera i szukają następcy. Możesz sam zgłosić kandydaturę (maks. 2 naraz) – uważaj, informacja może wyciec do mediów i zdenerwować Twój zarząd.</small>
+    ${V.length ? V.map(v => { const c = v.c, a = A.find(x => x.club === c.id), p = appChance(c), r = table(c.lg).find(x => x.id === c.id);
+      return `<div class="prow">${badge(c, 'sm')}<div class="pn" data-act="clubv" data-arg="${c.id}">${esc(c.name)}<small>${S.countries[c.cc].flag} ${esc(S.leagues[c.lg].name)} • ${r ? r.pos + '. miejsce • ' : ''}rep. ${c.rep} • szanse: ${appChanceTxt(p)}</small></div>${a ? st(a) : `<button class="btn sm" data-act="applyjob" data-arg="${c.id}">Aplikuj</button>`}</div>`; }).join('') : '<small class="mut">Obecnie brak wolnych posad.</small>'}
+    ${A.filter(a => !V.some(v => v.c.id === a.club)).map(a => { const c = club(a.club); return c ? `<div class="prow">${badge(c, 'sm')}<div class="pn">${esc(c.name)}</div>${st(a)}</div>` : ''; }).join('')}</div>`;
+}
+ACT.applyjob = id => { const c = club(+id); if (!confirm(`Złożyć aplikację na stanowisko trenera ${c.name}?`)) return; const r = applyJob(+id); toast(r.msg, r.ok ? '' : 'bad'); saveSoon(); render(); };
 function vStaff() {
   initStaff(); const mk = staffMarket(), stars = ab => { const n = clamp(Math.round(ab / 4), 1, 5); return '★'.repeat(n) + '☆'.repeat(5 - n); };
   return `<div class="card"><h2>🧑‍💼 Sztab szkoleniowy</h2><small class="mut">Koszt sztabu: ${money(staffCost())}/tydz. Zatrudnienie nowej osoby oznacza odprawę dla poprzednika (8 tygodniówek). Lista kandydatów odświeża się co kilka tygodni.</small></div>
@@ -1153,8 +1165,8 @@ function vFac() {
   const com = k => `<div class="row" style="margin:10px 0"><div class="sp"><b>${COMM[k][0]}</b><br><small class="mut">${COMM[k][1]}</small></div>${lvl(commLvl(k))}${commLvl(k) < 5 ? `<button class="btn sm" data-act="upcomm" data-arg="${k}">${money(commCost(k, commLvl(k)))}</button>` : ''}</div>`;
   return stadiumCard(ut) + `<div class="card"><h2>⚽ Ośrodek treningowy</h2>${fac('train', 'Boiska i siłownia', 'Szybszy rozwój wszystkich zawodników.')}</div>
     <div class="card"><h2>🎓 Akademia – obiekty</h2>${fac('fac', ACAD_NAMES.fac, 'Wyższy potencjał wychowanków.')}${fac('coach', ACAD_NAMES.coach, 'Szybszy rozwój juniorów i trafniejsza ocena potencjału.')}${fac('rec', ACAD_NAMES.rec, 'Więcej juniorów co sezon, większa szansa na talent pokolenia.')}<small class="mut">Utrzymanie akademii: ${money(acadCost())}/tydz.</small></div>
-    <div class="card"><h2>💼 Obiekty komercyjne</h2>${com('gastro')}${com('park')}${com('shop')}${com('hotel')}</div><div class="card"><h2>🌱 Pielęgnacja i regeneracja</h2>${com('turf')}${com('recov')}
-      <small class="mut">${commLvl('hotel') ? `Hotel: ${money(hotelIncome())}/tydz. ` : ''}${commLvl('shop') ? `Sklep: ${money(shopIncome())}/tydz. ` : ''}Obiekty komercyjne zwiększają przychody klubu – zwracają się po kilku sezonach.</small></div>
+    <div class="card"><h2>💼 Obiekty komercyjne</h2>${com('gastro')}${com('park')}${com('shop')}${com('hotel')}${com('museum')}${com('fanzone')}${com('screen')}</div><div class="card"><h2>🌱 Pielęgnacja i regeneracja</h2>${com('turf')}${com('recov')}${com('solar')}
+      <small class="mut">${commLvl('hotel') ? `Hotel: ${money(hotelIncome())}/tydz. ` : ''}${commLvl('shop') ? `Sklep: ${money(shopIncome())}/tydz. ` : ''}${commLvl('museum') ? `Muzeum: ${money(museumIncome())}/tydz. ` : ''}Obiekty komercyjne zwiększają przychody klubu – zwracają się po kilku sezonach.</small></div>
     `;
 }
 ACT.upcomm = k => { const r = upgradeComm(k); toast(r.msg, r.ok ? 'ok' : 'bad'); render(); };
@@ -1163,7 +1175,8 @@ const stadExp = c => { const add = Math.max(1000, Math.round(c.cap * 0.1 / 500) 
 function stadiumSVG(c, cap, opt = {}) {
   cap = cap || c.cap; let col = (c.col && c.col[0]) || '#2a6', col2 = (c.col && c.col[1]) || '#fff'; const W = 340, H = 230, cx = 170, cy = 112;
   if (typeof uk_dist === 'function' && uk_dist(col, '#2f9a4e') < 110) { const t0 = col; col = col2; col2 = t0; if (uk_dist(col, '#2f9a4e') < 110) col = '#c9d3e6'; }   // krzesełka nie mogą zlać się z murawą
-  const tiers = cap < 5000 ? 1 : cap < 15000 ? 1 : cap < 30000 ? 2 : cap < 50000 ? 2 : 3, four = cap >= 12000, corners = cap >= 25000, roof = cap >= 30000, sides2 = cap >= 5000;
+  const sd = opt.std || stadInit(c), B = opt.builds || c.builds || [], T = k => standTiers(k, sd[k]), tiers = Math.max(T('main'), T('opp'), T('north'), T('south'));
+  const corners = sd.corners, sides2 = true, four = true;
   const pw = 120, ph = 74, t = tiers === 3 ? 9 : 11, L = lv => opt.fac ? (opt.fac[lv] || 0) : (S.fac && S.fac[lv]) || 0;
   let o = `<svg viewBox="0 0 ${W} ${H}" width="100%" class="stad" role="img" aria-label="Stadion ${cap} miejsc"><defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b3a2a"/><stop offset="1" stop-color="#10261b"/></linearGradient>
@@ -1177,15 +1190,28 @@ function stadiumSVG(c, cap, opt = {}) {
       for (let k = 2; k < (vert ? Hd : Wd) - 2; k += 4) s += vert ? `<line x1="${X + 1}" y1="${Y + k}" x2="${X + Wd - 1}" y2="${Y + k}" stroke="#0003" stroke-width=".6"/>` : `<line x1="${X + k}" y1="${Y + 1}" x2="${X + k}" y2="${Y + Hd - 1}" stroke="#0003" stroke-width=".6"/>`; }
     return s; };
   const x0 = cx - pw / 2, y0 = cy - ph / 2;
-  o += stand(x0, y0 - t - 2, pw, t, tiers, false);                       // główna (zawsze)
-  if (sides2) o += stand(x0, y0 + ph + 2, pw, t, tiers, false); else o += `<rect x="${x0}" y="${y0 + ph + 2}" width="${pw}" height="${t - 3}" rx="3" fill="#3c6b3f"/>`;
-  if (four) { o += stand(x0 - t - 2, y0, t, ph, tiers, true) + stand(x0 + pw + 2, y0, t, ph, tiers, true); } else o += `<rect x="${x0 - t + 1}" y="${y0}" width="${t - 3}" height="${ph}" rx="3" fill="#3c6b3f"/><rect x="${x0 + pw + 2}" y="${y0}" width="${t - 3}" height="${ph}" rx="3" fill="#3c6b3f"/>`;
-  if (corners) { const R = t * tiers; for (const [qx, qy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { const X = qx < 0 ? x0 - R - 2 : x0 + pw + 2, Y = qy < 0 ? y0 - R - 2 : y0 + ph + 2; o += `<rect x="${X}" y="${Y}" width="${R}" height="${R}" rx="4" fill="${col}" opacity=".75" stroke="#0008" stroke-width=".6"/>`; } }
-  if (roof) { const R = t * tiers + 4; o += `<rect x="${x0 - R - 2}" y="${y0 - R - 2}" width="${pw + 2 * R + 4}" height="${ph + 2 * R + 4}" rx="${corners ? 16 : 6}" fill="none" stroke="#dfe8f5" stroke-opacity=".55" stroke-width="4"/>`; }
+  o += stand(x0, y0 - t - 2, pw, t, T('main'), false) + stand(x0, y0 + ph + 2, pw, t, T('opp'), false);
+  o += stand(x0 - t - 2, y0, t, ph, T('north'), true) + stand(x0 + pw + 2, y0, t, ph, T('south'), true);
+  if (sd.safe) { const X = x0 + pw + 2, d = (T('south') - 1) * (t - 1); o += `<rect x="${X + d}" y="${y0 + ph * 0.2}" width="${t}" height="${ph * 0.6}" rx="2" fill="${col2}" opacity=".9" stroke="#0008" stroke-width=".6"/>`; for (let i = 0; i < 6; i++) o += `<circle cx="${X + d + t / 2}" cy="${y0 + ph * 0.24 + i * ph * 0.1}" r="1.6" fill="#ff5468"/>`; }
+  if (sd.vip) { const d = (T('main') - 1) * (t - 1); o += `<rect x="${x0 + pw * 0.3}" y="${y0 - t - 2 - d - 4}" width="${pw * 0.4 * (0.6 + sd.vip * 0.1)}" height="3.5" rx="1" fill="#ffd23f"/>`; }
+  if (corners) { const R = t * tiers * (corners === 2 ? 1 : 0.7); for (const [qx, qy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { const X = qx < 0 ? x0 - R - 2 : x0 + pw + 2, Y = qy < 0 ? y0 - R - 2 : y0 + ph + 2; o += `<rect x="${X}" y="${Y}" width="${R}" height="${R}" rx="4" fill="${col}" opacity=".75" stroke="#0008" stroke-width=".6"/>`; } }
+  { const rf = (x, y, w, h) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="#dfe8f5" fill-opacity=".16" stroke="#dfe8f5" stroke-opacity=".7" stroke-width="1.6"/>`, D = k => (T(k) - 1) * (t - 1) + t;
+    if (sd.roof.main) o += rf(x0 - 4, y0 - 2 - D('main') - 3, pw + 8, D('main') + 1);
+    if (sd.roof.opp) o += rf(x0 - 4, y0 + ph + 2, pw + 8, D('opp') + 1);
+    if (sd.roof.north) o += rf(x0 - 2 - D('north') - 3, y0 - 4, D('north') + 1, ph + 8);
+    if (sd.roof.south) o += rf(x0 + pw + 2, y0 - 4, D('south') + 1, ph + 8); }
+  if (opt.hl) { const D = k => (T(k) - 1) * (t - 1) + t + 3, h = opt.hl, R = h === 'main' ? [x0 - 6, y0 - 2 - D('main') - 3, pw + 12, D('main') + 3] : h === 'opp' ? [x0 - 6, y0 + ph, pw + 12, D('opp') + 3] : h === 'north' ? [x0 - 2 - D('north') - 3, y0 - 6, D('north') + 3, ph + 12] : h === 'south' ? [x0 + pw, y0 - 6, D('south') + 3, ph + 12] : [x0 - 30, y0 - 30, pw + 60, ph + 60];
+    o += `<rect x="${R[0]}" y="${R[1]}" width="${R[2]}" height="${R[3]}" rx="5" fill="none" stroke="#ffd23f" stroke-width="2" stroke-dasharray="5 3"/>`; }
+  for (const b of B) { const D = b.s === 'main' ? [cx, y0 - t * tiers - 14] : b.s === 'opp' ? [cx, y0 + ph + t * tiers + 12] : b.s === 'north' ? [x0 - t * tiers - 12, cy] : b.s === 'south' ? [x0 + pw + t * tiers + 12, cy] : [x0 - 10, y0 - 10];
+    o += `<text x="${D[0]}" y="${D[1]}" text-anchor="middle" font-size="12">🏗️</text>`; }
   // boisko
   o += `<rect x="${x0}" y="${y0}" width="${pw}" height="${ph}" fill="url(#mow)" stroke="#fff" stroke-opacity=".8" stroke-width="1"/><line x1="${cx}" y1="${y0}" x2="${cx}" y2="${y0 + ph}" stroke="#fff" stroke-opacity=".8"/><circle cx="${cx}" cy="${cy}" r="10" fill="none" stroke="#fff" stroke-opacity=".8"/>
     <rect x="${x0}" y="${cy - 16}" width="16" height="32" fill="none" stroke="#fff" stroke-opacity=".8"/><rect x="${x0 + pw - 16}" y="${cy - 16}" width="16" height="32" fill="none" stroke="#fff" stroke-opacity=".8"/>`;
   // maszty oświetleniowe
+  const mu = L('museum'); if (mu) o += `<rect x="${W - 64}" y="28" width="${20 + mu * 4}" height="11" rx="2" fill="#b98cff" opacity=".85"/><text x="${W - 61}" y="36" font-size="6.5" fill="#fff" font-weight="700">MUZEUM</text>`;
+  const fz = L('fanzone'); if (fz) for (let i = 0; i < fz; i++) o += `<path d="M${x0 + pw - 10 - i * 16} ${H - 34} l6 -9 l6 9 z" fill="${i % 2 ? col : col2}" opacity=".9"/>`;
+  const scr = L('screen'); if (scr) o += `<rect x="${x0 - t * tiers - 4}" y="${y0 - t * tiers - 14}" width="${14 + scr * 2}" height="8" rx="1" fill="#0b1220" stroke="#4da3ff"/>`;
+  const sol = L('solar'); if (sol) for (let i = 0; i < sol; i++) o += `<rect x="${40 + i * 9}" y="30" width="7" height="10" fill="#1c3f8a" stroke="#8fb4ff" stroke-width=".5"/>`;
   const fl = cap >= 8000 ? [[x0 - 22, y0 - 22], [x0 + pw + 22, y0 - 22], [x0 - 22, y0 + ph + 22], [x0 + pw + 22, y0 + ph + 22]] : [[x0 - 8, y0 - 18], [x0 + pw + 8, y0 - 18]];
   for (const [x, y] of fl) o += `<circle cx="${x}" cy="${y}" r="3.2" fill="#fff6c2"/><circle cx="${x}" cy="${y}" r="7" fill="#fff6c2" opacity=".18"/>`;
   // obiekty wokół
@@ -1196,11 +1222,23 @@ function stadiumSVG(c, cap, opt = {}) {
   const tr = opt.train != null ? opt.train : (S.fac && S.fac.train) || 1; for (let i = 0; i < Math.min(3, Math.ceil(tr / 2)); i++) o += `<rect x="${8 + i * 30}" y="8" width="26" height="17" rx="1" fill="#2a8a45" stroke="#fff8" stroke-width=".7"/><line x1="${21 + i * 30}" y1="8" x2="${21 + i * 30}" y2="25" stroke="#fff8" stroke-width=".7"/>`;
   const ac = S.acad ? S.acad.fac : 1; o += `<rect x="${W - 64}" y="8" width="${24 + ac * 6}" height="16" rx="3" fill="#4da3ff" opacity=".85"/><text x="${W - 60}" y="19" font-size="7" fill="#fff" font-weight="700">AKADEMIA</text>`;
   const rc = L('recov'); if (rc) o += `<rect x="8" y="30" width="${18 + rc * 4}" height="12" rx="6" fill="#19b97a" opacity=".85"/><text x="11" y="39" font-size="7" fill="#fff">SPA</text>`;
-  if (opt.build) { const bx = x0 + pw + t * tiers + 14, by = y0 - 34; o += `<path d="M${bx} ${by + 70} V${by} H${bx + 34} M${bx} ${by + 8} L${bx + 12} ${by}" stroke="#ffb020" stroke-width="2.4" fill="none"/><line x1="${bx + 30}" y1="${by}" x2="${bx + 30}" y2="${by + 18}" stroke="#ffb020"/><rect x="${bx + 26}" y="${by + 18}" width="8" height="6" fill="#ffb020"/>`; }
+  if (opt.build && !B.length) { const bx = x0 + pw + t * tiers + 14, by = y0 - 34; o += `<path d="M${bx} ${by + 70} V${by} H${bx + 34} M${bx} ${by + 8} L${bx + 12} ${by}" stroke="#ffb020" stroke-width="2.4" fill="none"/><line x1="${bx + 30}" y1="${by}" x2="${bx + 30}" y2="${by + 18}" stroke="#ffb020"/><rect x="${bx + 26}" y="${by + 18}" width="8" height="6" fill="#ffb020"/>`; }
   o += `<text x="${cx}" y="${H - 6}" text-anchor="middle" font-size="10" font-weight="800" fill="#e8eefc">${esc(c.stadName || c.name)} • ${cap.toLocaleString('pl-PL')} miejsc</text>`;
   return o + '</svg>';
 }
-ACT.stadprev = () => { const ut = userClub(), e = stadExp(ut); modal(`<h2>🏗️ Po rozbudowie</h2>${stadiumSVG(ut, ut.cap + e.add)}<small class="mut">Teraz: ${ut.cap.toLocaleString('pl-PL')} miejsc → po rozbudowie ${(ut.cap + e.add).toLocaleString('pl-PL')}. Większe stadiony dostają kolejne poziomy trybun, narożniki i dach.</small><div class="btns"><button class="btn full" data-act="close">Zamknij</button></div>`); };
+ACT.stadprev = id => { const ut = userClub(), P = stadProjects(ut).find(p => p.id === id); if (!P) return;
+  const sd = JSON.parse(JSON.stringify(stadInit(ut))); if (P.k === 'exp') sd[P.s] += P.add; else if (P.k === 'roof') sd.roof[P.s] = 1; else if (P.k === 'corners') sd.corners++; else if (P.k === 'vip') sd.vip++; else if (P.k === 'safe') sd.safe = 1;
+  const cap = ut.cap + (P.add || 0) + (P.k === 'safe' ? safeSeats(ut) : 0);
+  modal(`<h2>👁 ${esc(P.name)}</h2>${stadiumSVG(ut, cap, { std: sd, builds: [], hl: P.s })}<p>${esc(P.d)}</p>${P.k === 'exp' ? `<small class="mut">${esc(STANDS[P.s])}: ${stadInit(ut)[P.s].toLocaleString('pl-PL')} → ${sd[P.s].toLocaleString('pl-PL')} miejsc. Stadion: ${ut.cap.toLocaleString('pl-PL')} → ${cap.toLocaleString('pl-PL')}.</small>` : ''}<div class="kv"><div><span>Koszt</span><b>${money(P.cost)}</b></div><div><span>Czas budowy</span><b>~${Math.round(P.days / 7)} tyg.</b></div></div>
+    <div class="btns"><button class="btn pri sp" data-act="stadproj" data-arg="${P.id}" ${P.busy || P.lock ? 'disabled' : ''}>Buduj</button><button class="btn" data-act="close">Zamknij</button></div>`); };
+ACT.stadproj = id => { const ut = userClub(), P = stadProjects(ut).find(p => p.id === id); if (!P) return; if (!confirm(`${P.name} za ${money(P.cost)}?`)) return; const r = startStadProject(id); toast(r.msg, r.ok ? 'ok' : 'bad'); closeModal(); render(); };
+function stadProjHtml(ut) {
+  const P = stadProjects(ut), B = ut.builds || [], sd = stadInit(ut);
+  return `<h3>🏗️ Projekty rozbudowy</h3><small class="mut">Sam decydujesz, co budować: każda trybuna osobno, dachy, narożniki, loże i sektor stojący. Maks. 2 budowy naraz.</small>
+    <div class="kv">${Object.keys(STANDS).map(k => `<div><span>${STANDS[k].replace(' (za bramką)', '')}</span><b>${sd[k].toLocaleString('pl-PL')}${sd.roof[k] ? ' ☂️' : ''}</b></div>`).join('')}${sd.corners ? `<div><span>Narożniki</span><b>${(sd.corners * cornerSeats(ut)).toLocaleString('pl-PL')}</b></div>` : ''}${sd.safe ? `<div><span>Kocioł (stojące)</span><b>${safeSeats(ut).toLocaleString('pl-PL')}</b></div>` : ''}${sd.vip ? `<div><span>Loże VIP</span><b>poz. ${sd.vip}</b></div>` : ''}</div>
+    ${B.map(b => `<div class="row"><span class="pill">🏗️ ${esc(b.name)}</span><small class="mut sp" style="text-align:right">do ${fmtDate(b.done * 864e5)}</small></div>`).join('')}
+    <div class="list">${P.map(p => `<div class="prow" data-act="stadprev" data-arg="${p.id}"><div class="pn">${esc(p.name)}<small>${esc(p.d)}</small></div><b style="white-space:nowrap">${p.busy ? '🏗️' : p.lock ? '🔒' : money(p.cost)}</b></div>`).join('')}</div>`;
+}
 function stadiumCard(ut) {
   const e = stadExp(ut), att = attendance(ut, false), dem = Math.round(ticketDemand(ut) * (0.85 + (S.fans != null ? S.fans : 60) / 400) * (1 + commLvl('park') * 0.03) * priceK(ut)), gate = Math.round(GATE_NET * att * ut.price * (1 + commLvl('gastro') * 0.06));
   const full = dem >= ut.cap;
@@ -1209,8 +1247,8 @@ function stadiumCard(ut) {
     <div><span>Średnia frekwencja</span><b>${att.toLocaleString('pl-PL')} (${Math.round(att / ut.cap * 100)}%)</b></div><div><span>Wpływy z meczu</span><b>${money(gate)}</b></div></div>
     <h3>🎟️ Cena biletu</h3><div class="stepper"><button class="btn" data-act="tkt" data-arg="-1">−</button><b>${ut.price.toFixed(1)} € <small class="mut">(${Math.round(ut.price / basePrice(ut) * 100)}% standardu)</small></b><button class="btn" data-act="tkt" data-arg="1">+</button></div>
     <small class="mut">Wyższa cena = mniejszy popyt, ale więcej z każdego biletu. Gdy stadion jest pełny, podwyżka zwykle się opłaca; przy pustych trybunach – obniżka. Bardzo drogie bilety psują nastroje kibiców.</small>
-    <small class="mut">Popyt rośnie z renomą klubu, poziomem ligi, nastrojami kibiców i parkingiem. ${full ? 'Stadion jest za mały – rozbudowa się opłaci.' : 'Na razie stadion nie zapełnia się – rozbudowa nie zwiększy wpływów.'}${ut.stadBuild ? ` Trwa rozbudowa: +${ut.stadBuild.add.toLocaleString('pl-PL')} miejsc od ${SEASON_LABEL(ut.stadBuild.season)}.` : ''}</small>
-    <div class="btns">${ut.stadBuild ? '<span class="pill">🏗️ Budowa w toku</span>' : `<button class="btn sm" data-act="stadprev">👁 Podgląd</button><button class="btn sm ${full ? 'pri' : ''}" data-act="stadexp">Rozbuduj (+${e.add.toLocaleString('pl-PL')} miejsc) • ${money(e.cost)}</button>`}</div></div>`;
+    <small class="mut">Popyt rośnie z renomą klubu, poziomem ligi, nastrojami kibiców i parkingiem. ${full ? 'Stadion jest za mały – rozbudowa się opłaci.' : 'Na razie stadion nie zapełnia się – nowe miejsca nie zwiększą wpływów (ale dachy, loże i kocioł tak).'}${ut.stadBuild ? ` Trwa rozbudowa: +${ut.stadBuild.add.toLocaleString('pl-PL')} miejsc od ${SEASON_LABEL(ut.stadBuild.season)}.` : ''}</small>
+    ${stadProjHtml(ut)}</div>`;
 }
 ACT.tkt = d => { const ut = userClub(), b = basePrice(ut); S.tkt = clamp(Math.round(((ut.price / b) + +d * 0.05) * 100) / 100, 0.5, 1.8); ut.price = Math.round(b * S.tkt * 10) / 10; saveSoon(); render(); };
 ACT.stadexp = () => {

@@ -156,12 +156,16 @@ function money(n) {
   if (a >= 1e3) return s + Math.round(a / 1e3) + ' tys. €';
   return s + Math.round(a) + ' €';
 }
+// wartość rynkowa: OVR + potencjał ważony wiekiem (młody z wysokim POT kosztuje jak gotowy zawodnik), wiek, pozycja
+const POT_W = [0.62, 0.62, 0.6, 0.56, 0.5, 0.43, 0.35, 0.26, 0.17, 0.09];   // wiek 16..25
+const POS_VK = { GK: 0.7, CB: 0.9, LB: 0.88, RB: 0.88, CDM: 0.95, CM: 1, CAM: 1.08, LM: 0.95, RM: 0.95, LW: 1.12, RW: 1.12, ST: 1.18 };
 function calcValue(p) {
-  let v = 800000 * Math.exp(0.158 * (p.ovr - 60));
-  const a = p.age;
-  v *= a <= 20 ? 1.5 : a <= 23 ? 1.3 : a <= 26 ? 1.1 : a <= 29 ? 1 : a <= 31 ? 0.75 : a <= 33 ? 0.5 : a <= 35 ? 0.3 : 0.15;
-  if (a < 25) v *= 1 + Math.max(0, p.pot - p.ovr) * 0.04;
-  if (p.pos === 'GK') v *= 0.7;
+  const a = p.age, gap = Math.max(0, (p.pot || p.ovr) - p.ovr);
+  const w = a < 16 ? 0.62 : a > 25 ? 0 : POT_W[a - 16];
+  const eff = p.ovr + gap * w + (a <= 21 && gap >= 15 ? 1.5 : 0);   // „wonderkid premium"
+  let v = 800000 * Math.exp(0.158 * (eff - 60));
+  v *= a <= 23 ? 1.12 : a <= 26 ? 1.08 : a <= 29 ? 1 : a <= 31 ? 0.75 : a <= 33 ? 0.5 : a <= 35 ? 0.3 : 0.15;
+  v *= POS_VK[p.pos] || 1;
   const r = v >= 1e7 ? 5e5 : v >= 1e6 ? 5e4 : 1e4;
   return Math.max(10000, Math.round(v / r) * r);
 }
@@ -277,7 +281,7 @@ function createMatch(h, a, opts = {}) {
   };
   const d = (h.rep || 50) - (a.rep || 50);
   if (m.comp === 'C' && Math.abs(d) >= 10) (d > 0 ? m.away : m.home).cf *= 1.07; // magia pucharu: słabszy gra ambitniej
-  if (m.home.user && !m.neutral && typeof commLvl === 'function') m.home.cf *= 1 + 0.006 * commLvl('turf');   // własna, zadbana murawa
+  if (m.home.user && !m.neutral && typeof commLvl === 'function') m.home.cf *= (1 + 0.006 * commLvl('turf') + 0.003 * commLvl('screen')) * (typeof stadHomeK === 'function' ? stadHomeK(h) : 1);   // własna, zadbana murawa
   if (m.home.user || m.away.user) { const ah = avg(m.home.pitch.map(x => x.ov)), aa = avg(m.away.pitch.map(x => x.ov)), gap = Math.abs(ah - aa); if (gap > 4) (ah > aa ? m.away : m.home).cf *= 1 + Math.min(UND_MAX, (gap - 4) * UND_K); }   // słabszy mobilizuje się – mniej pogromów
   if (m.home.ai && !m.home.user) m.home.ment = d > 10 ? 'att' : d < -12 ? 'def' : 'bal';
   if (m.away.ai && !m.away.user) m.away.ment = d < -10 ? 'att' : d > 12 ? 'def' : 'bal';

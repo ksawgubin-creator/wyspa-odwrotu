@@ -1428,9 +1428,9 @@ function refillAI(c) {
   for (const [line, n] of [['GK', 3], ['DEF', 7], ['MID', 7], ['ATT', 4]]) while (cnt(line) < n) { const p = squadPlayer(c, pick(posFor[line]), 2); c.players.push(p); }
   while (c.players.length < 22) c.players.push(squadPlayer(c, pick(POSITIONS.slice(1)), 2));
   while (c.players.length > 27) { const w = c.players.filter(p => !p.loan).sort((a, b) => (a.ovr - a.age * 0.3) - (b.ovr - b.age * 0.3))[0]; if (!w) break; detach(w);
-    // nadmiar kadry: sprzedaż do klubu o pasującym poziomie (dobrzy zawodnicy nie lądują za darmo na rynku)
+    // nadmiar kadry: wypożyczenie do klubu o pasującym poziomie (wraca po sezonie; dobrzy zawodnicy nie lądują za darmo na rynku)
     const bs = w.ovr >= 60 || w.pot >= 72 ? S.clubs.filter(b => b.id !== S.user && b !== c && !isReserve(b) && b.players.length < 26 && Math.abs(teamLevel(b) - Math.max(w.ovr, w.pot - 12)) <= 6) : [];
-    if (bs.length) { const b = pick(bs); attach(w, b); w.wage = calcWage(w, b.rep); w.con = ri(1, 3); const fee = Math.round(w.val * 0.6 / 1e4) * 1e4; b.bal -= fee; c.bal += fee; } else { w.tid = -1; S.free.push(w); } }
+    if (bs.length) { const b = pick(bs); attach(w, b); w.loan = { from: c.id, season: S.season + (S.day >= S.cal.length ? 1 : 0) }; } else { w.tid = -1; S.free.push(w); } }
 }
 /* ostatnie dni okna: oferty last minute za Twoich zawodników i okazje na rynku */
 /* asystent przedłuża kontrakty (jak w FM): tryb 'fringe' – rotacyjni/rezerwowi/perspektywiczni, 'all' – wszyscy poza kluczowymi */

@@ -246,7 +246,10 @@ function ensureNationPools() {
   }
 }
 function genFreeAgent() {
-  const p = genPlayer(pick(POSITIONS), 52 + rnd() * 18, rnd() < 0.5 ? pick(['POL', 'ENG', 'ESP', 'ITA', 'GER', 'FRA', 'POR', 'NED']) : foreignNat(false), { age: ri(19, 34) });
+  // wolni zawodnicy to głównie przeciętniacy i weterani – rzadko ktoś mocny, prawie nigdy młody talent
+  const age = rnd() < 0.15 ? ri(19, 22) : ri(24, 34), lvl = rnd() < 0.05 ? 58 + rnd() * 8 : 44 + rnd() * 14;
+  const p = genPlayer(pick(POSITIONS), lvl, rnd() < 0.5 ? pick(['POL', 'ENG', 'ESP', 'ITA', 'GER', 'FRA', 'POR', 'NED']) : foreignNat(false), { age });
+  p.pot = Math.min(p.pot, p.ovr + (age <= 22 ? 7 : 2)); p.val = calcValue(p);
   p.val = Math.round(p.val * 0.5 / 10000) * 10000; p.wage = calcWage(p, 50); return p;
 }
 function genScout() {
@@ -965,6 +968,7 @@ function weekly(d) {
   if (d.ls === 30) { const exp = ut.players.filter(p => p.con <= 1 && !p.loan); if (exp.length) msg('Kontrakty wygasają', `Z końcem sezonu wygasają kontrakty: ${exp.map(shortName).join(', ')}. Przedłuż je w karcie zawodnika.`); }
   if (d.ls === 4) msg('Okno zamknięte', 'Letnie okno transferowe zostało zamknięte. Wolnych agentów możesz podpisywać zawsze.');
   if (d.ls === 2 || d.ls === 22) deadlineDays(ut);
+  if (d.ls >= 20 && d.ls % 3 === 0) autoRenewals(ut);
   if (d.ls === 20) msg('Zimowe okno transferowe', 'Otwiera się zimowe okno transferowe (do kolejki 24).');
   if (WINTER[ut.cc] && S.campS !== S.season && S.leagues[ut.lg].lsMap[d.ls] === -1 && winterSlots(WINTER[ut.cc] === 'long' ? 12 : 22, WINTER[ut.cc] === 'long' ? 3 : 12).includes(d.ls) && typeof pushEvent === 'function') {
     S.campS = S.season; news(`❄️ ${S.leagues[ut.lg].name}: przerwa zimowa – liga wraca ${WINTER[ut.cc] === 'long' ? 'na początku lutego' : 'w połowie stycznia'}.`);
@@ -1423,9 +1427,26 @@ function refillAI(c) {
   const posFor = { GK: ['GK'], DEF: ['CB', 'LB', 'RB'], MID: ['CDM', 'CM', 'CAM'], ATT: ['ST', 'LW', 'RW'] };
   for (const [line, n] of [['GK', 3], ['DEF', 7], ['MID', 7], ['ATT', 4]]) while (cnt(line) < n) { const p = squadPlayer(c, pick(posFor[line]), 2); c.players.push(p); }
   while (c.players.length < 22) c.players.push(squadPlayer(c, pick(POSITIONS.slice(1)), 2));
-  while (c.players.length > 27) { const w = c.players.filter(p => !p.loan).sort((a, b) => (a.ovr - a.age * 0.3) - (b.ovr - b.age * 0.3))[0]; if (!w) break; detach(w); w.tid = -1; S.free.push(w); }
+  while (c.players.length > 27) { const w = c.players.filter(p => !p.loan).sort((a, b) => (a.ovr - a.age * 0.3) - (b.ovr - b.age * 0.3))[0]; if (!w) break; detach(w);
+    // nadmiar kadry: sprzedaż do klubu o pasującym poziomie (dobrzy zawodnicy nie lądują za darmo na rynku)
+    const bs = w.ovr >= 60 || w.pot >= 72 ? S.clubs.filter(b => b.id !== S.user && b !== c && !isReserve(b) && b.players.length < 26 && Math.abs(teamLevel(b) - Math.max(w.ovr, w.pot - 12)) <= 6) : [];
+    if (bs.length) { const b = pick(bs); attach(w, b); w.wage = calcWage(w, b.rep); w.con = ri(1, 3); const fee = Math.round(w.val * 0.6 / 1e4) * 1e4; b.bal -= fee; c.bal += fee; } else { w.tid = -1; S.free.push(w); } }
 }
 /* ostatnie dni okna: oferty last minute za Twoich zawodników i okazje na rynku */
+/* asystent przedłuża kontrakty (jak w FM): tryb 'fringe' – rotacyjni/rezerwowi/perspektywiczni, 'all' – wszyscy poza kluczowymi */
+function autoRenewals(ut) {
+  const mode = S.settings.autoRenew || 'off'; if (mode === 'off') return;
+  const lv = teamLevel(ut), done = [], skipped = [];
+  for (const p of ut.players.filter(p => p.con <= 1 && !p.loan && !p.listed && p._arTried !== S.season)) {
+    const role = roleOf(p); if (role === 'key' || (mode === 'fringe' && role === 'first')) continue;
+    p._arTried = S.season;
+    if (p.age >= 33 || (p.ovr < lv - 10 && p.age > 22 && p.pot < lv)) { skipped.push(p.n); continue; }   // nie warto
+    const years = p.age <= 24 ? 4 : p.age <= 29 ? 3 : 2, dem = contractDemand(p, years, role);
+    const r = negotiateRenewal(p.id, dem, years, role, {});
+    if (r.res === 'accept') done.push(`${p.n} (${plural(years, 'rok', 'lata', 'lat')}, ${money(dem)}/tydz.)`); else skipped.push(p.n);
+  }
+  if (done.length || skipped.length) msg('📝 Asystent: kontrakty', `${done.length ? 'Przedłużyłem umowy: ' + done.join('; ') + '.' : ''}${skipped.length ? `\nNie przedłużyłem (odmowa, budżet płac lub nie warto): ${skipped.join(', ')}.` : ''}`);
+}
 function deadlineDays(ut) {
   const lv = teamLevel(ut), got = [];
   const mine = ut.players.filter(p => !p.loan && !(p.joined && absDay() - p.joined < 60) && p.ovr >= lv - 1 && !S.offers.some(o => o.pid === p.id));
@@ -1494,10 +1515,10 @@ function aiTransfers() {
     if (fee >= 3e6 || seller.cc === userClub().cc || b.cc === userClub().cc) news(`🔄 Transfer: ${bestP.n} (${bestP.ovr}) – ${seller.name} → ${b.name} (${money(fee)}).`);
   }
   // AI podpisuje lepszych wolnych agentów
-  const fa = S.free.filter(p => p.age <= 33).sort((a, b) => b.ovr - a.ovr).slice(0, 30);
-  for (let k = 0; k < 6 && fa.length; k++) {
-    const p = fa.splice(ri(0, Math.min(fa.length - 1, 9)), 1)[0];
-    const c = S.clubs.find(c => c.id !== S.user && c.players.length < 26 && Math.abs(teamLevel(c) - p.ovr) <= 4 && rnd() < 0.3);
+  const fa = S.free.filter(p => p.age <= 33).sort((a, b) => (b.ovr + Math.max(0, b.pot - b.ovr) * 0.5) - (a.ovr + Math.max(0, a.pot - a.ovr) * 0.5)).slice(0, 30);
+  for (let k = 0; k < 14 && fa.length; k++) {
+    const p = fa.splice(ri(0, Math.min(fa.length - 1, 5)), 1)[0];
+    const cs = S.clubs.filter(c => c.id !== S.user && !isReserve(c) && c.players.length < 28 && teamLevel(c) <= p.ovr + 3 && teamLevel(c) >= p.ovr - 8); const c = cs.length ? pick(cs) : null;
     if (!c) continue;
     S.free = S.free.filter(x => x !== p); attach(p, c); p.con = ri(1, 3); p.wage = calcWage(p, c.rep); p.val = calcValue(p);
     if (p.ovr >= 72) news(`✍️ Wolny transfer: ${p.n} (${p.ovr}) → ${c.name}.`);
@@ -1939,7 +1960,7 @@ function endSeason() {
       }
       if (p.con <= 0) {
         if (c === ut) { detach(p); p.tid = -1; S.free.push(p); left.push(p.n); }
-        else if (p.age >= 32 && rnd() < 0.5) { detach(p); p.tid = -1; S.free.push(p); }
+        else if (p.age >= 32 && rnd() < (p.ovr >= 74 ? 0.25 : 0.55)) { detach(p); p.tid = -1; S.free.push(p); }
         else { p.con = ri(1, 4); p.wage = calcWage(p, c.rep); }
       } else if (c !== ut) p.wage = calcWage(p, c.rep);
     }

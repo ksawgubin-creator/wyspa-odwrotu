@@ -570,7 +570,8 @@ ACT.wbmod = () => { const ut = userClub(), room = wageRoom();
     <div class="seg wrap">${[-10000, -2000, 2000, 10000].map(v => `<button class="btn sm" data-act="wbshift" data-arg="${v}">${v > 0 ? '+' : '−'}${money(Math.abs(v))}/tydz.</button>`).join('')}</div>
     <div class="numrow"><span>Inna kwota (€/tydz., ujemna = z płac do transferów):</span><input class="numin" type="number" inputmode="numeric" step="500" value="0" data-change="wbnum"></div>
     <div class="btns"><button class="btn full" data-act="close">Zamknij</button></div>`); };
-ACT.wbshift = v => { const r = shiftBudget(+v); toast(r.msg, r.ok ? 'ok' : 'bad'); if (r.ok) { render(); ACT.wbmod(); } };
+ACT.wbshift = v => { const r = shiftBudget(+v); toast(r.msg, r.ok ? 'ok' : 'bad'); if (r.ok) { render(); if ($('#modal') && !$('#modal').classList.contains('hidden')) ACT.wbmod(); } };
+CHG.wbslide = v => { const n = Math.round(+v || 0); if (n) setTimeout(() => { const r = shiftBudget(n); toast(r.msg, r.ok ? 'ok' : 'bad'); render(); }); };
 CHG.wbnum = v => { const n = Math.round(+v || 0); if (n) setTimeout(() => ACT.wbshift(n)); };
 let NEG = null;
 ACT.prenego = id => {
@@ -626,7 +627,7 @@ function renderNego(note) {
       <small class="mut">Agent zawodnika oczekuje ${dem.toLocaleString("pl-PL")} €/tydz.${NEG.fee ? ` • kwota transferu: ${money(NEG.fee)}` : ''}${NEG.pre ? '' : `<br>Wolne w budżecie płac: <b class="${wageRoom() < dem ? 'bad' : 'good'}">${money(Math.max(0, wageRoom()))}/tydz.</b>${wageRoom() < dem ? ' – <a data-act="wbmod">przesuń środki</a>' : ''}`}</small>
       <h3>Rola w składzie</h3><div class="seg">${ROLE_ORD.slice().reverse().filter(r => r !== 'pros' || p.age <= 21).map(r => `<button class="btn sm ${NEG.role === r ? 'on' : ''}" data-act="negrole" data-arg="${r}">${ROLES[r][0]}</button>`).join('')}</div>
       <small class="mut">Zawodnik oczekuje roli: <b>${ROLES[exp][0].toLowerCase()}</b>.${NEG.role !== exp ? (ROLE_ORD.indexOf(NEG.role) < ROLE_ORD.indexOf(exp) ? ' Mniejsza rola = wyższe żądania (ambitni mogą odmówić).' : ' Większa rola – musisz mu dać grać.') : ''}</small>
-      <h3>Pensja tygodniowa</h3><div class="stepper"><button class="btn" data-act="wage" data-arg="-1">−</button><b>${money(NEG.wage)}</b><button class="btn" data-act="wage" data-arg="1">+</button></div>
+      <h3>Pensja tygodniowa</h3><div class="stepper"><button class="btn" data-act="wage" data-arg="-1">−</button><b>${NEG.wage.toLocaleString("pl-PL")} €</b><button class="btn" data-act="wage" data-arg="1">+</button></div>
       <div class="numrow"><span>Wpisz pensję (€/tydz.):</span><input class="numin" type="number" inputmode="numeric" min="0" step="100" value="${NEG.wage}" data-change="negwagenum"></div>
       <h3>Długość umowy</h3><div class="seg">${[1, 2, 3, 4, 5].map(y => `<button class="btn sm ${NEG.years === y ? 'on' : ''}" data-act="years" data-arg="${y}">${y} l.</button>`).join('')}</div>
       ${extrasHtml(NEG, agentDemand(p, NEG.fee, dem), bonusDemand(dem, NEG.years), 'neg')}
@@ -651,7 +652,7 @@ function renderRen(note) {
     <h3>Rola w składzie</h3><div class="seg">${ROLE_ORD.slice().reverse().filter(r => r !== 'pros' || p.age <= 21).map(r => `<button class="btn sm ${REN.role === r ? 'on' : ''}" data-act="renrole" data-arg="${r}">${ROLES[r][0]}</button>`).join('')}</div>
     <small class="mut">${roleGap(p, REN.role) > 0 ? '⚠️ Proponujesz mniejszą rolę, niż oczekuje – zażąda wyższej pensji, a ambitni mogą odmówić.' : roleGap(p, REN.role) < 0 ? '✨ Większa rola niż oczekuje – zawodnik będzie zachwycony, ale musisz dać mu grać.' : 'Rola zgodna z oczekiwaniami.'}</small>
     <h3>Długość umowy</h3><div class="seg">${[1, 2, 3, 4, 5].map(y => `<button class="btn sm ${REN.years === y ? 'on' : ''}" data-act="renyears" data-arg="${y}">${y} l.</button>`).join('')}</div>
-    <h3>Pensja tygodniowa</h3><div class="stepper"><button class="btn" data-act="renwage" data-arg="-1">−</button><b>${money(REN.wage)}</b><button class="btn" data-act="renwage" data-arg="1">+</button></div>
+    <h3>Pensja tygodniowa</h3><div class="stepper"><button class="btn" data-act="renwage" data-arg="-1">−</button><b>${REN.wage.toLocaleString("pl-PL")} €</b><button class="btn" data-act="renwage" data-arg="1">+</button></div>
     <div class="numrow"><span>Wpisz pensję (€/tydz.):</span><input class="numin" type="number" inputmode="numeric" min="0" step="100" value="${REN.wage}" data-change="renwagenum"></div>
     <small class="mut">Agent sugeruje ok. ${money(dem)}/tydz.</small>
     ${extrasHtml(REN, agentDemand(p, 0, dem, true), bonusDemand(dem, REN.years), 'ren')}
@@ -1064,7 +1065,13 @@ ACT.offtab = a => { if (a !== UI.offTab) navPush(); UI.offTab = a; render(); };
 ACT.cltab = a => { if (a !== UI.clubTab) navPush(); UI.clubTab = a; render(); };
 function vFin() {
   const ut = userClub(), lf = ut.lastFin, bill = sum(ut.players.map(p => p.wage)), sc = sum(S.scouts.map(s => s.cost));
-  return `<div class="card"><h2>Finanse</h2>
+  const wb = S.board.wb || 0, room = wageRoom(), maxUp = Math.floor(Math.max(0, ut.tb) / 52 / 500) * 500, maxDn = Math.max(0, Math.floor(room / 500) * 500);
+  return `<div class="card hl"><h2>⇄ Budżety</h2>
+    <div class="kv"><div><span>Budżet transferowy</span><b class="good">${money(ut.tb)}</b></div><div><span>Budżet płac</span><b>${money(wb)}/tydz.</b></div><div><span>Pensje teraz</span><b>${money(wageBill(ut))}/tydz.</b></div><div><span>Wolne na pensje</span><b class="${room < 0 ? 'bad' : 'good'}">${money(room)}/tydz.</b></div></div>
+    <small class="mut">Przesuń suwak: w prawo – więcej na pensje (z budżetu transferowego), w lewo – więcej na transfery (z niewykorzystanych płac). 1 000 €/tydz. pensji = 52 000 € transferów.</small>
+    <input type="range" style="width:100%;margin:10px 0" min="${-maxDn}" max="${maxUp}" step="500" value="0" data-change="wbslide">
+    <div class="seg wrap">${[-10000, -2000, 2000, 10000].map(v => `<button class="btn sm" data-act="wbshift" data-arg="${v}" ${v > 0 ? (v > maxUp ? 'disabled' : '') : (-v > maxDn ? 'disabled' : '')}>${v > 0 ? '+' : '−'}${money(Math.abs(v))}/tydz. płac</button>`).join('')}</div></div>
+  <div class="card"><h2>Finanse</h2>
     <div class="kv"><div><span>Saldo</span><b class="${ut.bal < 0 ? 'bad' : ''}">${money(ut.bal)}</b></div><div><span>Budżet transf.</span><b>${money(ut.tb)}</b></div>
     <div><span>Pensje/tydz.</span><b>${money(bill)}</b></div><div><span>Skauci/tydz.</span><b>${money(sc)}</b></div>
     <div><span>Sponsorzy/tydz.</span><b>${money(ut.spons)}</b></div><div><span>Prawa TV/tydz.</span><b>${money(ut.tv)}</b></div>
@@ -1194,6 +1201,8 @@ function vGame() {
   return `<div class="card"><h2>Zapis gry</h2><small class="mut">Gra zapisuje się automatycznie w pamięci urządzenia.</small>
     <div class="btns"><button class="btn sp" data-act="savegame">💾 Zapisz teraz</button><button class="btn" data-act="export">⬇️ Eksportuj</button><label class="btn">⬆️ Importuj<input type="file" accept=".json" data-change="import" hidden></label></div></div>
     <div class="card"><h2>Poziom trudności</h2><div class="row"><b class="sp">${DIFF[S.diff || 'normal'].n}</b>${(S.diff || 'normal') !== 'easy' ? '<button class="btn sm" data-act="difflower">Obniż</button>' : ''}</div><small class="mut">${DIFF[S.diff || 'normal'].d} Poziom można tylko obniżyć – podwyższenie byłoby zbyt łatwym sposobem na „podkręcenie” istniejącej kariery.</small></div>
+    <div class="card"><h2>Kontrakty – asystent</h2><small class="mut">Od stycznia asystent sam przedłuża umowy wygasające po sezonie (za stawkę, jakiej żąda zawodnik, w ramach budżetu płac). Kluczowymi zawodnikami zajmujesz się zawsze sam.</small>
+      <div class="seg">${[['off', 'Wyłączone'], ['fringe', 'Rotacyjni i rezerwowi'], ['all', 'Wszyscy poza kluczowymi']].map(([k, n]) => `<button class="btn sm ${(S.settings.autoRenew || 'off') === k ? 'on' : ''}" data-act="setrenew" data-arg="${k}">${n}</button>`).join('')}</div></div>
     <div class="card"><h2>Przerywniki</h2><small class="mut">Ustal, o co gra ma Cię pytać. Asystent przejmie resztę.</small>
       <h3>Konferencje prasowe</h3><div class="seg">${[['on', 'Często'], ['rare', 'Tylko ważne mecze'], ['off', 'Wyłączone']].map(([k, n]) => `<button class="btn sm ${(S.settings.press || 'rare') === k ? 'on' : ''}" data-act="setpress" data-arg="${k}">${n}</button>`).join('')}</div>
       ${[['htAuto', 'Odprawę w przerwie prowadzi asystent', true], ['autoSubs', 'Asystent robi zmiany zmęczonych zawodników (mecz na żywo)', true], ['autoPause', 'Pauza przy czerwonej kartce / kontuzji bez zmiany', true], ['resPopup', 'Okno z wynikami kolejki po meczu', false]].map(([k, n, def]) => `<div class="row" style="margin-top:8px"><span class="sp">${n}</span><button class="btn sm ${(S.settings[k] != null ? S.settings[k] : def) ? 'pri' : ''}" data-act="settog" data-arg="${k}">${(S.settings[k] != null ? S.settings[k] : def) ? 'Tak' : 'Nie'}</button></div>`).join('')}</div>
@@ -1202,6 +1211,7 @@ function vGame() {
 }
 ACT.savegame = async () => { await saveNow(); toast('Zapisano grę.'); };
 ACT.difflower = () => { const o = ['easy', 'normal', 'hard', 'expert'], i = o.indexOf(S.diff || 'normal'); if (i <= 0) return; const nx = o[i - 1]; if (!confirm(`Obniżyć poziom trudności na: ${DIFF[nx].n}? Tej zmiany nie można cofnąć.`)) return; S.diff = nx; saveSoon(); toast(`Poziom trudności: ${DIFF[nx].n}`, 'ok'); render(); };
+ACT.setrenew = k => { S.settings.autoRenew = k; saveSoon(); render(); };
 ACT.setpress = k => { S.settings.press = k; saveSoon(); render(); };
 ACT.settog = k => { const def = { htAuto: true, autoPause: true, resPopup: false, autoSubs: true }[k]; S.settings[k] = !(S.settings[k] != null ? S.settings[k] : def); saveSoon(); render(); };
 ACT.defspeed = s => { S.settings.speed = +s; saveSoon(); render(); };
@@ -1506,3 +1516,11 @@ document.addEventListener('change', e => { const el = e.target.closest('[data-ch
   showMenu();
 })();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => { });
+/* klawiatura ekranowa: okno dopasowuje się do widocznej części ekranu, a aktywne pole przewija się na środek */
+(function () {
+  try {
+    const vv = window.visualViewport;
+    if (vv) { const set = () => document.documentElement.style.setProperty('--vvh', vv.height + 'px'); vv.addEventListener('resize', set); set(); }
+    document.addEventListener('focusin', e => { const t = e.target; if (t && t.matches && t.matches('input,select,textarea') && t.closest('#modal')) setTimeout(() => { try { t.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (x) { /* */ } }, 350); });
+  } catch (e) { /* */ }
+})();

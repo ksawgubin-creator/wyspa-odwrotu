@@ -129,7 +129,8 @@ function aiStyle(t, d) {
 }
 const MAX_SUBS = 5, BENCH = 9;
 // strojenie silnika: przewaga własnego boiska i „stromość” różnic siły
-let UND_K = 0.01, UND_MAX = 0.15, POSS_EXP = 1.5, FIN_K = 0.104, SHOT_BASE = 0.25, SHOT_EXP = 1.15, FIN_EXP = 1.9, HOME_ADV = 1.13, AWAY_ADV = 0.9, DAY_VAR = 0.07;
+/* symulacja meczów AI: własne parametry – faworyci wygrywają ligi częściej (logiczne tabele) */
+let F_POSS = 2.2, F_SHOT = 1.4, F_FIN = 2.4, F_POW = 0.9, F_POW_K = 1.04, UND_K = 0.01, UND_MAX = 0.15, POSS_EXP = 1.5, FIN_K = 0.104, SHOT_BASE = 0.25, SHOT_EXP = 1.15, FIN_EXP = 1.9, HOME_ADV = 1.13, AWAY_ADV = 0.9, DAY_VAR = 0.07;
 
 /* ---------- stan zawodnika ---------- */
 // polska odmiana liczebników: 1 gol, 2 gole, 5 goli
@@ -276,7 +277,7 @@ function createMatch(h, a, opts = {}) {
   };
   const d = (h.rep || 50) - (a.rep || 50);
   if (m.comp === 'C' && Math.abs(d) >= 10) (d > 0 ? m.away : m.home).cf *= 1.07; // magia pucharu: słabszy gra ambitniej
-  { const ah = avg(m.home.pitch.map(x => x.ov)), aa = avg(m.away.pitch.map(x => x.ov)), gap = Math.abs(ah - aa); if (gap > 4) (ah > aa ? m.away : m.home).cf *= 1 + Math.min(UND_MAX, (gap - 4) * UND_K); }   // słabszy mobilizuje się – mniej pogromów
+  if (m.home.user || m.away.user) { const ah = avg(m.home.pitch.map(x => x.ov)), aa = avg(m.away.pitch.map(x => x.ov)), gap = Math.abs(ah - aa); if (gap > 4) (ah > aa ? m.away : m.home).cf *= 1 + Math.min(UND_MAX, (gap - 4) * UND_K); }   // słabszy mobilizuje się – mniej pogromów
   if (m.home.ai && !m.home.user) m.home.ment = d > 10 ? 'att' : d < -12 ? 'def' : 'bal';
   if (m.away.ai && !m.away.user) m.away.ment = d < -10 ? 'att' : d > 12 ? 'def' : 'bal';
   // AI przeciw użytkownikowi gra swoim stylem i czasem kryje najgroźniejszego zawodnika
@@ -494,7 +495,7 @@ function finishMatch(m) {
 }
 
 /* szybka symulacja (mecze AI): ten sam model siły, wynik losowany z rozkładu Poissona */
-let FAST_K = 1.055, FAST_BLEND = 0.22;
+let FAST_K = 1.0, FAST_BLEND = 0.08;
 function poisson(l) { let L = Math.exp(-l), k = 0, p = 1; do { k++; p *= rnd(); } while (p > L); return k - 1; }
 function fastSim(h, a, opts = {}) {
   const m = createMatch(h, a, { ...opts, quick: true });
@@ -502,17 +503,17 @@ function fastSim(h, a, opts = {}) {
   // zmiany: 3 najbardziej zmęczonych w 65. minucie
   for (const side of [H, A]) for (let k = 0; k < 3; k++) { m.minute = 62 + k * 6; aiSubs(m, side); }
   m.minute = 45; calcStr(H, 45); calcStr(A, 45);
-  const hm = Math.pow(H.str.mid, POSS_EXP) * (m.neutral ? 1 : 1.06), am = Math.pow(A.str.mid, POSS_EXP), ph = hm / (hm + am);
+  const hm = Math.pow(H.str.mid, F_POSS) * (m.neutral ? 1 : 1.06), am = Math.pow(A.str.mid, F_POSS), ph = hm / (hm + am);
   const xg = (S1, S2, poss) => {
     const aS = 0.7 * S1.str.att + 0.3 * S1.str.mid, dS = 0.65 * S2.str.def + 0.35 * S2.str.mid;
     const mA = S1.ment === 'att' ? 1.18 : S1.ment === 'def' ? 0.82 : 1, mO = S2.ment === 'att' ? 1.12 : S2.ment === 'def' ? 0.88 : 1;
-    const shots = 90 * poss * clamp(SHOT_BASE * Math.pow(aS / dS, SHOT_EXP) * mA * mO, 0.03, 0.7);
+    const shots = 90 * poss * clamp(SHOT_BASE * Math.pow(aS / dS, F_SHOT) * mA * mO, 0.03, 0.7);
     const q = S1.str.att * 0.97 / (0.5 * S2.str.gk + 0.5 * S2.str.def);
-    return { shots, g: shots * clamp(FIN_K * Math.pow(q, FIN_EXP), 0.02, 0.45) * FAST_K };
+    return { shots, g: shots * clamp(FIN_K * Math.pow(q, F_FIN), 0.02, 0.45) * FAST_K };
   };
   const xh = xg(H, A, ph), xa = xg(A, H, 1 - ph);
   if (!m.neutral) { xh.g *= HOME_ADV; xa.g *= AWAY_ADV; }
-  { const mg = (xh.g + xa.g) / 2; xh.g = xh.g * (1 - FAST_BLEND) + mg * FAST_BLEND; xa.g = xa.g * (1 - FAST_BLEND) + mg * FAST_BLEND; xh.g = Math.min(4, 1.06 * Math.pow(xh.g, 0.85)); xa.g = Math.min(4, 1.06 * Math.pow(xa.g, 0.85)); }   // mniej pogromów
+  { const mg = (xh.g + xa.g) / 2; xh.g = xh.g * (1 - FAST_BLEND) + mg * FAST_BLEND; xa.g = xa.g * (1 - FAST_BLEND) + mg * FAST_BLEND; xh.g = Math.min(4.2, F_POW_K * Math.pow(xh.g, F_POW)); xa.g = Math.min(4.2, F_POW_K * Math.pow(xa.g, F_POW)); }   // mniej pogromów
   const addGoals = (side, n, from, to) => {
     for (let i = 0; i < n; i++) {
       const c = side.pitch.filter(s => s.pos !== 'GK'); if (!c.length) return;

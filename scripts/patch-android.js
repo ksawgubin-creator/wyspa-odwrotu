@@ -14,6 +14,7 @@ for (const d of fs.readdirSync(res)) {
 const mf = path.join(root, 'android/app/src/main/AndroidManifest.xml');
 let m = fs.readFileSync(mf, 'utf8');
 if (!m.includes('screenOrientation')) m = m.replace(/<activity\b/, '<activity\n            android:screenOrientation="portrait"');
+if (!m.includes('windowSoftInputMode')) m = m.replace(/<activity\b/, '<activity\n            android:windowSoftInputMode="adjustResize"');   // klawiatura zmniejsza widok zamiast go zasłaniać
 fs.writeFileSync(mf, m);
 const gf = path.join(root, 'android/app/build.gradle');
 let g = fs.readFileSync(gf, 'utf8');

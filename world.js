@@ -810,7 +810,7 @@ function recover(gap) {
     const c = p.tid >= 0 ? S.clubs[p.tid] : null;
     const mine = c === ut, rate = 2.7 + (c && c.training === 'fit' ? 0.5 : 0) + (mine ? (staffAb('fit') - 10) * 0.04 + TR_INT[S.trInt || 0].fit : 0);
     p.fit = Math.min(100, p.fit + gap * rate * (p.inj ? 1.4 : 1));
-    if (p.inj) { p.inj = Math.max(0, p.inj - gap * (mine ? 0.75 + staffAb('phy') / 40 : 1)); if (!p.inj && c === ut) msg('Powrót do zdrowia', `${p.n} wrócił do pełnej sprawności.`); }
+    if (p.inj) { p.inj = Math.max(0, p.inj - gap * (mine ? 0.75 + staffAb('phy') / 40 : 1)); if (!p.inj && c === ut && p.ovr >= teamLevel(ut) - 3) msg('Powrót do zdrowia', `${p.n} wrócił do pełnej sprawności.`); }
   }
 }
 /* ---------- derby i rywalizacje ---------- */
@@ -981,7 +981,7 @@ function weekly(d) {
   if (d.ls % 4 === 2 && ut.bal > 0 && ut._lastW != null) { const wk = ut.bal - ut._lastW; if (wk < 0 && ut.bal / -wk < 12 && absDay() - (S._finWarn || -99) > 40) { S._finWarn = absDay(); msg('💸 Uwaga na finanse', `Klub traci ok. ${money(-wk)} tygodniowo. Przy tym tempie saldo spadnie poniżej zera za ok. ${plural(Math.round(ut.bal / -wk), 'tydzień', 'tygodnie', 'tygodni')}. Rozważ sprzedaż zawodników, wyższe ceny biletów lub cięcie kosztów.`); } }
   ut._lastW = ut.bal;
   // miesięczny raport treningowy: kto rośnie, kto słabnie (względem początku sezonu)
-  if (d.ls % 8 === 7) { const ch = ut.players.filter(p => p.ovrS != null).map(p => ({ p, d: p.ovr - p.ovrS })); const up = ch.filter(x => x.d > 0).sort((a, b) => b.d - a.d).slice(0, 3), dn = ch.filter(x => x.d < 0).sort((a, b) => a.d - b.d).slice(0, 3);
+  if (d.ls % 15 === 14) { const ch = ut.players.filter(p => p.ovrS != null).map(p => ({ p, d: p.ovr - p.ovrS })); const up = ch.filter(x => x.d > 0).sort((a, b) => b.d - a.d).slice(0, 3), dn = ch.filter(x => x.d < 0).sort((a, b) => a.d - b.d).slice(0, 3);
     if (up.length || dn.length) msg('🏋️ Raport treningowy', `${up.length ? 'Najwięcej zyskali od początku sezonu: ' + up.map(x => `${x.p.n} (+${x.d})`).join(', ') + '.' : 'Nikt jeszcze wyraźnie nie urósł.'}${dn.length ? '\nSłabsza forma fizyczna/umiejętności: ' + dn.map(x => `${x.p.n} (${x.d})`).join(', ') + '.' : ''}\nTrening drużyny: ${({ bal: 'zrównoważony', fit: 'kondycja', att: 'atak', def: 'obrona' })[ut.training || 'bal']} • ośrodek ${S.fac.train}/5.`); }
   if (ut.tb > ut.bal) ut.tb = Math.max(0, ut.bal);
   if (ut.bal < 0) { S.board.conf = clamp(S.board.conf - clamp(-ut.bal / (20 * (ut.tv + ut.spons)), 0.5, 4), 0, 100); ut.tb = Math.min(ut.tb, 0); if (d.ls % 6 === 0) msg('Długi klubu', `Saldo klubu jest ujemne (${money(ut.bal)}). Zarząd zamroził budżet transferowy i traci cierpliwość.`); }
@@ -1526,7 +1526,9 @@ function aiTransfers() {
   rebuildIndex();
 }
 function news(t) { S.news.unshift({ d: curDay() ? curDay().date : 0, t }); if (S.news.length > 100) S.news.length = 100; }
-function msg(title, body) { S.inbox.unshift({ id: S.nextId++, season: S.season, date: curDay() ? curDay().date : 0, title, body, read: false }); if (S.inbox.length > 80) S.inbox.length = 80; }
+/* poczta: drobne komunikaty trafiają jako „info” (przeczytane, bez licznika), ważne – jako nowe */
+const MSG_LOW = /^(Powrót do zdrowia|🏋️ Raport treningowy|Okno zamknięte|Zimowe okno|🏅 Osiągnięcie|🎓 Liga juniorów|🎓 Raport akademii|Kontuzja|Kapitan|Obietnica dotrzymana|🧑‍💼|📋)/;
+function msg(title, body, low) { const lo = low != null ? low : MSG_LOW.test(title) || /^📌/.test(title); S.inbox.unshift({ id: S.nextId++, season: S.season, date: curDay() ? curDay().date : 0, title, body, read: lo, low: lo }); if (S.inbox.length > 80) S.inbox.length = 80; }
 
 /* ---------- obiekty ---------- */
 const FAC_COST = lvl => Math.round(1.5e6 * Math.pow(2.2, lvl - 1));
@@ -2116,8 +2118,8 @@ function coachMarket(d) {
       if (r.pos - exp >= 5 && r.P >= 6 && !(c._sackD > absDay() - 60) && rnd() < 0.035) {
         const old = c.coach; c.coach = genCoach(c.rep); c._sackD = absDay();
         if (c.cc === userClub().cc || c.rep >= 72) news(`${c.name} zwalnia trenera ${old.n}. Nowym szkoleniowcem został ${c.coach.n} (OVR ${c.coach.ovr}).`);
-        if (fitsMgr(c) && c.rep > userClub().rep + 4 && rnd() < 0.35 && typeof pushEvent === 'function' && S.pending.length < 4 && S.evSeen && S.evSeen.approach !== S.season) { S.approach = c.id; pushEvent(EVENTS.find(e => e.id === 'approach'), {}); }
-        else if (fitsMgr(c) && !isReserve(c) && S.leagues[c.lg].tier <= 3 && rnd() < 0.45 && S.jobs.length < 3 && absDay() - (S.lastAiOffer || -999) >= 30) { S.lastAiOffer = absDay(); offerJob(c, 'zwolnił trenera i chce Cię zatrudnić'); }
+        // oferty pracy tylko przed sezonem: klub, który zwolnił trenera, trafia na listę zainteresowanych (oferta przyjdzie latem, jeśli nadal szuka)
+        if (fitsMgr(c) && !isReserve(c) && S.leagues[c.lg].tier <= 3) { S.jobQ = (S.jobQ || []).filter(x => x !== c.id).concat(c.id).slice(-6); }
       }
     }
   }
@@ -2125,9 +2127,15 @@ function coachMarket(d) {
 function seasonJobOffers(lines) {
   const grown = S.mgr.ovr >= (S.mgr.prev || 0);
   S.mgr.prev = S.mgr.ovr;
+  // oferty pracy przychodzą tylko przed sezonem (okres turnieju przedsezonowego) – maks. 3 (5 po świetnym sezonie)
+  const L1 = S.cal.find(d => d.t === 'L'), exp = L1 ? Math.floor(L1.date / 864e5) : absDay() + 30, cap = S.mgr.ovr - (S.mgr.prev0 || S.mgr.ovr) >= 4 ? 5 : 3;
+  S.mgr.prev0 = S.mgr.ovr;
+  S.jobs = [];
   const pool = S.clubs.filter(c => c.id !== S.user && fitsMgr(c) && !isReserve(c) && c.rep > userClub().rep - 5);
-  const n = grown ? ri(1, 3) : ri(0, 1);
-  for (const c of pickJobs(pool, n)) offerJob(c, 'jest zainteresowany Twoimi usługami');
+  const fromQ = (S.jobQ || []).map(club).filter(c => c && c.id !== S.user && fitsMgr(c)); S.jobQ = [];
+  const n = Math.min(cap, (grown ? ri(1, 3) : ri(0, 1)) + Math.min(2, fromQ.length));
+  for (const c of fromQ.slice(0, 2).concat(pickJobs(pool.filter(c => !fromQ.includes(c)), n))) { if (S.jobs.length >= n) break; offerJob(c, fromQ.includes(c) ? 'szuka nowego trenera i chce Cię zatrudnić' : 'jest zainteresowany Twoimi usługami'); }
+  for (const j of S.jobs) j.exp = exp;
   if (S.jobs.length) lines.push(`📨 Oferty pracy: ${S.jobs.map(j => club(j.club).name).join(', ')}.`);
 }
 function acceptJob(id) {

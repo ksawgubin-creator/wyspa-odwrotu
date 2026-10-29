@@ -218,7 +218,7 @@ function vHome() {
   ${S.nt ? `<div class="card" data-act="gont"><div class="row"><span style="font-size:22px">${flag(S.nt)}</span><b class="sp">Reprezentacja: ${esc(NAT[S.nt].name)}</b><small>Powołania ›</small></div></div>` : ''}
   ${out.length ? `<div class="card"><b>Niedostępni</b>${out.map(p => `<div class="row" style="margin-top:6px" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<span class="sp">${esc(p.n)}</span>${stTag(p)}</div>`).join('')}</div>` : ''}
   <div class="card"><div class="row"><b>Wiadomości</b><span class="sp"></span><button class="btn sm" data-act="inbox">Wszystkie</button></div>
-    ${S.inbox.slice(0, 4).map(m => `<div class="msg ${m.read ? '' : 'new'}"><b>${esc(m.title)}</b><p>${esc(m.body)}</p></div>`).join('')}</div>`;
+    ${S.inbox.filter(m => !m.low).slice(0, 4).map(m => `<div class="msg ${m.read ? '' : 'new'}"><b>${esc(m.title)}</b><p>${esc(m.body)}</p></div>`).join('')}</div>`;
 }
 const empty = (ic, t, sub, act) => `<div class="empty"><div class="ei">${ic}</div><b>${t}</b>${sub ? `<small class="mut">${sub}</small>` : ''}${act ? `<div class="btns" style="justify-content:center">${act}</div>` : ''}</div>`;
 function heroInfo(c) { if (!c || c.id == null || !S.leagues[c.lg]) return ''; const r = table(c.lg).find(x => x.id === c.id); return r ? `${r.pos}. m.${r.form.length ? ' • ' + r.form.slice(-5).map(f => f === 'W' ? '🟢' : f === 'D' ? '🟡' : '🔴').join('') : ''}` : ''; }
@@ -284,7 +284,7 @@ ACT.takejob = id => { if (!confirm('Przyjąć ofertę i zmienić klub?')) return
 ACT.dropjob = id => { S.jobs = S.jobs.filter(j => j.id !== +id); saveSoon(); closeModal(); render(); };
 ACT.goeuro = a => { UI.tab = 'comps'; UI.compTab = 'euro'; UI.euro = a; render(); };
 ACT.gont = () => { navPush(); UI.tab = 'club'; UI.clubTab = 'nt'; render(); };
-ACT.inbox = () => { S.inbox.forEach(m => m.read = true); saveSoon(); modal(`<h2>Wiadomości</h2>${S.inbox.map(m => `<div class="msg"><b>${esc(m.title)}</b><small>${m.date ? fmtDate(m.date) : ''}</small><p>${esc(m.body)}</p></div>`).join('')}<div class="btns"><button class="btn full" data-act="close">Zamknij</button></div>`); render(); };
+ACT.inbox = f => { S.inbox.forEach(m => m.read = true); saveSoon(); UI.inF = f || UI.inF || 'imp'; const L = S.inbox.filter(m => UI.inF === 'all' || !m.low); modal(`<h2>Wiadomości</h2><div class="seg"><button class="btn sm ${UI.inF === 'imp' ? 'on' : ''}" data-act="inbox" data-arg="imp">Ważne</button><button class="btn sm ${UI.inF === 'all' ? 'on' : ''}" data-act="inbox" data-arg="all">Wszystkie</button></div>${L.map(m => `<div class="msg"><b>${esc(m.title)}</b><small>${m.date ? fmtDate(m.date) : ''}</small><p>${esc(m.body)}</p></div>`).join('')}<div class="btns"><button class="btn full" data-act="close">Zamknij</button></div>`); render(); };
 
 /* ---------- KONTYNUUJ ---------- */
 let running = false;

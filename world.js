@@ -1310,7 +1310,7 @@ function loanIn(pid, mode) {
   if (!windowOpen()) return { ok: false, msg: 'Okno transferowe jest zamknięte.' };
   if (!c || p.loan) return { ok: false, msg: 'Zawodnik niedostępny do wypożyczenia.' };
   const st = playerStatus(p);
-  if (st !== 'Rezerwowy' && st !== 'Perspektywiczny' && st !== 'Rotacyjny' && !(mode === 'obl' && st === 'Podstawowy')) return { ok: false, msg: `${c.name} nie wypożycza zawodników z podstawowego składu.${st === 'Podstawowy' ? ' (może zgodzi się na wypożyczenie z obowiązkiem wykupu)' : ''}` };
+  if (st !== 'Rezerwowy' && st !== 'Perspektywiczny' && st !== 'Rotacyjny' && !(mode === 'obl' && st === 'Podstawowy')) return { ok: false, msg: st === 'Kluczowy' ? `${c.name} nie wypożycza kluczowych zawodników – to filar zespołu.` : `${c.name} nie wypożycza zawodników z podstawowego składu.${st === 'Podstawowy' ? ' (może zgodzi się na wypożyczenie z obowiązkiem wykupu)' : ''}` };
   if (ut.players.length >= 32) return { ok: false, msg: 'Kadra pełna (maks. 32).' };
   if (c.rep - ut.rep > 15) return { ok: false, msg: `${c.name} nie wypożycza zawodników do tak małych klubów.` };
   const pi = playerInterest(p); if (!pi.ok) return pi;
@@ -1609,7 +1609,7 @@ const commCost = (k, lvl) => Math.round(Math.max(8000, userClub().cap) * ({ gast
 function upgradeComm(k) {
   const lvl = commLvl(k), ut = userClub(); if (lvl >= 5) return { ok: false, msg: 'Maksymalny poziom.' };
   const cost = commCost(k, lvl); if (ut.bal < cost) return { ok: false, msg: `Za mało środków (${money(cost)}).` };
-  ut.bal -= cost; ut.fin.exp += cost; S.fac[k] = lvl + 1; if (k === 'hotel') ut.spons = Math.round(ut.spons * 1.02);
+  ut.bal -= cost; ut.fin.exp += cost; S.fac[k] = lvl + 1; ut.tb = Math.min(ut.tb, Math.max(0, ut.bal)); if (k === 'hotel') ut.spons = Math.round(ut.spons * 1.02);
   saveSoon(); return { ok: true, msg: `${COMM[k][0]}: poziom ${lvl + 1}.` };
 }
 /* ---------- STADION: rozbudowa trybuna po trybunie (wybór gracza) ---------- */
@@ -1652,7 +1652,7 @@ function startStadProject(id) {
   if (P.lock) return { ok: false, msg: 'Najpierw rozbuduj trybuny za bramkami.' };
   if ((ut.builds || []).length >= 2) return { ok: false, msg: 'Możesz prowadzić maksymalnie dwie budowy naraz.' };
   if (ut.bal < P.cost) return { ok: false, msg: `Za mało środków (${money(P.cost)}).` };
-  ut.bal -= P.cost; ut.fin.exp += P.cost; ut.cap0 = ut.cap0 || ut.cap;
+  ut.bal -= P.cost; ut.fin.exp += P.cost; ut.cap0 = ut.cap0 || ut.cap; ut.tb = Math.min(ut.tb, Math.max(0, ut.bal));
   (ut.builds = ut.builds || []).push({ k: P.k, s: P.s, add: P.add || 0, done: absDay() + P.days, name: P.name });
   ut.cap = stadCap(ut); S.board.conf = clamp(S.board.conf + 1, 0, 100); saveSoon();
   msg('🏗️ Budowa ruszyła', `${P.name} – koszt ${money(P.cost)}, zakończenie ok. ${fmtDate((absDay() + P.days) * 864e5)}.`);
@@ -1679,7 +1679,7 @@ function upgradeFacility(kind) {
   if (lvl >= 5) return { ok: false, msg: 'Maksymalny poziom.' };
   const cost = FAC_COST(lvl);
   if (ut.bal < cost) return { ok: false, msg: `Za mało środków (${money(cost)}).` };
-  ut.bal -= cost; if (kind === 'train') S.fac.train++; else S.acad[kind]++; saveSoon();
+  ut.bal -= cost; if (kind === 'train') S.fac.train++; else S.acad[kind]++; ut.tb = Math.min(ut.tb, Math.max(0, ut.bal)); saveSoon();
   return { ok: true, msg: `Rozbudowano: poziom ${facGet(kind)}.` };
 }
 

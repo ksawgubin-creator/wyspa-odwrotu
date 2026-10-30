@@ -279,7 +279,7 @@ COUNTRY_DATA.push({
         ['Philip Zinckernagel', 'RW', 31, 72, 72, 'DEN'],
         ['Maren Haile-Selassie', 'RW', 27, 68, 69, 'SUI'],
         ['Hugo Cuypers', 'ST', 29, 72, 72, 'BEL'],
-        ['Robert Lewandowski', 'ST', 38, 83, 83, 'POL']
+        ['Tom Barlow', 'ST', 29, 66, 66, 'USA']
       ]],
       ['Austin FC', 'ATX', '#00B140', '#000000', 57, 20738, [
         ['Brad Stuver', 'GK', 35, 70, 70, 'USA'],

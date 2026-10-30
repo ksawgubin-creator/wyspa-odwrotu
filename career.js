@@ -72,11 +72,12 @@ function playFriendly(oppId, home) {
   const f = frState(), ut = userClub(), o = club(oppId); if (!f || !o) return { ok: false, msg: 'Teraz nie można rozgrywać sparingów.' };
   if (f.st.n >= f.max) return { ok: false, msg: `Limit sparingów (${f.max}) w tym okresie wykorzystany.` };
   if (f.st.done.includes(oppId)) return { ok: false, msg: 'Z tym rywalem już grałeś.' };
+  if (f.st.lastDay === Math.floor(todayMs() / 864e5)) return { ok: false, msg: 'Jeden sparing na dzień – zawodnicy muszą odpocząć. Przejdź do kolejnego dnia (+1 dzień).' };
   const keep = { l: ut.lineup.slice(), b: ut.bench.slice(), f: ut.formation };
   autoPick(ut);
   const h = home ? ut : o, a = home ? o : ut, m = fastSim(h, a, { comp: 'F', label: 'Mecz towarzyski', neutral: false });
   const me = home ? m.home : m.away, op = home ? m.away : m.home;
-  f.st.n++; f.st.done.push(oppId);
+  f.st.n++; f.st.done.push(oppId); f.st.lastDay = Math.floor(todayMs() / 864e5);
   // efekty: rytm meczowy, zgranie, finanse
   for (const r of Object.values(me.rec)) { const p = r.p, mins = r.off != null ? r.off - r.on : 90 - r.on; p.shp = clamp((p.shp || 60) + mins / 90 * 18, 0, 100); p.fit = clamp(p.fit - mins / 90 * 4, 30, 100); }
   for (const p of ut.players) if (!me.rec[p.id]) p.shp = clamp((p.shp || 60) + 3, 0, 100);

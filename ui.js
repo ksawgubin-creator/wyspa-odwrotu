@@ -333,7 +333,7 @@ async function simTo(target) {
       S.now = null;
       const um = userMatchToday();
       if (um && dKey(curDay().date) >= dKey(target)) break;   // mecz w docelowym dniu – zagrasz sam
-      if (S.ddPop === S.day) { S._ddShown = S.day + S.season * 1000; log.push({ k: 'i', t: '⏰ Deadline Day – ostatni dzień okna transferowego' }); }
+      if (S.ddPop === S.day) { S._ddShown = S.day + S.season * 1000; log.push({ k: 'i', t: '⏰ Ostatni dzień okna transferowego' }); }
       if (S.winPop === S.day) { S._wpShown = S.day + S.season * 1000; log.push({ k: 'i', t: '🟢 Otwarto zimowe okno transferowe' }); }
       try { assistantChores(log); } catch (e) { }
       const r = um ? assistantMatchDay(log) : processDay(null);
@@ -360,8 +360,15 @@ function assistantReport(log, d0, summary) {
     <div class="btns"><button class="btn pri full" data-act="asrepok">${summary ? 'Podsumowanie sezonu' : 'OK'}</button></div>`, true);
 }
 ACT.asrepok = () => { closeModal(); const s = UI._sumAfter; UI._sumAfter = null; if (s) return showSummary(s); if (S.sacked) return showSacked(); render(); if (userMatchToday() && atEntry()) ACT.prematch(); };
-ACT.simdays = n => simTo(todayMs() + +n * 864e5);
-ACT.simto = ms => { closeModal(); simTo(+ms); };
+/* ostrzeżenie przed dłuższą symulacją: ile meczów rozegra asystent, czy minie ostatni dzień okna */
+function simConfirm(target) {
+  let n = 0, dd = false; const w = winDates();
+  for (let i = S.day; i < S.cal.length && S.cal[i].date < target; i++) { const x = fixtureAt(i); if (x && !isTbd(x) && (i > S.day || atEntry())) n++; if (i === w.si || i === w.wi) dd = true; }
+  if (n < 2 && !dd) return true;
+  return confirm(`Asystent rozegra ${plural(n, 'mecz', 'mecze', 'meczów')}${dd ? ' i minie ostatni dzień okna transferowego' : ''}. Kontynuować?`);
+}
+ACT.simdays = n => { const t = todayMs() + +n * 864e5; if (simConfirm(t)) simTo(t); };
+ACT.simto = ms => { closeModal(); if (simConfirm(+ms)) simTo(+ms); };
 ACT.gocal = () => { navPush(); UI.tab = 'comps'; UI.compTab = 'cal'; UI.calM = null; render(); };
 /* wyskakujące okna: otwarcie zimowego okna i Deadline Day (raz) */
 const popPending = () => S.day < S.cal.length && ((S.ddPop === S.day && S._ddShown !== S.day + S.season * 1000) || (S.winPop === S.day && S._wpShown !== S.day + S.season * 1000));
@@ -423,7 +430,7 @@ const TR_FOCUS = { bal: ['⚖️ Zrównoważony', 'lekki nacisk na środek pola 
 function vTraining(t) {
   const ti = S.trInt || 0, ps = t.players.slice().sort((a, b) => a.age - b.age || b.pot - a.pot);
   return `<div class="card"><h2>🏋️ Intensywność</h2><div class="seg">${[-1, 0, 1].map(k => `<button class="btn sm ${ti === k ? 'on' : ''}" data-act="trint" data-arg="${k}">${TR_INT[k].n}</button>`).join('')}</div><small class="mut">${TR_INT[ti].d}</small>
-      <div class="kv"><div><span>Tempo rozwoju</span><b>${Math.round(TR_INT[ti].dev * 100)}%</b></div><div><span>Ryzyko kontuzji</span><b class="${TR_INT[ti].inj > 1 ? 'bad' : ''}">${Math.round(TR_INT[ti].inj * 100)}%</b></div><div><span>Ośrodek treningowy</span><b>${S.fac.train}/5</b></div><div><span>Trener przygotowania</span><b>${S.staff && S.staff.fit ? S.staff.fit.ab : '–'}</b></div></div></div>
+      <div class="kv"><div><span>Tempo rozwoju</span><b>${Math.round(TR_INT[ti].dev * 100)}%</b></div><div><span>Ryzyko kontuzji</span><b class="${TR_INT[ti].inj > 1 ? 'bad' : ''}">${Math.round(TR_INT[ti].inj * 100)}%</b></div><div><span>Ośrodek treningowy</span><b>${S.fac.train}/5</b></div><div><span>Trener przygotowania</span><b>${S.staff && S.staff.fit ? 'OVR ' + sOvr(S.staff.fit) : '–'}</b></div></div></div>
     <div class="card"><h2>🎯 Nacisk drużyny</h2><div class="seg wrap">${Object.entries(TR_FOCUS).map(([k, v]) => `<button class="btn sm ${(t.training || 'bal') === k ? 'on' : ''}" data-act="trfocus" data-arg="${k}">${v[0]}</button>`).join('')}</div><small class="mut">${TR_FOCUS[t.training || 'bal'][1]}. Najszybciej rozwijają się młodzi i grający regularnie.</small></div>
     <div class="card list"><h2 style="margin:4px 0 8px">👤 Trening indywidualny</h2><small class="mut">Trening specjalny przyspiesza wybraną umiejętność, gdy zawodnik robi postęp. ▲▼ – zmiana OVR od początku sezonu.</small>
       ${ps.map(p => { const names = p.pos === 'GK' ? ATTR_GK : ATTR_OUT; return `<div class="prow" style="flex-wrap:wrap">${posTag(p.pos)}<div class="pn" data-act="info" data-arg="${p.id}">${esc(p.n)}<small>${p.age} l. • ${p.st && p.st.apps ? Math.round(p.pt * 100) + '% minut' : 'jeszcze bez meczów'}${p.retrain ? ` • 🔄 ${POS_PL[p.retrain.pos]} ${Math.round(p.retrain.prog / 12 * 100)}%` : ''}</small></div>${ovrTag(p.ovr)}${devArrow(p)}<span class="potc">${p.pot}</span>
@@ -703,7 +710,7 @@ function renderNego(note) {
     const dem = signingDemand(p, NEG.role), exp = expectedRoleIn(p, ut);
     modal(`<h2>${NEG.pre ? '📝 Prekontrakt' : 'Warunki kontraktu'}</h2>${NEG.pre ? '<small class="mut">Zawodnik dołączy po zakończeniu sezonu, bez kwoty odstępnego. Premię i prowizję płacisz teraz.</small>' : ''}<div class="row">${posTag(p.pos)}<b class="sp">${esc(p.n)}</b>${ovrShow(p)}</div>
       <small class="mut">Agent zawodnika oczekuje ${dem.toLocaleString("pl-PL")} €/tydz.${NEG.fee ? ` • kwota transferu: ${money(NEG.fee)}` : ''}${NEG.pre ? '' : `<br>Wolne w budżecie płac: <b class="${wageRoom() < dem ? 'bad' : 'good'}">${money(Math.max(0, wageRoom()))}/tydz.</b>${wageRoom() < dem ? ' – <a data-act="wbmod">przesuń środki</a>' : ''}`}</small>
-      <h3>Rola w składzie</h3><div class="seg">${ROLE_ORD.slice().reverse().filter(r => r !== 'pros' || p.age <= 21).map(r => `<button class="btn sm ${NEG.role === r ? 'on' : ''}" data-act="negrole" data-arg="${r}">${ROLES[r][0]}</button>`).join('')}</div>
+      <h3>Rola w składzie</h3><div class="seg wrap">${ROLE_ORD.slice().reverse().filter(r => r !== 'pros' || p.age <= 21).map(r => `<button class="btn sm ${NEG.role === r ? 'on' : ''}" data-act="negrole" data-arg="${r}">${ROLES[r][0]}</button>`).join('')}</div>
       <small class="mut">Zawodnik oczekuje roli: <b>${ROLES[exp][0].toLowerCase()}</b>.${NEG.role !== exp ? (ROLE_ORD.indexOf(NEG.role) < ROLE_ORD.indexOf(exp) ? ' Mniejsza rola = wyższe żądania (ambitni mogą odmówić).' : ' Większa rola – musisz mu dać grać.') : ''}</small>
       <h3>Pensja tygodniowa</h3><div class="stepper"><button class="btn" data-act="wage" data-arg="-1">−</button><b>${NEG.wage.toLocaleString("pl-PL")} €</b><button class="btn" data-act="wage" data-arg="1">+</button></div>
       <div class="numrow"><span>Wpisz pensję (€/tydz.):</span><input class="numin" type="number" inputmode="numeric" min="0" step="100" value="${NEG.wage}" data-change="negwagenum"></div>
@@ -727,7 +734,7 @@ function renderRen(note) {
   const p = pget(REN.pid), dem = contractDemand(p, REN.years, REN.role), exp = expectedRole(p);
   modal(`<h2>📝 Nowy kontrakt</h2><div class="row">${posTag(p.pos)}<b class="sp">${esc(p.n)}</b>${ovrTag(p.ovr)}</div>
     <small class="mut">Obecnie: ${money(p.wage)}/tydz., ${plural(p.con, 'rok', 'lata', 'lat')} • ${pers(p)} • oczekuje roli: <b>${ROLES[exp][0].toLowerCase()}</b></small>
-    <h3>Rola w składzie</h3><div class="seg">${ROLE_ORD.slice().reverse().filter(r => r !== 'pros' || p.age <= 21).map(r => `<button class="btn sm ${REN.role === r ? 'on' : ''}" data-act="renrole" data-arg="${r}">${ROLES[r][0]}</button>`).join('')}</div>
+    <h3>Rola w składzie</h3><div class="seg wrap">${ROLE_ORD.slice().reverse().filter(r => r !== 'pros' || p.age <= 21).map(r => `<button class="btn sm ${REN.role === r ? 'on' : ''}" data-act="renrole" data-arg="${r}">${ROLES[r][0]}</button>`).join('')}</div>
     <small class="mut">${roleGap(p, REN.role) > 0 ? '⚠️ Proponujesz mniejszą rolę, niż oczekuje – zażąda wyższej pensji, a ambitni mogą odmówić.' : roleGap(p, REN.role) < 0 ? '✨ Większa rola niż oczekuje – zawodnik będzie zachwycony, ale musisz dać mu grać.' : 'Rola zgodna z oczekiwaniami.'}</small>
     <h3>Długość umowy</h3><div class="seg">${[1, 2, 3, 4, 5].map(y => `<button class="btn sm ${REN.years === y ? 'on' : ''}" data-act="renyears" data-arg="${y}">${y} l.</button>`).join('')}</div>
     <h3>Pensja tygodniowa</h3><div class="stepper"><button class="btn" data-act="renwage" data-arg="-1">−</button><b>${REN.wage.toLocaleString("pl-PL")} €</b><button class="btn" data-act="renwage" data-arg="1">+</button></div>
@@ -893,13 +900,13 @@ function calGrid(items) {
   }
   return `<div class="card"><div class="row"><button class="btn sm" data-act="calm" data-arg="-1" ${cm <= m0 ? 'disabled' : ''}>‹</button><b class="sp" style="text-align:center">${MONTHS_PL[mo]} ${y}</b><button class="btn sm" data-act="calm" data-arg="1" ${cm >= m1 ? 'disabled' : ''}>›</button></div>
     <div class="calg">${['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'].map(d => `<div class="cdh">${d}</div>`).join('')}${cells}</div>
-    <small class="mut">Dotknij dnia, aby przesymulować grę do tej daty. <span class="lg win">okno transferowe</span> <span class="lg hm">u siebie</span> <span class="lg aw">wyjazd</span> ⏰ Deadline Day</small></div>`;
+    <small class="mut">Dotknij dnia, aby przesymulować grę do tej daty. <span class="lg win">okno transferowe</span> <span class="lg hm">u siebie</span> <span class="lg aw">wyjazd</span> ⏰ ostatni dzień okna</small></div>`;
 }
 ACT.calm = d => { UI.calM += +d; render(); };
 ACT.calday = ms => {
   ms = +ms; const k = dKey(ms), xs = []; for (let i = 0; i < S.cal.length; i++) { const x = fixtureAt(i); if (x && !x.nt && dKey(x.d.date) === k) xs.push(x); }
   const w = winDates(), notes = [];
-  if (k === dKey(w.sum[1]) || k === dKey(w.win[1])) notes.push('⏰ Deadline Day – ostatni dzień okna transferowego.');
+  if (k === dKey(w.sum[1]) || k === dKey(w.win[1])) notes.push('⏰ Ostatni dzień okna transferowego (Deadline Day).');
   if (k === dKey(w.win[0])) notes.push('🟢 Otwarcie zimowego okna transferowego.');
   const isToday = k === dKey(todayMs());
   modal(`<h2>📅 ${fmtDate(ms)}</h2>${xs.map(x => `<div class="row">${badge(x.h, 'sm')}<b class="sp">${esc(x.h.name)} – ${esc(x.a.name)}</b>${badge(x.a, 'sm')}</div><small class="mut">${esc(x.label || '')} • ${isTbd(x) || x.a.id == null ? 'prognoza po losowaniu' : `prognoza: ${WX[matchWeather(x.h, x.d.date)][0]} ${WX[matchWeather(x.h, x.d.date)][1]}`}</small>`).join('')}
@@ -1295,7 +1302,7 @@ function vFac() {
       <small class="mut">${commLvl('hotel') ? `Hotel: ${money(hotelIncome())}/tydz. ` : ''}${commLvl('shop') ? `Sklep: ${money(shopIncome())}/tydz. ` : ''}${commLvl('museum') ? `Muzeum: ${money(museumIncome())}/tydz. ` : ''}Obiekty komercyjne zwiększają przychody klubu – zwracają się po kilku sezonach.</small></div>
     `;
 }
-ACT.upcomm = k => { const r = upgradeComm(k); toast(r.msg, r.ok ? 'ok' : 'bad'); render(); };
+ACT.upcomm = k => { if (!confirm(`${COMM[k][0]}: rozbudowa za ${money(commCost(k, commLvl(k)))}?\n${COMM[k][1]}`)) return; const r = upgradeComm(k); toast(r.msg, r.ok ? 'ok' : 'bad'); render(); };
 const stadExp = c => { const add = Math.max(1000, Math.round(c.cap * 0.1 / 500) * 500); return { add, cost: Math.round(add * c.price * 90 / 1e5) * 1e5 }; };
 /* ---------- rysunek stadionu: trybuny rosną z pojemnością, wokół obiekty klubu ---------- */
 function stadiumSVG(c, cap, opt = {}) {
@@ -1371,7 +1378,7 @@ function stadiumCard(ut) {
   return `<div class="card"><h2>🏟️ Stadion</h2>${stadiumSVG(ut, ut.cap, { build: !!ut.stadBuild })}
     <div class="kv"><div><span>Pojemność</span><b>${ut.cap.toLocaleString('pl-PL')}</b></div><div><span>Popyt na bilety</span><b>${dem.toLocaleString('pl-PL')}</b></div>
     <div><span>Średnia frekwencja</span><b>${att.toLocaleString('pl-PL')} (${Math.round(att / ut.cap * 100)}%)</b></div><div><span>Wpływy z meczu</span><b>${money(gate)}</b></div></div>
-    <h3>🎟️ Cena biletu</h3><div class="stepper"><button class="btn" data-act="tkt" data-arg="-1">−</button><b>${ut.price.toFixed(1)} € <small class="mut">(${Math.round(ut.price / basePrice(ut) * 100)}% standardu)</small></b><button class="btn" data-act="tkt" data-arg="1">+</button></div>
+    <h3>🎟️ Cena biletu</h3><div class="stepper"><button class="btn" data-act="tkt" data-arg="-1">−</button><b>${ut.price.toFixed(1).replace('.', ',')} € <small class="mut">(${Math.round(ut.price / basePrice(ut) * 100)}% standardu)</small></b><button class="btn" data-act="tkt" data-arg="1">+</button></div>
     <small class="mut">Wyższa cena = mniejszy popyt, ale więcej z każdego biletu. Gdy stadion jest pełny, podwyżka zwykle się opłaca; przy pustych trybunach – obniżka. Bardzo drogie bilety psują nastroje kibiców.</small>
     <small class="mut">Popyt rośnie z renomą klubu, poziomem ligi, nastrojami kibiców i parkingiem. ${full ? 'Stadion jest za mały – rozbudowa się opłaci.' : 'Na razie stadion nie zapełnia się – nowe miejsca nie zwiększą wpływów (ale dachy, loże i kocioł tak).'}${ut.stadBuild ? ` Trwa rozbudowa: +${ut.stadBuild.add.toLocaleString('pl-PL')} miejsc od ${SEASON_LABEL(ut.stadBuild.season)}.` : ''}</small>
     ${stadProjHtml(ut)}</div>`;
@@ -1384,7 +1391,7 @@ ACT.stadexp = () => {
   ut.cap0 = ut.cap0 || ut.cap; ut.bal -= e.cost; ut.fin.exp += e.cost; ut.stadBuild = { add: e.add, season: S.season + 1 }; S.board.conf = clamp(S.board.conf + 2, 0, 100);
   msg('🏗️ Rozbudowa stadionu', `Ruszyła rozbudowa stadionu – od nowego sezonu ${(ut.cap + e.add).toLocaleString('pl-PL')} miejsc.`); saveSoon(); render();
 };
-ACT.upfac = k => { const r = upgradeFacility(k); toast(r.msg); render(); };
+ACT.upfac = k => { if (!confirm(`Rozbudować obiekt za ${money(FAC_COST(facGet(k)))}?`)) return; const r = upgradeFacility(k); toast(r.msg); render(); };
 function vNTManage() {
   if (!S.nt) return `<div class="card"><h2>Reprezentacja</h2><small class="mut">Możesz jednocześnie prowadzić klub i reprezentację. Wybierz kadrę narodową:</small></div>
     <div class="card list">${NATIONS.slice().sort((a, b) => b.str - a.str).map(n => `<div class="prow"><span style="font-size:20px">${n.flag}</span><div class="pn">${esc(n.name)}<small>${n.conf} • siła ${n.str}</small></div>${ntAllowed(n) ? `<button class="btn sm" data-act="takent" data-arg="${n.code}">Obejmij</button>` : `<span class="mut">🔒 OVR ${n.str - 10}</span>`}</div>`).join('')}</div>`;
@@ -1564,7 +1571,7 @@ ACT.msubs = () => { document.querySelectorAll('.uk-goal').forEach(e => e.remove(
 function renderSubs() {
   const s = uside();
   modal(`<h2>Zmiany (${s.subs}/${MAX_SUBS})</h2><small class="mut">${subOut ? 'Wybierz zawodnika z ławki.' : 'Wybierz zawodnika, który zejdzie.'}</small>
-    <h3>Na boisku</h3>${s.pitch.map(x => `<div class="prow ${subOut === x.p ? 'sel' : ''}" data-act="subout" data-arg="${x.p.id}"><span class="pos ${LINE[x.pos]}">${POS_PL[x.pos]}</span><div class="pn">${esc(x.p.n)}${s.rec[x.p.id] && s.rec[x.p.id].y ? ' 🟨' : ''}${s.rec[x.p.id] && s.rec[x.p.id].g ? ' ⚽'.repeat(s.rec[x.p.id].g) : ''}</div><div class="fitb">${bar(Math.round(fitNow(s, x, M.minute)))}</div>${ovrTag(x.ov)}</div>`).join('')}
+    <h3>Na boisku</h3>${s.pitch.map(x => `<div class="prow ${subOut === x.p ? 'sel' : ''}" data-act="subout" data-arg="${x.p.id}"><span class="pos ${LINE[x.pos]}">${POS_PL[x.pos]}</span><div class="pn">${esc(x.p.n)}${s.rec[x.p.id] && s.rec[x.p.id].y ? ' 🟨' : ''}${s.rec[x.p.id] && s.rec[x.p.id].g ? ' ⚽'.repeat(s.rec[x.p.id].g) : ''}</div><div class="fitb">${bar(Math.round(fitNow(s, x, M.minute)))}</div>${ovrTag(Math.round(x.ov))}</div>`).join('')}
     <h3>Ławka${subOut ? ` <small class="mut">(OVR na pozycji: ${POS_PL[outPos()]})</small>` : ''}</h3>${(subOut ? s.bench.slice().sort((a, b) => ovrAt(b, outPos()) - ovrAt(a, outPos())) : s.bench).map(p => `<div class="prow" data-act="subin" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${esc(p.n)}</div><div class="fitb">${bar(p.fit)}</div>${ovrTag(subOut ? ovrAt(p, outPos()) : p.ovr)}</div>`).join('') || '<small>Pusta</small>'}
     <div class="btns"><button class="btn full" data-act="close">Wróć do meczu</button></div>`);
 }
@@ -1722,6 +1729,9 @@ document.addEventListener('click', e => { const el = e.target.closest('[data-act
   }, { passive: true });
 })();
 document.addEventListener('change', e => { const el = e.target.closest('[data-change]'); if (el && CHG[el.dataset.change]) CHG[el.dataset.change](el.value, el); });
+/* wyszukiwanie nazwiska w trakcie pisania (z opóźnieniem), bez utraty fokusu */
+let FQ_T = null;
+document.addEventListener('input', e => { const el = e.target; if (!el.matches || !el.matches('[data-change="fq"]')) return; clearTimeout(FQ_T); FQ_T = setTimeout(() => { const v = el.value; CHG.fq(v, el); setTimeout(() => { const n = document.querySelector('[data-change="fq"]'); if (n) { n.focus(); n.setSelectionRange(v.length, v.length); } }, 0); }, 450); });
 (async () => {
   busy(true, 'Tworzenie świata…');
   await new Promise(r => setTimeout(r, 30));

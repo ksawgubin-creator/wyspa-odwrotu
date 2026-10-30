@@ -36,7 +36,11 @@ ACT.friendlies = () => {
     <div class="btns"><button class="btn full" data-act="close">Zamknij</button></div>`);
 };
 ACT.frplay = a => { const [id, h] = a.split(':').map(Number); const r = playFriendly(id, !!h); if (!r.ok) return toast(r.msg, 'bad');
-  toast(`${r.sc}${r.cash ? ' • +' + money(r.cash) : ''}`, r.gd >= 0 ? 'ok' : ''); render(); ACT.friendlies(); };
+  const m = r.m; render();
+  modal(`<h2>${r.gd > 0 ? '🎉 Wygrana' : r.gd < 0 ? '😞 Porażka' : '🤝 Remis'} w sparingu</h2><div class="fixture"><div class="tm">${badge(m.home.t, 'lg')}<span>${esc(m.home.t.name)}</span></div><div class="vs" style="color:var(--txt)">${m.home.goals} : ${m.away.goals}</div><div class="tm">${badge(m.away.t, 'lg')}<span>${esc(m.away.t.name)}</span></div></div>
+    <small>⚽ ${esc([...m.home.scorers, ...m.away.scorers].sort((x, y) => x.min - y.min).map(g => `${g.name} ${g.min}'`).join(', ') || 'brak goli')}</small>
+    <div class="kv"><div><span>Wpływy</span><b>${money(r.cash)}</b></div><div><span>Rytm meczowy</span><b class="good">↑</b></div></div>
+    <div class="btns"><button class="btn pri full" data-act="friendlies">Wróć do sparingów</button></div>`); };
 
 /* ---------- sponsor koszulki ---------- */
 ACT.kitpick = () => {
@@ -63,7 +67,7 @@ function vBoard() {
     <small class="mut">${esc(MERCH[S.merch || 'norm'][1])}</small></div>
   <div class="card"><h2>🤝 Klub partnerski</h2>${aff ? `<div class="row">${badge(aff, 'sm')}<div class="sp"><b>${esc(aff.name)}</b><br><small class="mut">${S.countries[aff.cc].flag} ${esc(S.leagues[aff.lg].name)} • koszt ${money(affCost())}/tydz.</small></div><button class="btn sm red" data-act="affend">Zakończ</button></div>` : `<small class="mut">Klub z niższej ligi, do którego wypożyczasz młodych: zawsze ich przyjmie, dostaną więcej minut i rozwiną się szybciej. Co sezon partner daje Ci pierwszeństwo przy swoim najlepszym talencie (30% taniej).</small><div class="list">${affCands().map(c => `<div class="prow">${badge(c, 'sm')}<div class="pn">${esc(c.name)}<small>${S.countries[c.cc].flag} ${esc(S.leagues[c.lg].name)} • rep. ${c.rep}</small></div><button class="btn sm" data-act="setaff" data-arg="${c.id}">Wybierz</button></div>`).join('')}</div>`}</div>
   <div class="card"><h2>🧑‍💼 Dyrektor sportowy</h2><small class="mut">Odciąża Cię w pracy biurowej. Koszt: ${money(DOF_COST())}/tydz.</small>
-    <div class="row"><span class="sp">Zatrudniony</span><button class="btn sm ${D.on ? 'pri' : ''}" data-act="dof" data-arg="on">${D.on ? 'Tak' : 'Nie'}</button></div>
+    <div class="row"><span class="sp">${D.on ? 'Dyrektor pracuje w klubie' : 'Brak dyrektora sportowego'}</span><button class="btn sm ${D.on ? '' : 'pri'}" data-act="dof" data-arg="on">${D.on ? 'Zwolnij' : 'Zatrudnij'}</button></div>
     ${D.on ? `<div class="row"><span class="sp">Sprzedaż zawodników z listy transferowej<br><small class="mut">przyjmuje oferty ≥ wartości („szybko”: ≥85%), odrzuca niskie</small></span><select data-change="dofsell">${[['', 'Nie'], ['val', 'Za wartość'], ['fast', 'Szybko']].map(([k, n]) => `<option value="${k}" ${(D.sell || '') === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
     <div class="row"><span class="sp">Skauting celów na braki w kadrze<br><small class="mut">dopisuje zawodników do obserwowanych</small></span><button class="btn sm ${D.scout ? 'pri' : ''}" data-act="dof" data-arg="scout">${D.scout ? 'Tak' : 'Nie'}</button></div>
     <div class="row"><span class="sp">Przedłużanie kontraktów<br><small class="mut">ustawienie asystenta: ${({ off: 'wyłączone', fringe: 'rezerwowi', all: 'wszyscy' })[S.settings.autoRenew || 'off']}</small></span><button class="btn sm" data-act="dof" data-arg="renew">${S.settings.autoRenew === 'all' ? 'Wszyscy' : 'Przekaż'}</button></div>` : ''}</div>`;
@@ -143,4 +147,4 @@ ACT.mstats = () => {
 };
 ACT.backres = () => showResult();
 ACT.mheat = id => { const m = LASTM.m, me = LASTM.user === 'h' ? m.home : m.away, r = me.rec[+id]; if (!r) return;
-  $('#mheat').innerHTML = `<div class="card"><b>🔥 Heatmapa: ${esc(r.p.n)}</b> <small class="mut">(${POS_PL[r.pos]}, atak w prawo)</small><div style="text-align:center;margin-top:6px">${heatSVG(me, r)}</div><small class="mut">Strefy aktywności na podstawie pozycji, taktyki, strzałów i odbiorów.</small></div>`; };
+  const el = $('#mheat'); setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50); el.innerHTML = `<div class="card"><b>🔥 Heatmapa: ${esc(r.p.n)}</b> <small class="mut">(${POS_PL[r.pos]}, atak w prawo)</small><div style="text-align:center;margin-top:6px">${heatSVG(me, r)}</div><small class="mut">Strefy aktywności na podstawie pozycji, taktyki, strzałów i odbiorów.</small></div>`; };

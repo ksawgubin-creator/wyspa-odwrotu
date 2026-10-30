@@ -974,6 +974,7 @@ function weekly(d) {
   scoutingWeek();
   if (windowOpen()) { genOffers(); aiTransfers(); }
   if (d.ls === 30) { const exp = ut.players.filter(p => p.con <= 1 && !p.loan); if (exp.length) msg('Kontrakty wygasają', `Z końcem sezonu wygasają kontrakty: ${exp.map(shortName).join(', ')}. Przedłuż je w karcie zawodnika.`); }
+  if (d.ls === 21) rivalWinter();
   if (d.ls === 4) msg('Okno zamknięte', 'Letnie okno transferowe zostało zamknięte. Wolnych agentów możesz podpisywać zawsze.');
   if (d.ls === 2 || d.ls === 22) deadlineDays(ut);
   if (d.ls >= 20 && d.ls % 3 === 0) autoRenewals(ut);
@@ -1072,8 +1073,9 @@ function playerStatus(p) {
 function askPrice(p) {
   const st = playerStatus(p), disc = p._disc && p._disc.until > absDay() ? p._disc.k : 1;
   const c = clubOf(p), u = userClub(), young = p.pot - p.ovr >= 10 ? 0.2 * clamp((23 - p.age) / 4, 0, 1) : 0;
-  const seller = c && u && c.id !== u.id ? 1 + clamp((c.rep - u.rep) * 0.012, -0.1, 0.3) + (c.bal > 5e7 ? 0.1 : c.bal < 0 ? -0.12 : 0) : 1;   // bogaty/mocniejszy klub nie musi sprzedawać
-  const r = p.val * disc * DF().price * seller * (1 + young) * (1 + 0.05 * p.con + (st === 'Kluczowy' ? 0.2 : st === 'Podstawowy' ? 0.08 : 0));
+  const seller = c && u && c.id !== u.id ? 1 + clamp((c.rep - u.rep) * 0.012, -0.1, 0.3) + (c.bal > 5e7 ? 0.1 : c.bal < 0 ? -0.12 : 0) : 1;
+  const rivalTax = c && u && c.id !== u.id && c.lg === u.lg && c.rep >= u.rep - 6 ? 1.15 : 1;   // bezpośredni rywal nie chce wzmacniać konkurenta   // bogaty/mocniejszy klub nie musi sprzedawać
+  const r = p.val * disc * DF().price * seller * rivalTax * (1 + young) * (1 + 0.05 * p.con + (st === 'Kluczowy' ? 0.2 : st === 'Podstawowy' ? 0.08 : 0));
   const step = r >= 1e7 ? 5e5 : r >= 1e6 ? 5e4 : 1e4;
   return Math.round(r / step) * step;
 }
@@ -2203,29 +2205,55 @@ function starMoves(lines) {
   if (n) lines.push(`💫 Letnie hity transferowe: ${plural(n, 'gwiazda zmieniła', 'gwiazdy zmieniły', 'gwiazd zmieniło')} klub.`);
 }
 /* ambicja rywali: gdy menedżer dominuje w lidze, najsilniejsi konkurenci dostają zastrzyk od właścicieli i kupują wzmocnienia */
+/* zakup wzmocnień przez klub AI: zawodnicy lepsi od średniej składu, płatne z salda */
+function armClub(c, want, lo, hi, tag) {
+  const ut = userClub(), lvl = teamLevel(c), got = [];
+  for (let s = 0; s < 2000 && got.length < want; s++) {
+    const p = PALL[ri(0, PALL.length - 1)], sc = p && club(p.tid);
+    if (!sc || sc.id === c.id || sc.id === ut.id || isReserve(sc) || p.loan || p.preTo || p.age < 20 || p.age > 30 || sc.players.length <= 20) continue;
+    if (p.ovr < lvl + lo || p.ovr > lvl + hi || sc.rep > c.rep + 10) continue;
+    const fee = Math.round(p.val * 1.15 / 5e4) * 5e4; if (fee > c.bal * 0.9) continue;
+    detach(p); attach(p, c); p.wage = calcWage(p, c.rep); p.con = ri(3, 5); c.bal -= fee; c.tb = Math.max(0, c.tb - fee); sc.bal += fee; refillAI(sc); refillAI(c); got.push(p);
+    if (c.lg === ut.lg || fee >= 2e7) news(`${tag} ${c.name}: ${p.n} (${p.ovr}, ${POS_PL[p.pos]}) z ${sc.name} za ${money(fee)}.`);
+  }
+  if (got.length) rebalanceSpons(c);
+  return got.length;
+}
+/* ambicja rywali: najsilniejsi konkurenci w lidze menedżera co lato się zbroją – mocniej, gdy menedżer dominuje */
 function rivalAmbition(lines, won) {
   const ut = userClub(); if (!ut || isReserve(ut)) return;
   S.dom = S.dom || {};
   S.dom[ut.id] = won ? (S.dom[ut.id] || 0) + 1 : Math.max(0, (S.dom[ut.id] || 0) - 1);
-  const lvU = teamLevel(ut), rivals = S.leagues[ut.lg].clubs.map(club).filter(c => c.id !== ut.id && !isReserve(c)).sort((a, b) => teamLevel(b) - teamLevel(a)).slice(0, 3);
-  const dom = S.dom[ut.id], names = [];
-  for (const c of rivals) {
-    const gap = lvU - teamLevel(c); if (gap <= 0 || (gap < 1.5 && !dom)) continue;
-    const want = clamp(Math.round(gap / 2.5) + (dom >= 2 ? 1 : 0), 1, 3);
-    const lvl = teamLevel(c), inj = Math.round(sum(c.players.map(p => p.wage)) * (12 + Math.min(3, dom) * 6) * DF().aiK / 1e5) * 1e5;
-    c.bal += inj; c.tb += inj; c.rep = Math.min(95, c.rep + (dom >= 2 ? 1 : 0));
-    let n = 0;
-    for (let s = 0; s < 1500 && n < want; s++) {
-      const p = PALL[ri(0, PALL.length - 1)], sc = p && club(p.tid);
-      if (!sc || sc.id === c.id || sc.id === ut.id || p.loan || p.preTo || p.age < 21 || p.age > 30 || sc.players.length <= 20) continue;
-      if (p.ovr < lvl + 2 || p.ovr > Math.max(lvU + 3, lvl + 9) || sc.rep > c.rep + 10) continue;
-      const fee = Math.round(p.val * 1.15 / 5e4) * 5e4; if (fee > c.bal) continue;
-      detach(p); attach(p, c); p.wage = calcWage(p, c.rep); p.con = ri(3, 5); c.bal -= fee; c.tb = Math.max(0, c.tb - fee); sc.bal += fee; refillAI(sc); refillAI(c); n++;
-      news(`💰 ${c.name} odpowiada na dominację ${ut.short || ut.name}: ${p.n} (${p.ovr}) z ${sc.name} za ${money(fee)}.`);
-    }
-    if (n) { names.push(`${c.name} (+${n})`); rebalanceSpons(c); }
+  const K = DF().aiK, lvU = teamLevel(ut), dom = Math.min(3, S.dom[ut.id]);
+  const rivals = S.leagues[ut.lg].clubs.map(club).filter(c => c.id !== ut.id && !isReserve(c)).sort((a, b) => teamLevel(b) - teamLevel(a)).slice(0, 4);
+  const names = [];
+  rivals.forEach((c, i) => {
+    const gap = lvU - teamLevel(c), bill = sum(c.players.map(p => p.wage));
+    // właściciele dokładają pieniądze: tym więcej, im większa przewaga menedżera i im wyżej klub w hierarchii
+    const inj = Math.round(bill * ((gap > 0 ? 14 + dom * 8 + gap * 2 : 6) * (i < 2 ? 1 : 0.6)) * K / 1e5) * 1e5;
+    c.bal += inj; c.tb += inj; if (dom >= 2 && i < 2) c.rep = Math.min(95, c.rep + 1);
+    const want = clamp((gap > 0 ? Math.round(gap / 2) + 1 + (dom >= 2 ? 1 : 0) : rnd() < 0.7 * K ? 1 : 0) + (i === 0 && K > 1 ? 1 : 0), 0, 4);
+    const n = want ? armClub(c, want, gap > 0 ? 2 : 1, Math.max(gap + 4, 7), gap > 0 ? '💰 Odpowiedź na Twoją dominację –' : '🛡️ Czołówka się wzmacnia –') : 0;
+    if (n) names.push(`${c.name} (+${n})`);
+  });
+  // w pozostałych najwyższych ligach faworyci też się wzmacniają (żeby europejscy rywale nie stali w miejscu)
+  for (const lg of Object.values(S.leagues)) {
+    if (lg.tier !== 1 || lg.id === ut.lg) continue;
+    const top = lg.clubs.map(club).filter(c => !isReserve(c)).sort((a, b) => teamLevel(b) - teamLevel(a)).slice(0, 2);
+    for (const c of top) if (rnd() < 0.5 * K) armClub(c, 1, 1, 6, '🛡️');
   }
-  if (names.length) lines.push(`⚔️ Rywale się zbroją: ${names.join(', ')} – właściciele chcą zatrzymać Twoją dominację.`);
+  if (names.length) lines.push(`⚔️ Rywale się zbroją: ${names.join(', ')}${dom ? ' – właściciele chcą zakończyć Twoją dominację' : ' – walka o tytuł będzie trudniejsza'}.`);
+}
+/* zima: kluby z czołówki tabeli dokupują zawodnika na drugą część sezonu */
+function rivalWinter() {
+  const ut = userClub(); if (!ut || isReserve(ut)) return;
+  const tb = table(ut.lg), up = tb.find(r => r.id === ut.id).pos, K = DF().aiK, names = [];
+  for (const r of tb.slice(0, Math.max(4, Math.min(6, up + 1)))) {
+    const c = club(r.id); if (c.id === ut.id || isReserve(c) || rnd() > 0.6 * K) continue;
+    if (r.pos <= 2) { const inj = Math.round(sum(c.players.map(p => p.wage)) * 5 * K / 1e5) * 1e5; c.bal += inj; c.tb += inj; }
+    if (armClub(c, 1, 1, 6, '❄️ Zimowe wzmocnienie –')) names.push(c.short || c.name);
+  }
+  if (names.length) msg('❄️ Rywale wzmacniają się zimą', `Kluby z czołówki ${S.leagues[ut.lg].name} sięgnęły po nowych zawodników: ${names.join(', ')}. Wyścig o tytuł się zaostrza.`);
 }
 function jobOffers() {
   let l = S.clubs.filter(c => c.id !== S.user && c.rep <= S.mgr.ovr + 2 && c.rep >= S.mgr.ovr - 25 && !isReserve(c));

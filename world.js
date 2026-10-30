@@ -814,9 +814,9 @@ function recover(gap) {
   const ut = userClub();
   for (const p of PALL) {
     const c = p.tid >= 0 ? S.clubs[p.tid] : null;
-    const mine = c === ut, rate = 2.7 + (c && c.training === 'fit' ? 0.5 : 0) + (mine ? (staffAb('fit') - 10) * 0.04 + TR_INT[S.trInt || 0].fit + commLvl('recov') * 0.25 : 0);
+    const mine = c === ut, rate = 2.7 + (c && c.training === 'fit' ? 0.5 : 0) + (mine ? (staffOvr('fit') - 50) * 0.012 + TR_INT[S.trInt || 0].fit + commLvl('recov') * 0.25 : 0);
     p.fit = Math.min(100, p.fit + gap * rate * (p.inj ? 1.4 : 1));
-    if (p.inj) { p.inj = Math.max(0, p.inj - gap * (mine ? 0.75 + staffAb('phy') / 40 : 1)); if (!p.inj && c === ut && p.ovr >= teamLevel(ut) - 3) msg('Powrót do zdrowia', `${p.n} wrócił do pełnej sprawności.`); }
+    if (p.inj) { p.inj = Math.max(0, p.inj - gap * (mine ? 0.7 + staffOvr('phy') / 165 : 1)); if (!p.inj && c === ut && p.ovr >= teamLevel(ut) - 3) msg('Powrót do zdrowia', `${p.n} wrócił do pełnej sprawności.`); }
   }
 }
 /* ---------- derby i rywalizacje ---------- */
@@ -954,7 +954,7 @@ function weekly(d) {
       ch *= fac * (0.6 + 0.8 * clamp(p.pt, 0, 1)) * (focus && (LINE[p.pos] === focus || (focus === 'DEF' && p.pos === 'GK')) ? 1.5 : 1);
       if (p.loan && p.tid !== p.loan.from) ch *= p.tid === S.aff && p.loan.from === S.user ? 1.38 : 1.2;   // klub partnerski: więcej minut i opieki
       if (TI) ch *= TI.dev;
-      if (ch) ch *= (0.75 + traits(p).pro / 40) * clamp((p.pot - p.ovr) / 8, 0.5, 1.6) * (S.mentors && S.mentors.some(x => x.p === p.id) ? 1.3 : 1) * (p.pos === 'GK' && c.id === S.user && S.staff ? 0.85 + staffAb('gk') / 60 : 1) * (c.id === S.user ? 0.9 + staffAb('ass') / 100 : 1);
+      if (ch) ch *= (0.75 + traits(p).pro / 40) * clamp((p.pot - p.ovr) / 8, 0.5, 1.6) * (S.mentors && S.mentors.some(x => x.p === p.id) ? 1.3 : 1) * (p.pos === 'GK' && c.id === S.user && S.staff ? 0.75 + staffOvr('gk') / 200 : 1) * (c.id === S.user ? 0.8 + staffOvr('ass') / 250 : 1);
       if (ch && p.ovr < p.pot && rnd() < ch) {
         develop(p, 1);
         if (p.focus != null && p.a[p.focus] < 99) { p.a[p.focus] = Math.min(99, p.a[p.focus] + 0.8); p.ovr = Math.min(calcOvr(p.pos, p.a), p.pot); }
@@ -1852,11 +1852,13 @@ function newSeason(first) {
   if (!first && S.user >= 0) setBoardObjective();
 }
 /* ---------- sztab szkoleniowy ---------- */
-const STAFF_ROLES = { ass: ['Asystent trenera', 'Szybszy rozwój całej kadry i rady przed meczem'], fit: ['Trener przygotowania fizycznego', 'Szybsza regeneracja kondycji, mniej kontuzji'], phy: ['Fizjoterapeuta', 'Krótsze leczenie kontuzji'], gk: ['Trener bramkarzy', 'Szybszy rozwój bramkarzy'] };
-const staffWage = ab => Math.round((100 + Math.pow(ab, 2.4) * 18) / 100) * 100;
-function genStaff(ab) { ab = clamp(Math.round(ab), 1, 20); return { n: genName(pick(COACH_NAT)), ab, wage: staffWage(ab) }; }
+const STAFF_ROLES = { ass: ['Asystent trenera', 'Rozwój całej kadry, rady przed meczem; prowadzi drużynę, gdy symulujesz dni (wyniki i decyzje)'], tac: ['Analityk taktyczny', 'Lepsze przygotowanie do meczu: siła drużyny w każdym meczu (do ±4%)'], fit: ['Trener przygotowania fizycznego', 'Szybsza regeneracja kondycji, mniej kontuzji'], phy: ['Fizjoterapeuta', 'Krótsze leczenie kontuzji'], gk: ['Trener bramkarzy', 'Szybszy rozwój bramkarzy'] };
+/* sztab: ocena OVR 1–99 (dawne „ab” 1–20 przeliczane przy wczytaniu) */
+const staffWage = ovr => Math.round((100 + Math.pow(ovr / 5, 2.4) * 18) / 100) * 100;
+function genStaff(ab) { const ovr = clamp(Math.round(ab * 4.75 + gauss() * 3), 1, 99); return { n: genName(pick(COACH_NAT)), ovr, wage: staffWage(ovr) }; }
+const staffOvr = k => { const x = S.staff && S.staff[k]; if (!x) return 50; if (x.ovr == null) x.ovr = clamp(Math.round((x.ab || 10) * 4.75), 1, 99); return x.ovr; };
 function initStaff(force) {
-  if (S.staff && S.staff.ass && !force) return;
+  if (S.staff && S.staff.ass && !force) { for (const k in STAFF_ROLES) if (!S.staff[k]) S.staff[k] = genStaff(clamp(userClub().rep / 6, 3, 16) + ri(-2, 2)); return; }
   const r = userClub().rep, base = clamp(r / 6, 3, 16);
   S.staff = {}; for (const k in STAFF_ROLES) S.staff[k] = genStaff(base + ri(-2, 2));
   S.staffMkt = null;
@@ -1874,7 +1876,7 @@ function hireStaff(role, i) {
   S.staff[role] = c; S.staffMkt.list[role].splice(i, 1);
   saveSoon(); return { ok: true, msg: `${c.n} dołącza do sztabu (odprawa dla poprzednika: ${money(comp)}).` };
 }
-const staffAb = k => S.staff && S.staff[k] ? S.staff[k].ab : 10;
+const staffAb = k => staffOvr(k) / 5;
 const staffCost = () => S.staff ? sum(Object.values(S.staff).map(x => x.wage)) : 0;
 function assistantTip(opp) {
   const ab = staffAb('ass'), ut = userClub(); if (!opp || !opp.players) return '';

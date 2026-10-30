@@ -287,3 +287,55 @@ function careerNewSeason() {
   const V = S.vision; if (V) for (const g of V.goals) if (g.k === 'tier' && !g.done && !g.fail && S.leagues[userClub().lg].tier <= g.t) { g.done = true; S.board.conf = clamp(S.board.conf + 6, 0, 100); msg('🎯 Wizja klubu', `Cel zrealizowany: ${g.txt}! Zarząd jest zachwycony.`); }
 }
 function careerTakeOver() { S.vision = null; S.aff = null; S.kit = null; S.kitOff = null; S.naming = null; S.dof = S.dof ? { ...S.dof, on: false } : null; visionInit(true); objInit(); }
+
+/* ---------- ASYSTENT PROWADZI DRUŻYNĘ (symulacja dni z kalendarza) ---------- */
+// ocena skutku decyzji z perspektywy klubu (bez znajomości losowania – wartość oczekiwana)
+function asFxScore(fx) {
+  if (!fx) return 0; const inc = Math.max(1, typeof weeklyIncome === 'function' ? weeklyIncome(userClub()) : 1e5);
+  const W = { team: 1.6, board: 1.3, fans: 1.0, press: 0.5, player: 0.45, player2: 0.3, form: 0.3, fit: 0.2, teamFit: 0.4, yth: 0.4, mgr: 2 };
+  let s = 0;
+  for (const [k, v] of Object.entries(fx)) {
+    if (typeof v !== 'number') { if (k === 'promise' || k === 'boast') s -= 1; if (k === 'list') s -= 2; continue; }
+    if (W[k] != null) s += v * W[k];
+    else if (k === 'money' || k === 'cash' || k === 'tb') s += v / inc * 3;
+    else if (k === 'spons') s += v / inc * 30;
+    else if (k === 'wage') s -= v / inc * 40;
+    else if (k === 'inj') s -= v * 0.5;
+  }
+  return s;
+}
+function asChoiceScore(def, ch, ctx) {
+  try {
+    const base = evFx(ch, ctx);
+    if (!ch.outs || !ch.outs.length) return asFxScore(base);
+    let tot = 0, sw = 0;
+    for (const o of ch.outs) { const w = Math.max(0, +(typeof o.w === 'function' ? o.w(ctx) : (o.w == null ? 1 : o.w)) || 0); if (!w) continue; tot += w * (asFxScore(mergeFx(base, evFx(o, ctx))) - (o.bad ? 2 : 0)); sw += w; }
+    return sw ? tot / sw : asFxScore(base);
+  } catch (e) { return 0; }
+}
+function assistantPick(ev) {
+  const def = eventDef(ev); if (!def || !def.choices || !def.choices.length) return 0;
+  const ctx = ctxDeref(ev.ctx), sc = def.choices.map(ch => asChoiceScore(def, ch, ctx));
+  const best = sc.indexOf(Math.max(...sc)), q = 0.25 + staffOvr('ass') / 100 * 0.7;   // im lepszy asystent, tym trafniejsze decyzje
+  return rnd() < q ? best : ri(0, def.choices.length - 1);
+}
+/* asystent rozwiązuje oczekujące decyzje; zwraca listę [tytuł, wybór, wynik] */
+function assistantResolveAll(log) {
+  let n = 0;
+  while (S.pending.length && n++ < 20) {
+    const ev = S.pending[0], ci = assistantPick(ev), r = resolveEvent(ev.uid, ci);
+    if (r) log.push({ k: 'ev', t: ev.title, c: ev.choices[ci] || ev.choices[0], r: r.r, fx: r.fx || [] });
+  }
+}
+/* asystent gra mecz za menedżera: skład (z rotacją), szybka symulacja */
+function assistantMatchDay(log) {
+  const x = userMatchToday(); if (!x) return null;
+  const mine = x.user === 'h' ? x.h : x.a;
+  if (!x.nt) { try { rotateTired(mine, 70); } catch (e) { } }
+  try { fixLineup(mine, x.nt ? null : emergencyFor(mine)); } catch (e) { }
+  globalThis.ASSIST_ON = true;
+  let r; try { r = processDay(null); } finally { globalThis.ASSIST_ON = false; }
+  const um = r && r.userRes; if (um) { const m = um.m, me = um.x.user === 'h' ? m.home : m.away, op = me === m.home ? m.away : m.home;
+    log.push({ k: 'm', t: `${m.home.t.name} ${m.home.goals}:${m.away.goals} ${m.away.t.name}`, l: um.x.opts.label, res: me.goals > op.goals || m.winner === um.x.user ? 'W' : me.goals < op.goals ? 'L' : 'D', sc: me.scorers.map(s => s.name).join(', ') }); }
+  return r;
+}

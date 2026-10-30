@@ -139,7 +139,7 @@ const isAvail = p => !p.inj && !p.susp;
 // rodzaje kontuzji: [nazwa, min dni, max dni, waga]
 const INJ = [['stłuczenie', 3, 10, 30], ['naciągnięcie mięśnia dwugłowego', 10, 28, 20], ['skręcenie stawu skokowego', 10, 35, 18], ['uraz pachwiny', 14, 40, 10], ['naderwanie mięśnia', 21, 49, 8], ['uraz kolana', 30, 70, 6], ['złamanie', 50, 100, 3], ['zerwanie więzadła krzyżowego', 150, 220, 1.2]];
 // ryzyko urazu rośnie przy zmęczeniu, po niedawnym urazie i po przyspieszonym powrocie
-const injRisk = (p, fit) => (typeof S !== 'undefined' && S && S.trInt && p.tid === S.user && typeof TR_INT !== 'undefined' ? TR_INT[S.trInt].inj : 1) * (typeof S !== 'undefined' && S && p.tid === S.user && typeof DF === 'function' ? DF().inj * (1 - 0.06 * commLvl('turf')) : 1) * (1 + Math.max(0, 85 - fit) / 30) * (p._rushed && p._rushed > (typeof absDay === 'function' ? absDay() : 0) ? 3 : 1) * (p.injLast && typeof absDay === 'function' && absDay() - p.injLast < 60 ? 1.5 : 1);
+const injRisk = (p, fit) => (typeof S !== 'undefined' && S && S.trInt && p.tid === S.user && typeof TR_INT !== 'undefined' ? TR_INT[S.trInt].inj : 1) * (typeof S !== 'undefined' && S && p.tid === S.user && typeof DF === 'function' ? DF().inj * (1 - 0.06 * commLvl('turf')) : 1) * (typeof S !== 'undefined' && S && p.tid === S.user && typeof staffOvr === 'function' && S.staff ? 1.2 - staffOvr('fit') / 250 : 1) * (1 + Math.max(0, 85 - fit) / 30) * (p._rushed && p._rushed > (typeof absDay === 'function' ? absDay() : 0) ? 3 : 1) * (p.injLast && typeof absDay === 'function' && absDay() - p.injLast < 60 ? 1.5 : 1);
 function injure(p) {
   const recur = p.injT && p.injLast && typeof absDay === 'function' && absDay() - p.injLast < 60 && rnd() < 0.5;
   const t = recur ? INJ.find(x => x[0] === p.injT) || INJ[1] : wpick(INJ, x => x[3]);
@@ -302,6 +302,8 @@ function createMatch(h, a, opts = {}) {
   const d = (h.rep || 50) - (a.rep || 50);
   if (m.comp === 'C' && Math.abs(d) >= 10) (d > 0 ? m.away : m.home).cf *= 1.07; // magia pucharu: słabszy gra ambitniej
   if (m.home.user && !m.neutral && typeof commLvl === 'function') m.home.cf *= (1 + 0.006 * commLvl('turf') + 0.003 * commLvl('screen')) * (typeof stadHomeK === 'function' ? stadHomeK(h) : 1);   // własna, zadbana murawa
+  // sztab gracza: analityk taktyczny (każdy mecz) i asystent prowadzący drużynę podczas symulacji dni
+  if (typeof S !== 'undefined' && S && S.staff && typeof staffOvr === 'function') for (const sd of [m.home, m.away]) if (sd.t && sd.t.id === S.user && !sd.t.nation) { sd.cf *= 1 + (staffOvr('tac') - 50) * 0.0008; if (globalThis.ASSIST_ON) sd.cf *= 0.95 + staffOvr('ass') * 0.0008; }
   if (m.home.user || m.away.user) { const ah = avg(m.home.pitch.map(x => x.ov)), aa = avg(m.away.pitch.map(x => x.ov)), gap = Math.abs(ah - aa); if (gap > 4) (ah > aa ? m.away : m.home).cf *= 1 + Math.min(UND_MAX, (gap - 4) * UND_K); }   // słabszy mobilizuje się – mniej pogromów
   if (m.home.ai && !m.home.user) m.home.ment = d > 10 ? 'att' : d < -12 ? 'def' : 'bal';
   if (m.away.ai && !m.away.user) m.away.ment = d < -10 ? 'att' : d > 12 ? 'def' : 'bal';

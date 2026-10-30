@@ -194,7 +194,8 @@ function vHome() {
     ${nx && !nx.nt && nx.h.lg && nx.a.lg ? `<div class="row mut" style="font-size:12px;justify-content:space-between"><span>${heroInfo(nx.h)}</span><span>${heroInfo(nx.a)}</span></div>` : ''}
     ${(() => { const xi = ut.lineup.map(pget).filter(Boolean); if (!xi.length) return ''; const f = Math.round(avg(xi.map(p => p.fit))), bench = ut.players.filter(p => !ut.lineup.includes(p.id) && isAvail(p) && roleOf(p) === 'key' && p.fit >= 75 && p.ovr >= lineupAvg(ut) + 2); return `<div class="row" style="font-size:12px;margin-top:4px"><span class="${f < 70 ? 'bad' : f < 82 ? 'warn' : 'mut'}">🔋 Kondycja jedenastki: ${f}%${f < 70 ? ' – rozważ rotację' : ''}</span></div>${bench.length ? `<div class="row" style="font-size:12px"><span class="warn">⚠️ Kluczowy na ławce: ${bench.map(p => esc(lastName(p))).join(', ')}</span></div>` : ''}`; })()}
     <div class="btns">${today && nx.pre && S.pre && !S.pre.chosen ? `<button class="btn sp" disabled>☀️ Najpierw wybierz turniej poniżej</button>` : today ? `<button class="btn pri sp" data-act="prematch">⚽ Graj mecz</button><button class="btn" data-act="quicksim">⏩ Symuluj</button>` : `<button class="btn pri sp" data-act="cont">▶ Do meczu</button>`}</div>
-    <div class="btns simrow">${today ? '<small class="mut" style="width:100%;text-align:center">Dziś mecz – symulacja dni po rozegraniu</small>' : ''}<button class="btn sm" data-act="simdays" data-arg="1" ${today ? 'disabled' : ''}>+1 dzień</button><button class="btn sm" data-act="simdays" data-arg="3" ${today ? 'disabled' : ''}>+3 dni</button><button class="btn sm" data-act="simdays" data-arg="7" ${today ? 'disabled' : ''}>+7 dni</button><button class="btn sm" data-act="gocal">📅 Kalendarz</button></div>
+    <div class="btns simrow"><button class="btn sm" data-act="simdays" data-arg="1">+1 dzień</button><button class="btn sm" data-act="simdays" data-arg="3">+3 dni</button><button class="btn sm" data-act="simdays" data-arg="7">+7 dni</button><button class="btn sm" data-act="gocal">📅 Kalendarz</button></div>
+    <small class="mut" style="display:block;text-align:center">⏩ Przy symulacji dni drużynę prowadzi asystent (${esc(S.staff && S.staff.ass ? S.staff.ass.n : "asystent")}, OVR ${S.staff && S.staff.ass ? sOvr(S.staff.ass) : 50}) – gra mecze i podejmuje decyzje.</small>
   </div>
   ${windowBanner()}
   ${typeof homeCareerCards === 'function' ? homeCareerCards() : ''}
@@ -317,31 +318,47 @@ ACT.cont = async () => {
   } finally { running = false; busy(false); }
 };
 /* symulacja do wybranego dnia: zatrzymuje się na meczach, decyzjach, otwarciu okna i w Deadline Day */
+/* symulacja do wybranego dnia: drużynę prowadzi asystent (mecze, decyzje); zatrzymuje się dopiero w docelowym dniu */
 async function simTo(target) {
   if (running) return; running = true;
+  const log = [], ass = S.staff && S.staff.ass ? S.staff.ass.n : 'Asystent', d0 = todayMs();
+  let summary = null;
   try {
     if (S.sacked) return showSacked();
-    if (S.pending.length) return ACT.event(S.pending[0].uid);
-    busy(true, 'Symulacja…'); let stop = '';
+    busy(true, `${ass} prowadzi drużynę…`);
     for (let n = 0; n < 400; n++) {
+      if (S.pending.length) assistantResolveAll(log);
       if (S.day >= S.cal.length) break;
       if (curDay().date > target) { S.now = target; break; }
       S.now = null;
-      if (popPending()) { stop = 'pop'; break; }
-      if (userMatchToday()) { stop = 'match'; break; }
-      const r = processDay(null);
-      if (r.summary) { busy(false); await saveNow(); render(); return showSummary(r.summary); }
-      if (S.sacked) { busy(false); saveNow(); render(); return showSacked(); }
-      if (S.pending.length) { stop = 'ev'; if (curDay().date > target) S.now = target; break; }
-      busy(true, `Symulacja… ${fmtDate(curDay().date)}`);
+      const um = userMatchToday();
+      if (um && dKey(curDay().date) >= dKey(target)) break;   // mecz w docelowym dniu – zagrasz sam
+      if (S.ddPop === S.day) { S._ddShown = S.day + S.season * 1000; log.push({ k: 'i', t: '⏰ Deadline Day – ostatni dzień okna transferowego' }); }
+      if (S.winPop === S.day) { S._wpShown = S.day + S.season * 1000; log.push({ k: 'i', t: '🟢 Otwarto zimowe okno transferowe' }); }
+      const r = um ? assistantMatchDay(log) : processDay(null);
+      if (S.pending.length) assistantResolveAll(log);
+      if (r && r.summary) { summary = r.summary; break; }
+      if (S.sacked) break;
+      busy(true, `${ass} prowadzi drużynę… ${fmtDate(curDay().date)}`);
       await new Promise(r => setTimeout(r, 0));
     }
-    busy(false); saveSoon(); render();
-    if (S.pending.length) ACT.event(S.pending[0].uid);
-    else if (winPopups()) {}
-    else if (stop === 'match') { toast('⚽ Dzień meczowy'); ACT.prematch(); }
+    busy(false); await saveNow(); render();
+    if (log.length || summary) assistantReport(log, d0, summary);
+    else if (S.sacked) showSacked();
+    else if (userMatchToday() && atEntry()) { toast('⚽ Dzień meczowy'); ACT.prematch(); }
   } finally { running = false; busy(false); }
 }
+function assistantReport(log, d0, summary) {
+  const M = log.filter(x => x.k === 'm'), E = log.filter(x => x.k === 'ev'), I = log.filter(x => x.k === 'i'), ass = S.staff && S.staff.ass, o = ass ? sOvr(ass) : 50;
+  const w = M.filter(x => x.res === 'W').length, d = M.filter(x => x.res === 'D').length, l = M.filter(x => x.res === 'L').length;
+  UI._sumAfter = summary || null;
+  modal(`<h2>📋 Raport asystenta</h2><div class="row"><span class="ovr ${ovrCls(o)}">${o}</span><div class="sp"><b>${esc(ass ? ass.n : 'Asystent')}</b><br><small class="mut">${fmtDate(d0)} – ${fmtDate(todayMs())}</small></div></div>
+    ${M.length ? `<h3>⚽ Mecze (${w}Z ${d}R ${l}P)</h3><div class="list">${M.map(x => `<div class="prow"><span class="pill ${x.res === 'W' ? 'g' : x.res === 'L' ? 'r' : ''}">${x.res === 'W' ? 'Z' : x.res === 'L' ? 'P' : 'R'}</span><div class="pn">${esc(x.t)}<small>${esc(x.l)}${x.sc ? ' • ⚽ ' + esc(x.sc) : ''}</small></div></div>`).join('')}</div>` : ''}
+    ${E.length ? `<h3>📌 Decyzje asystenta (${E.length})</h3>${E.map(x => `<div class="card"><b>${esc(x.t)}</b><br><small>➜ ${esc(x.c)}</small><br><small class="mut">${esc(x.r || '')}</small>${x.fx.length ? `<div class="fxl">${x.fx.map(f => `<span class="pill">${esc(f)}</span>`).join(' ')}</div>` : ''}</div>`).join('')}` : ''}
+    ${I.map(x => `<p>${esc(x.t)}</p>`).join('')}
+    <div class="btns"><button class="btn pri full" data-act="asrepok">${summary ? 'Podsumowanie sezonu' : 'OK'}</button></div>`, true);
+}
+ACT.asrepok = () => { closeModal(); const s = UI._sumAfter; UI._sumAfter = null; if (s) return showSummary(s); if (S.sacked) return showSacked(); render(); if (userMatchToday() && atEntry()) ACT.prematch(); };
 ACT.simdays = n => simTo(todayMs() + +n * 864e5);
 ACT.simto = ms => { closeModal(); simTo(+ms); };
 ACT.gocal = () => { navPush(); UI.tab = 'comps'; UI.compTab = 'cal'; UI.calM = null; render(); };
@@ -885,7 +902,7 @@ ACT.calday = ms => {
   modal(`<h2>📅 ${fmtDate(ms)}</h2>${xs.map(x => `<div class="row">${badge(x.h, 'sm')}<b class="sp">${esc(x.h.name)} – ${esc(x.a.name)}</b>${badge(x.a, 'sm')}</div><small class="mut">${esc(x.label || '')} • ${isTbd(x) || x.a.id == null ? 'prognoza po losowaniu' : `prognoza: ${WX[matchWeather(x.h, x.d.date)][0]} ${WX[matchWeather(x.h, x.d.date)][1]}`}</small>`).join('')}
     ${notes.map(n => `<p>${n}</p>`).join('')}${!xs.length && !notes.length ? '<small class="mut">Brak wydarzeń w tym dniu.</small>' : ''}
     <div class="btns">${isToday ? '' : `<button class="btn pri sp" data-act="simto" data-arg="${ms}">⏩ Symuluj do tego dnia</button>`}<button class="btn" data-act="close">Zamknij</button></div>
-    <small class="mut">Symulacja zatrzyma się wcześniej przy Twoim meczu, ważnej decyzji, otwarciu okna i w Deadline Day.</small>`);
+    <small class="mut">Do tego dnia drużynę prowadzi asystent: sam gra mecze (wynik zależy od jego oceny OVR) i podejmuje decyzje. Dostaniesz raport.</small>`);
 };
 function vCal() {
   UI.calAll = UI.calAll || false;
@@ -1228,12 +1245,21 @@ function vacHtml() {
     ${A.filter(a => !V.some(v => v.c.id === a.club)).map(a => { const c = club(a.club); return c ? `<div class="prow">${badge(c, 'sm')}<div class="pn">${esc(c.name)}</div>${st(a)}</div>` : ''; }).join('')}</div>`;
 }
 ACT.applyjob = id => { const c = club(+id); if (!confirm(`Złożyć aplikację na stanowisko trenera ${c.name}?`)) return; const r = applyJob(+id); toast(r.msg, r.ok ? '' : 'bad'); saveSoon(); render(); };
+const sOvr = x => x.ovr != null ? x.ovr : clamp(Math.round((x.ab || 10) * 4.75), 1, 99);
+const STAFF_FX = {
+  ass: o => `rozwój kadry ${o >= 50 ? '+' : ''}${Math.round((0.8 + o / 250 - 1) * 100)}% • gdy prowadzi drużynę: siła ${o >= 63 ? '+' : ''}${((0.95 + o * 0.0008 - 1) * 100).toFixed(1)}%, trafność decyzji ${Math.round((0.25 + o / 100 * 0.7) * 100)}%`,
+  tac: o => `siła w meczach ${o >= 50 ? '+' : ''}${((o - 50) * 0.08).toFixed(1)}%`,
+  fit: o => { const r = Math.round((1.2 - o / 250 - 1) * 100); return `regeneracja ${o >= 50 ? '+' : ''}${Math.round((o - 50) * 0.012 / 2.7 * 100)}% • ryzyko kontuzji ${r > 0 ? '+' : ''}${r}%`; },
+  phy: o => `leczenie kontuzji ${o >= 50 ? '+' : ''}${Math.round((0.7 + o / 165 - 1) * 100)}%`,
+  gk: o => `rozwój bramkarzy ${o >= 50 ? '+' : ''}${Math.round((0.75 + o / 200 - 1) * 100)}%`,
+};
 function vStaff() {
-  initStaff(); const mk = staffMarket(), stars = ab => { const n = clamp(Math.round(ab / 4), 1, 5); return '★'.repeat(n) + '☆'.repeat(5 - n); };
-  return `<div class="card"><h2>🧑‍💼 Sztab szkoleniowy</h2><small class="mut">Koszt sztabu: ${money(staffCost())}/tydz. Zatrudnienie nowej osoby oznacza odprawę dla poprzednika (8 tygodniówek). Lista kandydatów odświeża się co kilka tygodni.</small></div>
-    ${Object.entries(STAFF_ROLES).map(([k, [n, d]]) => { const x = S.staff[k]; return `<div class="card"><div class="row"><b class="sp">${n}</b><span class="stars">${stars(x.ab)}</span></div>
-      <small>${esc(x.n)} • umiejętności <b>${x.ab}/20</b> • ${money(x.wage)}/tydz.</small><br><small class="mut">${d}</small>
-      <details><summary class="mut" style="margin-top:6px">Kandydaci (${mk[k].length})</summary>${mk[k].map((c, i) => `<div class="row" style="margin:6px 0"><span class="sp">${esc(c.n)}<br><small class="mut">${c.ab}/20 • ${money(c.wage)}/tydz.</small></span><span class="${c.ab > x.ab ? 'good' : 'bad'}">${c.ab > x.ab ? '▲' : '▼'}${Math.abs(c.ab - x.ab)}</span><button class="btn sm" data-act="hirestaff" data-arg="${k}:${i}">Zatrudnij</button></div>`).join('') || '<small class="mut">Brak kandydatów.</small>'}</details></div>`; }).join('')}`;
+  initStaff(); const mk = staffMarket();
+  const avgO = Math.round(avg(Object.keys(STAFF_ROLES).map(k => sOvr(S.staff[k]))));
+  return `<div class="card hl"><div class="row"><span class="ovr ${ovrCls(avgO)}" style="font-size:20px;height:38px;min-width:46px">${avgO}</span><div class="sp"><b>🧑‍💼 Sztab szkoleniowy</b><br><small class="mut">Średnia ocena sztabu • koszt ${money(staffCost())}/tydz.</small></div></div><small class="mut">Każdy członek sztabu ma ocenę 1–99 z realnym wpływem na drużynę. Zatrudnienie nowej osoby = odprawa dla poprzednika (8 tygodniówek). Kandydaci odświeżają się co kilka tygodni.</small></div>
+    ${Object.entries(STAFF_ROLES).map(([k, [n, d]]) => { const x = S.staff[k], o = sOvr(x); return `<div class="card"><div class="row"><span class="ovr ${ovrCls(o)}">${o}</span><b class="sp">${n}</b></div>
+      <small>${esc(x.n)} • ${money(x.wage)}/tydz.</small><br><small class="mut">${d}</small><br><small class="${o >= 50 ? 'good' : 'bad'}">Wpływ teraz: ${STAFF_FX[k](o)}</small>
+      <details><summary class="mut" style="margin-top:6px">Kandydaci (${mk[k].length})</summary>${mk[k].map((c, i) => { const co = sOvr(c); return `<div class="row" style="margin:6px 0"><span class="ovr ${ovrCls(co)}">${co}</span><span class="sp">${esc(c.n)}<br><small class="mut">${money(c.wage)}/tydz.</small></span><span class="${co > o ? 'good' : 'bad'}">${co > o ? '▲' : '▼'}${Math.abs(co - o)}</span><button class="btn sm" data-act="hirestaff" data-arg="${k}:${i}">Zatrudnij</button></div>`; }).join('') || '<small class="mut">Brak kandydatów.</small>'}</details></div>`; }).join('')}`;
 }
 ACT.hirestaff = a => { const [k, i] = a.split(':'); if (!confirm('Zatrudnić nową osobę do sztabu?')) return; const r = hireStaff(k, +i); toast(r.msg, r.ok ? 'ok' : 'bad'); render(); };
 function vAcad() {

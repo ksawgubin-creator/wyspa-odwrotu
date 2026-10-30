@@ -1508,7 +1508,7 @@ function eventsWeek(d) {
   squadDynamicsWeek();
   // kibice/prasa → zarząd, merchandising
   S.board.conf = clamp(S.board.conf + (S.fans - 55) / 220 + (S.press - 55) / 330, 0, 100);
-  const merch = Math.round(ut.spons * 0.12 * (S.fans / 60)); ut.bal += merch; ut.fin.inc += merch;
+  const merch = Math.round(ut.spons * 0.12 * (S.fans / 60) * (typeof merchK === 'function' ? merchK() : 1)); ut.bal += merch; ut.fin.inc += merch;
   S.press = clamp(S.press + (55 - S.press) * 0.03, 0, 100);
   if (S.winBonus && S.winBonus.until < now) S.winBonus = null;
   // obietnice (3 tygodnie, wymagane ≥55% minut)

@@ -1,7 +1,7 @@
 // Kopiuje pliki gry do katalogu www/ (źródło dla Capacitora).
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..'), out = path.join(root, 'www');
-const files = ['index.html', 'style.css', 'data.js', 'engine.js', 'world.js', 'events.js', 'uikit.js', 'uikit.css', 'ui.js', 'manifest.webmanifest', 'sw.js'];
+const files = ['index.html', 'style.css', 'data.js', 'engine.js', 'world.js', 'events.js', 'career.js', 'uikit.js', 'uikit.css', 'ui.js', 'careerui.js', 'manifest.webmanifest', 'sw.js'];
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(path.join(out, 'icons'), { recursive: true });
 for (const f of files) fs.copyFileSync(path.join(root, f), path.join(out, f));

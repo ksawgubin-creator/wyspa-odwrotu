@@ -431,3 +431,10 @@ h3{color:#8ea3c7;font-weight:800}
 .ddcard{background:linear-gradient(135deg,#7a1020,#c2384b)!important;color:#fff;animation:ddp 1.6s ease-in-out infinite}
 @keyframes ddp{50%{box-shadow:0 0 18px #ff546888}}
 .ddhead{font-size:26px;font-weight:900;text-align:center;padding:10px;border-radius:12px;background:linear-gradient(135deg,#7a1020,#ff5468);color:#fff;letter-spacing:1px;margin-bottom:8px}
+
+/* statystyki zawodników */
+.mst{font-size:12px;margin:8px 0}
+.mst-h,.mst-r{display:grid;grid-template-columns:2.6fr .7fr .9fr .8fr .8fr .9fr .8fr 1fr;gap:2px;align-items:center;padding:5px 2px;border-bottom:1px solid var(--line)}
+.mst-h{color:var(--mut,#9fb0cf);font-weight:700;font-size:10px}
+.mst-r span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mst-r{cursor:pointer}

@@ -362,7 +362,7 @@ function doShot(m, A, D) {
   // wysoka linia rywala + szybcy napastnicy = sam na sam; kontra (szybkie tempo z niskiego bloku) na rywala grającego wysoko/ofensywnie
   const counter = at.tempo > 0 && at.line < 0 ? 1 + 0.07 * ((dt.line || 0) > 0) + 0.06 * (D.ment === 'att') : 1;
   const pg = penalty ? 0.76 + (shooter.p.a[1] - 70) / 400 : clamp(FIN_K * Math.pow(q, FIN_EXP), 0.02, 0.45) * (m.wxG || 1) * (kind === 'fk' ? 0.75 : kind === 'head' ? 0.85 * (1 + 0.1 * (at.width || 0)) : 1) * (kind ? 1 : (1 - 0.08 * (at.tempo || 0)) * (1 + 0.08 * (dt.line || 0) * clamp((A.pace || 60) / 65, 0.7, 1.4)) * counter);
-  A.shots++; { const x = Math.min(0.95, pg); A.xg = (A.xg || 0) + x; const r = A.rec[shooter.p.id]; if (r) r.xg = (r.xg || 0) + x; }
+  A.shots++; { const x = Math.min(0.95, pg); A.xg = (A.xg || 0) + x; const r = A.rec[shooter.p.id]; if (r) { r.xg = (r.xg || 0) + x; r.sh = (r.sh || 0) + 1; } }
   const pmW = x => A.pm != null && x.slot === A.pm ? 2.5 : 1;
   { const kc = c.filter(x => x !== shooter); if (kc.length && !penalty) { const k = wpick(kc, x => (LINE[x.pos] === 'MID' ? 2 : LINE[x.pos] === 'ATT' ? 1.5 : 0.6) * Math.pow(x.p.a[2] / 60, 2) * pmW(x)); const r = A.rec[k.p.id]; if (r) r.kp = (r.kp || 0) + 1; } }
   if (penalty) ev(m, 'info', A, `Rzut karny! Wykonuje ${shortName(shooter.p)} (${A.t.name})...`);
@@ -506,7 +506,7 @@ function finishMatch(m) {
       p.mor = clamp(p.mor + (gd > 0 ? 3 : gd < 0 ? -3 : 0) + (r.rating >= 7.5 ? 2 : r.rating <= 5.5 ? -2 : 0), 0, 100);
       if (club) {
         p.shp = clamp(p.shp + mins / 90 * 16, 0, 100);
-        const st = p.st; st.apps++; st.g += r.g; st.a += r.a; st.rs += r.rating; st.mins += mins; if (r.y) st.y++; if (r.r) st.r++;
+        const st = p.st; st.apps++; st.g += r.g; st.a += r.a; st.rs += r.rating; st.mins += mins; if (r.y) st.y++; if (r.r) st.r++; if (opp.goals === 0 && mins >= 60 && (LINE[r.pos] === 'GK' || LINE[r.pos] === 'DEF')) st.cs = (st.cs || 0) + 1; st.xg = (st.xg || 0) + (r.xg || 0);
         if (m.comp === 'L') p.lg += r.g; else p.eg += r.g;
         p.car.apps++; p.car.g += r.g; p.car.a += r.a;
       } else if (m.comp === 'P') p.shp = clamp(p.shp + mins / 90 * 22, 0, 100);

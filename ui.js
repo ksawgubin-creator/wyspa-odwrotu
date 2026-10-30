@@ -197,6 +197,7 @@ function vHome() {
     <div class="btns simrow">${today ? '<small class="mut" style="width:100%;text-align:center">Dziś mecz – symulacja dni po rozegraniu</small>' : ''}<button class="btn sm" data-act="simdays" data-arg="1" ${today ? 'disabled' : ''}>+1 dzień</button><button class="btn sm" data-act="simdays" data-arg="3" ${today ? 'disabled' : ''}>+3 dni</button><button class="btn sm" data-act="simdays" data-arg="7" ${today ? 'disabled' : ''}>+7 dni</button><button class="btn sm" data-act="gocal">📅 Kalendarz</button></div>
   </div>
   ${windowBanner()}
+  ${typeof homeCareerCards === 'function' ? homeCareerCards() : ''}
   ${S.pre && !S.pre.chosen && S.pre.season === S.season && S.cal[S.day] && S.cal[S.day].t === 'P' ? preCard() : ''}
   ${upcomingStrip(nx)}
   ${S.intake && S.intake.length && (!S.intakeDay || absDay() - S.intakeDay < 45) ? `<div class="card hl" data-act="intake"><div class="row"><span style="font-size:22px">🎓</span><b class="sp">Dzień naboru do akademii!</b><small>Poznaj juniorów ›</small></div></div>` : ''}
@@ -519,7 +520,7 @@ ACT.info = id => {
   let act = '';
   if (mine) {
     act = `<div class="btns"><button class="btn sm pri" data-act="chat" data-arg="${p.id}">💬 Porozmawiaj</button></div>
-      ${p.loan ? `<p class="mut">Wypożyczony z ${esc(club(p.loan.from).name)} do końca sezonu.</p><div class="btns"><button class="btn sm red" data-act="release" data-arg="${p.id}">Zakończ wypożyczenie</button></div>` : `
+      ${p.loan ? `<p class="mut">Wypożyczony z ${esc(club(p.loan.from).name)} do końca sezonu.${p.loan.buy ? (p.loan.buy.obl ? ` Obowiązkowy wykup po sezonie: <b>${money(p.loan.buy.price)}</b>.` : ` Opcja wykupu: <b>${money(p.loan.buy.price)}</b>.`) : ''}</p>${p.loan.buy && !p.loan.buy.obl ? `<div class="btns"><button class="btn sm pri full" data-act="exbuy" data-arg="${p.id}">✅ Wykup teraz (${money(p.loan.buy.price)})</button></div>` : ''}<div class="btns"><button class="btn sm red" data-act="release" data-arg="${p.id}">Zakończ wypożyczenie</button></div>` : `
       <h3>Kontrakt (${plural(p.con, 'rok', 'lata', 'lat')}) • rola: ${ROLES[roleOf(p)][0]}</h3>
       <div class="btns"><button class="btn sm pri" data-act="rennego" data-arg="${p.id}">📝 Negocjuj nowy kontrakt</button></div>
       <div class="kv"><div><span>Rola w składzie</span><select data-change="setrole" data-pid="${p.id}">${ROLE_ORD.slice().reverse().filter(r => r !== 'pros' || p.age <= 21).map(r => `<option value="${r}" ${roleOf(p) === r ? 'selected' : ''}>${ROLES[r][0]}</option>`).join('')}</select></div></div>
@@ -530,10 +531,12 @@ ACT.info = id => {
   } else if (p.tid !== -2) {
     const pi = playerInterest(p);
     act = `<div class="row" style="margin-top:6px"><span class="sp mut">Zainteresowanie transferem</span><b class="${pi.ok ? 'good' : 'bad'}">${pi.ok ? '👍 otwarty na rozmowy' : '👎 nie chce'}</b></div>${pi.ok ? '' : `<small class="mut">${esc(pi.msg)}</small>`}<div class="btns">
-      ${p.tid === -1 ? `<button class="btn pri sp" data-act="nego" data-arg="${p.id}">✍️ Podpisz (wolny)</button>` : `<button class="btn pri sp" data-act="nego" data-arg="${p.id}">💰 Złóż ofertę</button><button class="btn" data-act="loanin" data-arg="${p.id}">Wypożycz</button>`}${canPre(p) ? `<button class="btn full" data-act="prenego" data-arg="${p.id}">📝 Prekontrakt – za darmo od lata</button>` : p.preTo && p.preTo.club === S.user ? '<span class="pill">📝 Prekontrakt podpisany – dołączy latem</span>' : ''}
+      ${p.tid === -1 ? `<button class="btn pri sp" data-act="nego" data-arg="${p.id}">✍️ Podpisz (wolny)</button>` : `<button class="btn pri sp" data-act="nego" data-arg="${p.id}">💰 Złóż ofertę</button><button class="btn" data-act="loanopts" data-arg="${p.id}">Wypożycz</button>`}${canPre(p) ? `<button class="btn full" data-act="prenego" data-arg="${p.id}">📝 Prekontrakt – za darmo od lata</button>` : p.preTo && p.preTo.club === S.user ? '<span class="pill">📝 Prekontrakt podpisany – dołączy latem</span>' : ''}
       <button class="btn" data-act="short" data-arg="${p.id}">${S.short.includes(p.id) ? '★ Obserwowany' : '☆ Obserwuj'}</button></div>
       ${k < 100 ? `<div class="btns"><button class="btn sm full" data-act="scoutp" data-arg="${p.id}">🔍 Wyślij skauta (wiedza ${k}%)</button></div>` : ''}`;
   }
+  if (!mine && p.bb && p.bb.club === S.user && p.bb.until >= S.season) act += `<div class="btns"><button class="btn sm pri full" data-act="buyback" data-arg="${p.id}">🔁 Odkup (klauzula): ${money(p.bb.price)}</button></div>`;
+  if (mine) act += objHtml(p);
   if (S.nt && p.nat === S.nt && p.tid !== -1) {
     const sq = S.ntTeams[S.nt].sq;
     act += `<div class="btns"><button class="btn sm full" data-act="callup" data-arg="${p.id}">${sq.includes(p.id) ? '✔ Powołany – usuń z kadry' : `${flag(S.nt)} Powołaj do reprezentacji`}</button></div>`;
@@ -607,7 +610,7 @@ ACT.loanout = id => {
   const p = pget(+id); if (!windowOpen()) return toast('Okno transferowe jest zamknięte.', 'bad');
   const L = loanCandidates(p); if (!L.length) return toast('Brak chętnych klubów.', 'bad');
   modal(`<h2>🔁 Wypożyczenie: ${esc(p.n)}</h2><small class="mut">Wybierz klub. „Szansa gry” to szacowany udział w meczach – im więcej gra, tym szybciej się rozwija.</small>
-    ${L.map(x => `<div class="prow" data-act="loanto" data-arg="${p.id}:${x.c.id}">${badge(x.c, 'sm')}<div class="pn">${esc(x.c.name)}<small>${S.countries[x.c.cc].flag} ${esc(S.leagues[x.c.lg].name)} • średnia kadry ${Math.round(teamLevel(x.c))}</small></div><span class="pill ${x.play >= 60 ? 'g' : ''}">gra ~${x.play}%</span></div>`).join('')}
+    ${L.map(x => `<div class="prow" data-act="loanto" data-arg="${p.id}:${x.c.id}">${badge(x.c, 'sm')}<div class="pn">${x.aff ? '🤝 ' : ''}${esc(x.c.name)}<small>${S.countries[x.c.cc].flag} ${esc(S.leagues[x.c.lg].name)} • średnia kadry ${Math.round(teamLevel(x.c))}</small></div><span class="pill ${x.play >= 60 ? 'g' : ''}">gra ~${x.play}%</span></div>`).join('')}
     <div class="btns"><button class="btn full" data-act="info" data-arg="${p.id}">Wróć</button></div>`);
 };
 ACT.loanto = a => { const [pid, cid] = a.split(':').map(Number); const r = loanOut(pid, cid); toast(r.msg, r.ok ? 'ok' : 'bad'); if (r.ok) closeModal(); render(); };
@@ -670,6 +673,7 @@ function renderNego(note) {
       <div class="stepper"><button class="btn" data-act="fee" data-arg="-1">−</button><b>${money(NEG.fee)}</b><button class="btn" data-act="fee" data-arg="1">+</button></div>
       <div class="numrow"><span>Wpisz kwotę (€):</span><input class="numin" type="number" inputmode="numeric" min="0" step="10000" value="${NEG.fee}" data-change="negfeenum"></div>
       ${(() => { const a = askPrice(p), lo = Math.round(a * 0.5), hi = Math.round(Math.max(a * 1.6, releaseClause(p) || 0)), pc = v => clamp((v - lo) / (hi - lo) * 100, 0, 100); return `<div class="slider"><input type="range" min="${lo}" max="${hi}" step="${feeStep(a)}" value="${clamp(NEG.fee, lo, hi)}" data-change="negfee"><div class="marks"><i style="left:${pc(p.val)}%" title="wartość"></i><i class="b" style="left:${pc(ut.tb)}%"></i></div><small class="mut">▮ wartość ${money(p.val)} • <span class="warn">▮</span> budżet ${money(ut.tb)} • cierpliwość klubu: ${p._noTalk > absDay() ? 'rozmowy zerwane' : '●'.repeat(Math.max(0, Math.floor(4 - (p._bids || 0)))) + '○'.repeat(Math.min(4, Math.ceil(p._bids || 0)))}<br>Oferta poniżej 70–80% ceny mocniej nadwyręża cierpliwość klubu.</small></div>`; })()}
+      ${swapHtml(p, c)}
       <div class="seg"><button class="btn sm ${NEG.inst ? 'on' : ''}" data-act="neginst">💳 Raty</button><button class="btn sm ${NEG.sellOn ? 'on' : ''}" data-act="negsellon">🔁 Klauzula odsprzedaży 15%</button>${releaseClause(p) ? `<button class="btn sm" data-act="negrc">📜 Klauzula</button>` : ''}</div>
       <small class="mut">${NEG.inst ? `Raty: teraz ${money(upfront(NEG.fee, NEG))}, potem 2 × ${money(Math.round((Math.round(NEG.fee * INST_K) - upfront(NEG.fee, NEG)) / 2))} na koniec kolejnych sezonów (łącznie +10%).` : 'Płatność jednorazowa.'}${NEG.sellOn ? ' Odsprzedaż: klub sprzedający obniża cenę o ok. 10%, ale dostanie 15% z przyszłej sprzedaży.' : ''}</small>
       ${note ? `<p class="${note.cls}">${esc(note.t)}</p>` : ''}
@@ -709,6 +713,7 @@ function renderRen(note) {
     <h3>Pensja tygodniowa</h3><div class="stepper"><button class="btn" data-act="renwage" data-arg="-1">−</button><b>${REN.wage.toLocaleString("pl-PL")} €</b><button class="btn" data-act="renwage" data-arg="1">+</button></div>
     <div class="numrow"><span>Wpisz pensję (€/tydz.):</span><input class="numin" type="number" inputmode="numeric" min="0" step="100" value="${REN.wage}" data-change="renwagenum"></div>
     <small class="mut">Agent sugeruje ok. ${money(dem)}/tydz.</small>
+    ${rclHtml(p)}
     ${extrasHtml(REN, agentDemand(p, 0, dem, true), bonusDemand(dem, REN.years), 'ren')}
     ${note ? `<p class="${note.cls}">${esc(note.t)}</p>` : ''}
     <div class="btns"><button class="btn pri sp" data-act="rensend">Zaproponuj</button>${REN.counter ? `<button class="btn" data-act="renacc">Zgoda na ${money(REN.counter)}</button>` : ''}</div>
@@ -1116,7 +1121,7 @@ function vOffers() {
   return S.offers.map(o => { const p = pget(o.pid), b = club(o.from); if (!p) return ''; return `<div class="card"><div class="row">${posTag(p.pos)}<b class="sp">${esc(p.n)}</b>${ovrTag(p.ovr)}</div>
     <div class="row" style="margin:8px 0">${badge(b, 'sm')}<span>${esc(b.name)} ${S.countries[b.cc].flag} oferuje <b class="good">${money(o.amount)}</b></span></div>
     <small class="mut">Wartość: ${money(p.val)} • morale zawodnika: ${moraleLabel(p.mor).join(' ')}</small>
-    <div class="btns"><button class="btn pri sp" data-act="accept" data-arg="${o.id}">Akceptuj</button><button class="btn" data-act="ctroffer" data-arg="${o.id}">💬 Negocjuj</button><button class="btn" data-act="decline" data-arg="${o.id}">Odrzuć</button></div></div>`; }).join('') || `<div class="card">${empty('📭', 'Brak ofert za Twoich zawodników', 'Wystaw zawodnika na sprzedaż w jego karcie – oferty przychodzą w oknie transferowym.')}</div>`;
+    <div class="btns"><button class="btn pri sp" data-act="accept" data-arg="${o.id}">Akceptuj</button><button class="btn" data-act="ctroffer" data-arg="${o.id}">💬 Negocjuj</button><button class="btn" data-act="decline" data-arg="${o.id}">Odrzuć</button></div><div class="btns"><button class="btn sm full" data-act="acceptbb" data-arg="${o.id}">🔁 Sprzedaj z klauzulą odkupu (−10%, odkup za ${money(Math.round(o.amount * 0.9 * 1.6 / 1e4) * 1e4)} przez 2 sezony)</button></div></div>`; }).join('') || `<div class="card">${empty('📭', 'Brak ofert za Twoich zawodników', 'Wystaw zawodnika na sprzedaż w jego karcie – oferty przychodzą w oknie transferowym.')}</div>`;
 }
 ACT.ctroffer = id => { const o = S.offers.find(x => x.id === +id); if (!o) return; const p = pget(o.pid); CTR = { id: o.id, ask: o.agreed ? o.amount : Math.round(Math.max(o.amount * 1.2, p.val) / 1e4) * 1e4 }; renderCtr(o.agreed ? { cls: 'good', t: `Uzgodniono ${money(o.amount)} – wystarczy potwierdzić sprzedaż.` } : undefined); };
 let CTR = null;
@@ -1142,9 +1147,9 @@ function vNews() { const k = UI.nwf || 'all', L = S.news.filter(n => NEWS_F[k][1
 
 /* ---------- KLUB ---------- */
 function vClub() {
-  if (!['mgr', 'troph', 'nt', 'game'].includes(UI.clubTab)) UI.clubTab = 'mgr';
-  const head = tabs([['mgr', 'Trener'], ['troph', 'Gablota'], ['nt', 'Reprezentacja'], ['game', 'Gra']], UI.clubTab, 'cltab');
-  return head + ({ mgr: vMgr, troph: vTroph, nt: vNTManage, game: vGame })[UI.clubTab]();
+  if (!['mgr', 'board', 'troph', 'nt', 'game'].includes(UI.clubTab)) UI.clubTab = 'mgr';
+  const head = tabs([['mgr', 'Trener'], ['board', 'Zarząd'], ['troph', 'Gablota'], ['nt', 'Reprezentacja'], ['game', 'Gra']], UI.clubTab, 'cltab');
+  return head + ({ mgr: vMgr, board: vBoard, troph: vTroph, nt: vNTManage, game: vGame })[UI.clubTab]();
 }
 function vOffice() {
   if (!['fin', 'staff', 'rank'].includes(UI.offTab)) UI.offTab = 'fin';
@@ -1539,6 +1544,7 @@ ACT.subout = id => { subOut = uside().pitch.find(x => x.p.id === +id).p; renderS
 ACT.subin = id => { const s = uside(); if (!subOut) return toast('Najpierw wybierz zawodnika schodzącego.'); if (s.subs >= MAX_SUBS) return toast('Wykorzystano wszystkie zmiany.'); const ip = pget(+id), op = outPos(); if ((ip.pos === 'GK') !== (op === 'GK') && !confirm(`${ip.pos === 'GK' ? 'Bramkarz w polu' : 'Zawodnik z pola na bramce'} – OVR na tej pozycji: ${ovrAt(ip, op)}. Na pewno?`)) return; substitute(M, s, subOut, ip); subOut = null; upd(); mctl(); renderSubs(); };
 ACT.matchdone = () => showResult();
 const rateCol = r => r >= 8 ? '#1db36b' : r >= 7 ? '#5cc46b' : r >= 6.3 ? '#b6b33a' : r >= 5.5 ? '#d98a2b' : '#d9473b';
+let LASTM = null;
 function showResult() {
   document.querySelectorAll(".uk-goal").forEach(e => e.remove());
   if (typeof toastClear === 'function') toastClear();
@@ -1557,7 +1563,8 @@ function showResult() {
     ${(() => { PPC = MX.nt ? null : postMatchPress(M, MX.user); return PPC ? `<div class="card" id="ppc" style="margin:8px 0"><div class="evcat">🎤 Konferencja po meczu</div><b>${esc(PPC.q)}</b><div class="choices">${PPC.a.map((x, i) => `<button class="btn full sm" data-act="ppans" data-arg="${i}">${esc(x[0])}</button>`).join('')}</div></div>` : ''; })()}
     <div class="row"><span>⭐ Zawodnik meczu:</span><b class="sp">${esc(M.motm.p.n)} <small class="mut">(${esc((M.motm.p.tid === H.t.id || H.rec[M.motm.p.id] ? H : A).t.short)})</small></b><span class="ovr o1">${M.motm.rating.toFixed(1)}</span></div>
     <h3>Oceny</h3>${recs.map(r => `<div class="rt"><span>${posTag(r.pos)} ${esc(shortName(r.p))} ${r.g ? '⚽'.repeat(r.g) : ''}${r.a ? '🅰️'.repeat(r.a) : ''}${r.y && !r.r ? '🟨' : ''}${r.r ? '🟥' : ''}</span><span class="rchip" style="background:${rateCol(r.rating)}">${r.rating.toFixed(1)}</span></div>`).join('')}
-    <div class="btns"><button class="btn pri full" data-act="finishday">Dalej</button></div>`, true);
+    <div class="btns"><button class="btn sm full" data-act="mstats">📊 Statystyki zawodników i heatmapy</button></div>
+    <div class="btns"><button class="btn pri full" data-act="finishday">Dalej</button></div>`, true); LASTM = { m: M, user: MX.user };
 }
 function xgNote(H, A) {
   const me = MX.user === 'h' ? H : A, op = me === H ? A : H, d = me.goals - (me.xg || 0), o = op.goals - (op.xg || 0);

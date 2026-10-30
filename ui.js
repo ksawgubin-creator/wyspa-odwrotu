@@ -16,7 +16,7 @@ function badge(t, cls = '') { if (typeof crestSVG === 'function') return crestSV
 const ntObj = code => ({ short: code, col: ncol(code), name: NAT[code].name });
 const ovrCls = o => o >= 85 ? 'o0' : o >= 75 ? 'o1' : o >= 65 ? 'o2' : o >= 55 ? 'o3' : o >= 47 ? 'o4' : 'o5';
 const ovrTag = o => `<span class="ovr ${ovrCls(o)}">${o}</span>`;
-function ovrShow(p, pot) { const r = ovrRange(p, pot); if (pot && know(p) < 30) return '<span class="ovr unk">?</span>'; return r[0] === r[1] ? ovrTag(r[0]) : `<span class="ovr unk">${r[0]}–${r[1]}</span>`; }
+function ovrShow(p, pot) { const r = ovrRange(p, pot); if (pot && !potKnown(p)) return '<span class="ovr unk">?</span>'; return r[0] === r[1] ? ovrTag(r[0]) : `<span class="ovr unk">${r[0]}–${r[1]}</span>`; }
 const posTag = p => `<span class="pos ${LINE[p]}">${POS_PL[p]}</span>`;
 const flag = code => NAT[code] ? NAT[code].flag : '🏳️';
 const stars = c => presStars(c);
@@ -524,7 +524,7 @@ const ATTR_HELP = { TEM: 'Tempo – szybkość i przyspieszenie', STR: 'Strzały
   RZU: 'Rzuty – parady i interwencje w powietrzu', CHW: 'Chwytanie – pewność łapania piłki', WYK: 'Wykopy – wznowienia i gra nogami', REF: 'Refleks – reakcja na strzały z bliska', SZY: 'Szybkość – wyjścia z bramki i sprint', UST: 'Ustawianie – czytanie gry i pozycja w bramce' };
 ACT.rushback = id => { const p = pget(+id); if (!confirm(`Przyspieszyć powrót ${p.n}? Zawodnik będzie gotowy do gry, ale przez 3 tygodnie ryzyko urazu jest trzykrotnie wyższe.`)) return; p.inj = 0; p.fit = Math.min(p.fit, 72); p._rushed = absDay() + 21; saveSoon(); toast(`${p.n} wraca do treningów.`, 'ok'); ACT.info(id); render(); };
 ACT.attrhelp = k => toast(ATTR_HELP[k] || k);
-const potTxt = p => { if (know(p) < 30) return '?'; const r = ovrRange(p, true); return r[0] === r[1] ? r[0] : r[0] + '–' + r[1]; };
+const potTxt = p => { if (!potKnown(p)) return '?'; const r = ovrRange(p, true); return r[0] === r[1] ? r[0] : r[0] + '–' + r[1]; };
 ACT.info = id => {
   const p = pget(+id); if (!p) return;
   const mine = p.tid === S.user, k = know(p), c = clubOf(p);
@@ -565,7 +565,7 @@ ACT.info = id => {
   const kv = rows => `<div class="kv">${rows.filter(Boolean).map(([l, v]) => `<div><span>${l}</span><b>${v}</b></div>`).join('')}</div>`;
   const body = {
     ov: () => `${p.inj ? `<div class="card" style="margin:6px 0;border-color:var(--bad)"><b>🚑 ${esc(p.injT || 'Kontuzja')}</b><br><small class="mut">Fizjoterapeuta szacuje powrót za ok. ${Math.ceil(p.inj / 7)} tyg. (${plural(Math.ceil(p.inj), "dzień", "dni", "dni")}).${p.injN > 1 ? ` To już ${p.injN}. uraz tego zawodnika.` : ''}</small>${mine && p.inj <= 14 ? `<div class="btns"><button class="btn sm red" data-act="rushback" data-arg="${p.id}">⚡ Przyspiesz powrót (duże ryzyko nawrotu)</button></div>` : ''}</div>` : ''}${p._rushed > absDay() ? '<small class="warn">⚠️ Po przyspieszonym powrocie – podwyższone ryzyko urazu przez 3 tygodnie.</small><br>' : ''}${stTag(p)}${own ? `<small class="mut">Charakter: <b>${pers(p)}</b> – ${PERS_DESC[pers(p)]}</small><div class="fxl">${Object.entries(TRAITS).map(([k, n]) => `<span class="pill">${n}: ${traitWord(traits(p)[k], TRAIT_FEM[k])}</span>`).join(' ')}</div>` : `<small class="mut">Charakter: ? (poznasz go po transferze)</small>`}
-      ${kv([['Wiek', p.age], ['Potencjał', `<span class="potv">${potTxt(p)}</span>${know(p) >= 30 && p.pot > p.ovr ? ` <small class="good">(+${Math.max(0, Math.round((ovrRange(p, true)[0] + ovrRange(p, true)[1]) / 2) - Math.round((r[0] + r[1]) / 2))})</small>` : ''}`], ['Kondycja', Math.round(p.fit) + '%'], ['Morale', moraleLabel(p.mor).join(' ')], ['Forma', formLabel(p.form)], ['Rytm meczowy', Math.round(p.shp) + '%'], ['Wartość', money(p.val)], ['Status', playerStatus(p)],
+      ${kv([['Wiek', p.age], ['Potencjał', `<span class="potv">${potTxt(p)}</span>${!potKnown(p) ? ' <small class="mut">(wyślij skauta)</small>' : ''}${potKnown(p) && potTrend(p) ? ` <small class="${potTrend(p).t > 0 ? 'good' : potTrend(p).t < 0 ? 'bad' : 'mut'}">${potTrend(p).t > 0 ? '↗ rośnie' : potTrend(p).t < 0 ? '↘ spada' : '→'}</small>` : ''}${potKnown(p) && p.pot > p.ovr ? ` <small class="good">(+${Math.max(0, Math.round((ovrRange(p, true)[0] + ovrRange(p, true)[1]) / 2) - Math.round((r[0] + r[1]) / 2))})</small>` : ''}`], ['Kondycja', Math.round(p.fit) + '%'], ['Morale', moraleLabel(p.mor).join(' ')], ['Forma', formLabel(p.form)], ['Rytm meczowy', Math.round(p.shp) + '%'], ['Wartość', money(p.val)], ['Status', playerStatus(p)],
         !mine && releaseClause(p) ? ['Klauzula odstępnego', money(releaseClause(p))] : null])}
       ${known && typeof radarSVG === 'function' ? `<div style="text-align:center;margin-top:6px">${radarSVG(at, names, { size: 180 })}</div>` : ''}
       <small class="mut">${p.pos === 'GK' ? 'RZU – rzuty (parady), CHW – chwytanie, WYK – wykopy, REF – refleks, SZY – szybkość, UST – ustawianie' : 'TEM – tempo, STR – strzały, POD – podania, DRY – drybling, OBR – obrona, FIZ – fizyczność'}</small><br>
@@ -1033,8 +1033,8 @@ function searchList() {
   const mid = r => (r[0] + r[1]) / 2;
   if (f.ovr) list = list.filter(p => mid(ovrRange(p)) >= f.ovr);
   if (f.ovrMax) list = list.filter(p => mid(ovrRange(p)) <= f.ovrMax);
-  if (f.potMin) list = list.filter(p => know(p) >= 30 && mid(ovrRange(p, true)) >= f.potMin);
-  if (f.potMax) list = list.filter(p => know(p) >= 30 && mid(ovrRange(p, true)) <= f.potMax);
+  if (f.potMin) list = list.filter(p => potKnown(p) && mid(ovrRange(p, true)) >= f.potMin);
+  if (f.potMax) list = list.filter(p => potKnown(p) && mid(ovrRange(p, true)) <= f.potMax);
   if (f.ageMin) list = list.filter(p => p.age >= f.ageMin);
   if (f.q) { const q = f.q.toLowerCase(); list = list.filter(p => p.n.toLowerCase().includes(q)); }
   if (f.real) list = list.filter(p => p.tid !== -2 && ['g', 'warn'].includes(dealState(p)[0]) && dealState(p)[1] !== 'nie na sprzedaż');
@@ -1058,8 +1058,8 @@ function vSearch() {
   const mid = r => (r[0] + r[1]) / 2, need = squadNeeds();
   const ut = userClub(), best = {}; for (const q of ut.players) for (const ps of [q.pos, ...(q.alt || [])]) best[ps] = Math.max(best[ps] || 0, ps === q.pos ? q.ovr : q.ovr - 3);
   // ocena dopasowania: poziom + potencjał + realne wzmocnienie pozycji (rezerwowy bramkarz to mniejsza potrzeba)
-  const fitK = p => { const o = ovrEst(p), pt = know(p) >= 30 ? mid(ovrRange(p, true)) : o; return o + Math.max(0, pt - o) * 0.35 - Math.max(0, p.age - 29) * 2.5 + (need[p.pos] || 0) * (p.pos === 'GK' ? 1 : 3) + clamp(o - (best[p.pos] || 0), -6, 8) * 0.8; };
-  const key = f.sort === 'pot' ? (p => know(p) >= 30 ? mid(ovrRange(p, true)) : 0) : f.sort === 'val' ? (p => p.val) : f.sort === 'age' ? (p => -p.age) : f.sort === 'ovr' ? ovrEst : fitK;
+  const fitK = p => { const o = ovrEst(p), pt = potKnown(p) ? mid(ovrRange(p, true)) : o; return o + Math.max(0, pt - o) * 0.35 - Math.max(0, p.age - 29) * 2.5 + (need[p.pos] || 0) * (p.pos === 'GK' ? 1 : 3) + clamp(o - (best[p.pos] || 0), -6, 8) * 0.8; };
+  const key = f.sort === 'pot' ? (p => potKnown(p) ? mid(ovrRange(p, true)) : 0) : f.sort === 'val' ? (p => p.val) : f.sort === 'age' ? (p => -p.age) : f.sort === 'ovr' ? ovrEst : fitK;
   list.sort((a, b) => key(b) - key(a));
   const act = ['cc', 'pos', 'ageMin', 'age', 'ovr', 'ovrMax', 'potMin', 'potMax', 'priceMin', 'price'].filter(k => f[k]);
   return `<div class="flt"><input placeholder="Szukaj nazwiska…" value="${esc(f.q)}" data-change="fq" style="flex:1 1 55%;min-width:0"><button class="btn sm pri" data-act="fsheet">⚙ Filtry${act.length + (f.real ? 1 : 0) ? ` (${act.length + (f.real ? 1 : 0)})` : ''}</button></div>

@@ -1011,6 +1011,8 @@ function baseKnow(p) {
   return k;
 }
 const know = p => Math.max(S.know[p.id] || 0, baseKnow(p));
+/* potencjał widać tylko u własnych zawodników, w akademii i po raporcie skauta */
+const potKnown = p => p.tid === S.user || p.tid === -3 || (S.know[p.id] || 0) >= 50 || (p.loan && p.loan.from === S.user);
 function ovrRange(p, potential) {
   const k = know(p), v = potential ? p.pot : p.ovr;
   if (k >= 95) return [v, v];
@@ -2070,15 +2072,10 @@ function endSeason() {
     if (p.loan && p.loan.season === S.season && p.loan.buy && p.loan.buy.obl && c === ut && typeof exerciseBuy === 'function') { exerciseBuy(p.id, true); continue; }
     if (p.loan && p.loan.season === S.season) { const from = club(p.loan.from); detach(p); attach(p, from); if (from === ut) back.push(p.n); else if (c === ut) back.push(p.n); p.loan = null; }
   }
+  const maxMins = {}; for (const c of S.clubs) maxMins[c.id] = Math.max(1, ...c.players.map(p => (p.st && p.st.mins) || 0));
   for (const c of S.clubs) {
     for (const p of c.players.slice()) {
-      if (p.age <= 24 && p.pot > 0) {
-        let d = (p.pt - 0.6) * 3 + (traits(p).pro - 10.5) * 0.2 + gauss() * 1.4 + (p.loan && p.tid !== p.loan.from ? 1 : 0);
-        if (d > 0) d *= clamp((88 - p.pot) / 12, 0.1, 1);   // im wyższy potencjał, tym trudniej o dalszy wzrost
-        d = clamp(Math.round(d), -6, 6);
-        const old = p.pot; p.pot = clamp(p.pot + d, p.ovr, 95);
-        if (c === ut && Math.abs(p.pot - old) >= 4) potNotes.push(`${p.n} ${p.pot > old ? '📈 zaskakuje – rośnie jego potencjał' : '📉 rozczarowuje – potencjał spada'}`);
-      }
+      if (p.age <= 24 && p.pot > 0) potDrift(p, c, c === ut || (p.loan && p.loan.from === ut.id) ? potNotes : null, maxMins[c.id] || 1);
       if (c === ut || (p.st.apps > 0 && (p.ovr >= 76 || (p.age <= 21 && p.pot >= 80) || p.hist))) { (p.hist = p.hist || []).push({ s: S.season, c: c.short, ovr: p.ovr, m: p.st.apps, g: p.st.g, a: p.st.a }); if (p.hist.length > 10) p.hist.shift(); }
       p.age++;
       if (p.age >= 30) p.pot = Math.min(p.pot, p.ovr + 1);
@@ -2274,6 +2271,33 @@ function rivalWinter() {
     if (armClub(c, 1, 1, 6, '❄️ Zimowe wzmocnienie –')) names.push(c.short || c.name);
   }
   if (names.length) msg('❄️ Rywale wzmacniają się zimą', `Kluby z czołówki ${S.leagues[ut.lg].name} sięgnęły po nowych zawodników: ${names.join(', ')}. Wyścig o tytuł się zaostrza.`);
+}
+/* ---------- ZMIENNY POTENCJAŁ: młodzi, którzy grają – rosną ponad prognozę; ci, którzy siedzą na ławce – tracą ---------- */
+function potShare(p, maxM) { return clamp(((p.st && p.st.mins) || 0) / Math.max(1, maxM || 1), 0, 1); }
+function potDrift(p, c, notes, maxM) {
+  if (p.pot0 == null) p.pot0 = p.pot;
+  const mine = c.id === S.user || (p.loan && p.loan.from === S.user), sh = potShare(p, maxM), st = p.st || {};
+  const ar = st.apps ? st.rs / st.apps : 6.5;
+  if (!mine) {   // kluby AI: dotychczasowy, łagodny dryf (bez inflacji gwiazd w świecie)
+    let d = (p.pt - 0.6) * 3 + (traits(p).pro - 10.5) * 0.2 + gauss() * 1.4 + (p.loan && p.tid !== p.loan.from ? 1 : 0);
+    if (d > 0) d *= clamp((88 - p.pot) / 12, 0.1, 1);
+    p.pot = clamp(p.pot + clamp(Math.round(d), -6, 6), p.ovr, 95); return;
+  }
+  let d = (sh - (mine ? 0.4 : 0.3)) * 9 + (traits(p).pro - 10.5) * 0.25 + gauss() * 1.2 + (p.loan && p.tid !== p.loan.from && sh >= 0.5 ? 1 : 0) + (st.apps >= 10 && ar >= 7 ? 1 : 0);
+  d *= p.age <= 19 ? 1.25 : p.age <= 21 ? 1 : p.age <= 23 ? 0.7 : 0.35;
+  if (d > 0) d *= clamp((95 - p.pot) / 10, 0.2, 1);
+  d = clamp(Math.round(d), -6, 7);
+  const old = p.pot; p.pot = clamp(p.pot + d, Math.max(p.ovr, p.pot0 - 14), Math.min(95, p.pot0 + 12));
+  if (notes && Math.abs(p.pot - old) >= 3) notes.push(`${p.n} ${p.pot > old ? `📈 potencjał rośnie (${old}→${p.pot}) – regularna gra procentuje` : `📉 potencjał spada (${old}→${p.pot}) – za mało minut${p.age <= 21 ? ', rozważ wypożyczenie' : ''}`}`);
+}
+/* trend potencjału w trakcie sezonu (do karty zawodnika) */
+function potTrend(p) {
+  if (p.age > 23) return null; const c = clubOf(p); if (!c) return null;
+  const maxM = Math.max(1, ...c.players.map(q => (q.st && q.st.mins) || 0)), sh = potShare(p, maxM);
+  if (maxM < 450) return { t: 0, sh, txt: 'za wcześnie na ocenę' };
+  const mine = c.id === S.user || (p.loan && p.loan.from === S.user), th = 0.4;
+  if (!mine) return p.pt >= 0.75 ? { t: 1, sh, txt: 'rośnie – gra regularnie' } : p.pt >= 0.45 ? { t: 0, sh, txt: 'stabilny' } : { t: -1, sh, txt: 'spada – mało gra' };
+  return sh >= th + 0.2 ? { t: 1, sh, txt: 'rośnie – gra regularnie' } : sh >= th - 0.1 ? { t: 0, sh, txt: 'stabilny' } : { t: -1, sh, txt: 'spada – za mało minut' + (p.age <= 21 && !p.loan ? ' (rozważ wypożyczenie)' : '') };
 }
 function jobOffers() {
   let l = S.clubs.filter(c => c.id !== S.user && c.rep <= S.mgr.ovr + 2 && c.rep >= S.mgr.ovr - 25 && !isReserve(c));

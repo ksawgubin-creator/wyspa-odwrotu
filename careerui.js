@@ -10,10 +10,16 @@ function homeCareerCards() {
   if (kitNeeded()) o += `<div class="card hl" data-act="kitpick"><div class="row"><span style="font-size:22px">👕</span><div class="sp"><b>Wybierz sponsora koszulki</b><br><small class="mut">Trzy firmy czekają na decyzję – stała kwota, premie za zwycięstwa albo długi kontrakt.</small></div><small>›</small></div></div>`;
   const f = frState();
   if (f && f.st.n < f.max) o += `<div class="card" data-act="friendlies"><div class="row"><span style="font-size:22px">🤝</span><div class="sp"><b>Mecze towarzyskie (${f.st.n}/${f.max})</b><br><small class="mut">${f.name[0].toUpperCase() + f.name.slice(1)}: zagraj sparing – rytm meczowy, zgranie, wpływy.</small></div><small>›</small></div></div>`;
+  const yd = userClub().players.filter(p => p.age <= 21 && !p.loan && p.pot - p.ovr >= 5 && (potTrend(p) || {}).t === -1);
+  if (yd.length) o += `<div class="card" data-act="ydown"><div class="row"><span style="font-size:20px">📉</span><div class="sp"><b>Młodzi tracą potencjał (${yd.length})</b><br><small class="mut">${yd.slice(0, 3).map(p => esc(lastName(p))).join(', ')}${yd.length > 3 ? '…' : ''} – za mało minut. Daj im grać albo wypożycz.</small></div><small>›</small></div></div>`;
   const pj = pjInfo();
   if (pj) o += `<div class="card" data-act="pjinfo"><div class="row"><span style="font-size:20px">🇵🇱</span><div class="sp"><b>Pro Junior System</b><br><small class="mut">Minuty młodzieżowców (Polacy do 21 lat): ${pj.mins.toLocaleString('pl-PL')} / ${pj.need.toLocaleString('pl-PL')}</small>${bar(Math.round(pj.pct * 100 / 1.5 * 1.5))}</div></div></div>`;
   return o;
 }
+ACT.ydown = () => { const yd = userClub().players.filter(p => p.age <= 21 && !p.loan && p.pot - p.ovr >= 5 && (potTrend(p) || {}).t === -1);
+  modal(`<h2>📉 Młodzi bez minut</h2><p>Młody zawodnik, który regularnie gra, może przekroczyć swój potencjał. Siedząc na ławce – traci go. Wypożyczenie (najlepiej do klubu partnerskiego) daje minuty.</p>
+    <div class="list">${yd.map(p => `<div class="prow">${posTag(p.pos)}<div class="pn" data-act="info" data-arg="${p.id}">${esc(p.n)}<small>${p.age} l. • ${p.ovr}/${p.pot} • minut: ${(p.st.mins || 0)}</small></div><button class="btn sm" data-act="loanout" data-arg="${p.id}">Wypożycz</button></div>`).join('')}</div>
+    <div class="btns"><button class="btn full" data-act="close">Zamknij</button></div>`); };
 ACT.pjinfo = () => { const i = pjInfo(); if (!i) return;
   modal(`<h2>🇵🇱 Pro Junior System</h2><p>PZPN nagradza kluby, które dają grać młodym Polakom (do 21 lat). Próg: <b>${i.need.toLocaleString('pl-PL')} minut</b> w sezonie. Nagroda: do <b>${money(Math.round(i.pot * 1.5))}</b> (więcej minut = większa premia).</p>
     <div class="kv"><div><span>Minuty</span><b>${i.mins.toLocaleString('pl-PL')}</b></div><div><span>Postęp</span><b>${Math.round(Math.min(1, i.mins / i.need) * 100)}%</b></div></div>

@@ -40,8 +40,8 @@ function releaseClauseWeek() {
   if (!windowOpen()) return;
   const ut = userClub();
   for (const p of ut.players.slice()) {
-    if (!p.rcl || p.loan || p.rcl > p.val * 1.6 || rnd() > 0.12) continue;
-    const b = S.clubs.find(c => c.id !== ut.id && !isReserve(c) && c.rep >= ut.rep + 3 && c.bal > p.rcl * 1.3 && teamLevel(c) <= p.ovr + 3 && c.players.length < 28);
+    if (!p.rcl || p.loan || p.rcl > p.val * 2.8 || rnd() > (p.rcl <= p.val * 1.6 ? 0.12 : 0.035)) continue;
+    const b = S.clubs.find(c => c.id !== ut.id && !isReserve(c) && c.rep >= ut.rep + (p.rcl > p.val * 1.6 ? 12 : 3) && c.bal > p.rcl * 1.3 && teamLevel(c) <= p.ovr + 3 && c.players.length < 28);
     if (!b || ut.players.length <= 18) continue;
     const fee = p.rcl; detach(p); attach(p, b); p.wage = calcWage(p, b.rep); p.con = ri(3, 5); p.rcl = null;
     ut.bal += fee; ut.tb += fee; ut.fin.tr += fee; b.bal -= fee; rebuildIndex(); fillBench(ut);
@@ -72,6 +72,7 @@ function playFriendly(oppId, home) {
   const f = frState(), ut = userClub(), o = club(oppId); if (!f || !o) return { ok: false, msg: 'Teraz nie można rozgrywać sparingów.' };
   if (f.st.n >= f.max) return { ok: false, msg: `Limit sparingów (${f.max}) w tym okresie wykorzystany.` };
   if (f.st.done.includes(oppId)) return { ok: false, msg: 'Z tym rywalem już grałeś.' };
+  const keep = { l: ut.lineup.slice(), b: ut.bench.slice(), f: ut.formation };
   autoPick(ut);
   const h = home ? ut : o, a = home ? o : ut, m = fastSim(h, a, { comp: 'F', label: 'Mecz towarzyski', neutral: false });
   const me = home ? m.home : m.away, op = home ? m.away : m.home;
@@ -79,7 +80,8 @@ function playFriendly(oppId, home) {
   // efekty: rytm meczowy, zgranie, finanse
   for (const r of Object.values(me.rec)) { const p = r.p, mins = r.off != null ? r.off - r.on : 90 - r.on; p.shp = clamp((p.shp || 60) + mins / 90 * 18, 0, 100); p.fit = clamp(p.fit - mins / 90 * 4, 30, 100); }
   for (const p of ut.players) if (!me.rec[p.id]) p.shp = clamp((p.shp || 60) + 3, 0, 100);
-  const big = o.rep - ut.rep, cash = home ? Math.round(attendance(ut, false) * 0.35 * ut.price * GATE_NET) : big >= 10 ? Math.round(o.rep * 12000) : Math.round(Math.max(0, ut.rep - o.rep) * 6000);
+  const big = o.rep - ut.rep, cash0 = home ? Math.round(attendance(ut, false) * 0.35 * ut.price * GATE_NET) : big >= 10 ? Math.round(o.rep * 12000) : Math.round(Math.max(0, ut.rep - o.rep) * 6000), cash = Math.min(cash0, Math.round(weeklyIncome(ut) * 1.2 / 1000) * 1000);
+  ut.lineup = keep.l; ut.bench = keep.b; ut.formation = keep.f;
   ut.bal += cash; ut.fin.inc += cash;
   const gd = me.goals - op.goals; for (const p of ut.players) p.mor = clamp(p.mor + (gd > 0 ? 2 : gd < 0 ? -1 : 0), 0, 100);
   if (big >= 12 && home) S.fans = clamp((S.fans || 60) + 2, 0, 100);
@@ -95,7 +97,7 @@ const pjYoung = p => p.nat === (S.countries.POL && S.countries.POL.nat) && p.age
 function pjInfo() {
   if (!PJ_ON()) return null;
   const ut = userClub(), tier = S.leagues[ut.lg].tier, need = tier === 1 ? 3000 : 2000;
-  const mins = sum(ut.players.filter(pjYoung).map(p => (p.st && p.st.mins) || 0));
+  const mins = sum(ut.players.filter(pjYoung).map(p => (p.st && p.st.mu) || 0));
   const pot = tier === 1 ? 3e6 : 1e6;
   return { need, mins, pot, tier, pct: clamp(mins / need, 0, 1.5), players: ut.players.filter(pjYoung).sort((a, b) => (b.st.mins || 0) - (a.st.mins || 0)) };
 }
@@ -155,9 +157,9 @@ function visionInit(force) {
   if (tier > 1) G.push({ k: 'tier', t: tier - 1, by: Y + (tier >= 3 ? 4 : 3), txt: `Awans o poziom wyżej (do ${S.leagues[S.countries[lg.cc].leagues[tier - 2]].name})` });
   else if (ut.rep >= 82) G.push({ k: 'euroko', by: Y + 3, txt: 'Faza pucharowa europejskich pucharów' });
   else G.push({ k: 'euro', by: Y + 3, txt: 'Gra w europejskich pucharach' });
-  G.push({ k: 'youth', n: 3, by: Y + 4, txt: '3 wychowanków akademii z co najmniej 10 występami w sezonie' });
+  G.push({ k: 'youth', n: 3, by: Y + 4, txt: '3 wychowanków akademii z co najmniej 900 minutami w sezonie' });
   G.push({ k: 'fin', by: Y + 5, txt: 'Dodatnie saldo klubu na koniec każdego sezonu' });
-  G.push({ k: 'style', by: Y + 5, txt: tier <= 1 && ut.rep >= 70 ? 'Ofensywny futbol: najwięcej goli w lidze w jednym z sezonów' : 'Młoda drużyna: średnia wieku pierwszej jedenastki poniżej 25 lat' });
+  G.push({ k: 'style', by: Y + 5, txt: tier <= 1 && ut.rep >= 70 ? 'Ofensywny futbol: najwięcej goli w lidze w jednym z sezonów' : 'Młoda drużyna: średnia wieku (ważona minutami) poniżej 25,5 roku' });
   S.vision = { club: ut.id, from: Y, goals: G.map(g => ({ ...g, done: false, fail: false })) };
   return S.vision;
 }
@@ -166,9 +168,9 @@ function visionCheck(g, final) {
   if (g.k === 'tier') return false;   // sprawdzane po awansie (careerNewSeason)
   if (g.k === 'euro') return !!(euroOf(ut.id) && euroOf(ut.id).teams.includes(ut.id));
   if (g.k === 'euroko') return Object.values(S.euro || {}).some(c => c.ko && Object.values(c.ko).some(r => Array.isArray(r) && r.some(t => t && (t.a === ut.id || t.b === ut.id || t.h === ut.id))));
-  if (g.k === 'youth') return ut.players.filter(p => p.homegrown && p.st.apps >= 10).length >= g.n;
+  if (g.k === 'youth') return ut.players.filter(p => p.homegrown && (p.st.mu || 0) >= 900).length >= g.n;
   if (g.k === 'fin') return !g.fail && ut.bal >= 0;
-  if (g.k === 'style') { if (/goli/.test(g.txt)) { const t = table(ut.lg); return t.length && t.slice().sort((a, b) => b.GF - a.GF)[0].id === ut.id; } const xi = ut.lineup.map(pget).filter(Boolean); return xi.length >= 11 && avg(xi.map(p => p.age)) < 25; }
+  if (g.k === 'style') { if (/goli/.test(g.txt)) { const t = table(ut.lg); return t.length && t.slice().sort((a, b) => b.GF - a.GF)[0].id === ut.id; } const pl = ut.players.filter(p => (p.st.mu || 0) > 0), tm = sum(pl.map(p => p.st.mu)); return tm > 0 && sum(pl.map(p => p.age * p.st.mu)) / tm < 25.5; }
   return false;
 }
 const ut0 = () => userClub();
@@ -201,7 +203,7 @@ function objInit() {
   for (const p of ut.players) {
     p.obj = null; if (p.loan) continue;
     const r = roleOf(p), ln = LINE[p.pos];
-    if (p.age <= 21 && p.pot - p.ovr >= 6) p.obj = { k: 'apps', n: r === 'key' || r === 'start' ? 25 : 12, txt: 'występów w sezonie' };
+    if (p.age <= 21 && p.pot - p.ovr >= 6) p.obj = { k: 'apps', n: r === 'key' || r === 'start' ? 25 : 12, txt: 'występów (30+ min) w sezonie' };
     else if (r === 'key' || r === 'start') {
       if (ln === 'ATT') p.obj = { k: 'g', n: Math.max(5, Math.round((p.ovr - teamLevel(ut) + 8) * 1.2)), txt: 'goli' };
       else if (p.pos === 'CAM' || p.pos === 'LM' || p.pos === 'RM') p.obj = { k: 'ga', n: Math.max(6, Math.round((p.ovr - teamLevel(ut) + 8) * 1.1)), txt: 'goli + asyst' };
@@ -212,7 +214,7 @@ function objInit() {
 }
 function objProg(p) {
   const o = p.obj; if (!o) return null; const st = p.st || {};
-  const v = o.k === 'apps' ? st.apps : o.k === 'g' ? st.g : o.k === 'ga' ? st.g + st.a : o.k === 'cs' ? (st.cs || 0) : o.k === 'rt' ? (st.apps ? st.rs / st.apps : 0) : 0;
+  const v = o.k === 'apps' ? (st.a30 || 0) : o.k === 'g' ? st.g : o.k === 'ga' ? st.g + st.a : o.k === 'cs' ? (st.cs || 0) : o.k === 'rt' ? (st.apps ? st.rs / st.apps : 0) : 0;
   return { v: o.k === 'rt' ? Math.round(v * 100) / 100 : v || 0, n: o.n, ok: o.k === 'rt' ? v >= o.n && st.apps >= 15 : v >= o.n };
 }
 function objSeasonEnd(lines) {
@@ -254,7 +256,7 @@ function namingOffers() {
 function sellNaming(i) {
   const o = namingOffers()[i], ut = userClub(); if (!o) return { ok: false, msg: 'Brak oferty.' };
   if (S.naming && S.naming.until >= S.season) return { ok: false, msg: 'Nazwa stadionu jest już sprzedana.' };
-  S.naming = { ...o, until: S.season + o.yrs - 1, old: ut.stadName || null }; ut.stadName = o.n;
+  S.naming = { ...o, until: S.season + o.yrs - 1, old: ut.stadName || null, club: ut.id }; ut.stadName = o.n;
   S.fans = clamp((S.fans || 60) - 6, 0, 100); S.press = clamp((S.press || 55) - 2, 0, 100);
   msg('🏟️ Nowa nazwa stadionu', `Stadion nazywa się teraz „${o.n}” – ${money(o.w)}/tydz. przez ${plural(o.yrs, 'sezon', 'sezony', 'sezonów')}. Część kibiców jest oburzona.`); saveSoon();
   return { ok: true, msg: `Stadion: ${o.n}.` };
@@ -286,7 +288,7 @@ function careerNewSeason() {
   // awans/spadek rozstrzyga się po ocenie sezonu – cel „awans” sprawdzamy po zmianie lig
   const V = S.vision; if (V) for (const g of V.goals) if (g.k === 'tier' && !g.done && !g.fail && S.leagues[userClub().lg].tier <= g.t) { g.done = true; S.board.conf = clamp(S.board.conf + 6, 0, 100); msg('🎯 Wizja klubu', `Cel zrealizowany: ${g.txt}! Zarząd jest zachwycony.`); }
 }
-function careerTakeOver() { S.vision = null; S.aff = null; S.kit = null; S.kitOff = null; S.naming = null; S.dof = S.dof ? { ...S.dof, on: false } : null; visionInit(true); objInit(); }
+function careerTakeOver() { if (S.naming && S.naming.club != null && club(S.naming.club)) club(S.naming.club).stadName = S.naming.old; S.vision = null; S.aff = null; S.kit = null; S.kitOff = null; S.naming = null; S.dof = S.dof ? { ...S.dof, on: false } : null; visionInit(true); objInit(); }
 
 /* ---------- ASYSTENT PROWADZI DRUŻYNĘ (symulacja dni z kalendarza) ---------- */
 // ocena skutku decyzji z perspektywy klubu (bez znajomości losowania – wartość oczekiwana)
@@ -304,12 +306,14 @@ function asFxScore(fx) {
   }
   return s;
 }
+// tylko stałe skutki (fx) – funkcje fn mają efekty uboczne, więc nie wolno ich wywoływać przy ocenie
+const asStatic = (o, ctx) => { try { return o.fx ? (typeof o.fx === 'function' ? o.fx(ctx) : o.fx) || {} : {}; } catch (e) { return {}; } };
 function asChoiceScore(def, ch, ctx) {
   try {
-    const base = evFx(ch, ctx);
+    const base = asStatic(ch, ctx);
     if (!ch.outs || !ch.outs.length) return asFxScore(base);
     let tot = 0, sw = 0;
-    for (const o of ch.outs) { const w = Math.max(0, +(typeof o.w === 'function' ? o.w(ctx) : (o.w == null ? 1 : o.w)) || 0); if (!w) continue; tot += w * (asFxScore(mergeFx(base, evFx(o, ctx))) - (o.bad ? 2 : 0)); sw += w; }
+    for (const o of ch.outs) { const w = Math.max(0, +(typeof o.w === 'function' ? o.w(ctx) : (o.w == null ? 1 : o.w)) || 0); if (!w) continue; tot += w * (asFxScore(mergeFx(base, asStatic(o, ctx))) - (o.bad ? 2 : 0)); sw += w; }
     return sw ? tot / sw : asFxScore(base);
   } catch (e) { return 0; }
 }
@@ -320,6 +324,15 @@ function assistantPick(ev) {
   return rnd() < q ? best : ri(0, def.choices.length - 1);
 }
 /* asystent rozwiązuje oczekujące decyzje; zwraca listę [tytuł, wybór, wynik] */
+/* drobne obowiązki asystenta: sponsor koszulki, uzupełnienie kadry z wolnych agentów */
+function assistantChores(log) {
+  if (kitNeeded()) { const L = kitOffers(); const i = 0; chooseKit(i); log.push({ k: 'i', t: `👕 Asystent podpisał umowę ze sponsorem koszulki: ${L[i].n}.` }); }
+  const ut = userClub();
+  if (ut.players.length < 20 && ut.bal > 0) {
+    const lv = teamLevel(ut), need = squadNeedsW(), F = (S.free || []).filter(p => p.age <= 32 && p.ovr >= lv - 6 && playerInterest(p).ok).sort((a, b) => ((need[b.pos] || 0) * 3 + b.ovr) - ((need[a.pos] || 0) * 3 + a.ovr));
+    for (const p of F) { if (ut.players.length >= 21) break; const w = wageDemand(p); if (w > wageRoom()) continue; const r = signFree(p.id, w, 2, {}); if (r && r.ok) log.push({ k: 'i', t: `✍️ Asystent podpisał wolnego zawodnika: ${p.n} (${POS_PL[p.pos]}, ${p.ovr}).` }); }
+  }
+}
 function assistantResolveAll(log) {
   let n = 0;
   while (S.pending.length && n++ < 20) {

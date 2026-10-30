@@ -9,12 +9,14 @@
 /* ---------- ukryte cechy charakteru (1–20) ---------- */
 // pro – profesjonalizm, amb – ambicja, tem – temperament (wysoki = wybuchowy), loy – lojalność, pre – odporność na presję
 const TRAITS = { pro: 'Profesjonalizm', amb: 'Ambicja', tem: 'Temperament', loy: 'Lojalność', pre: 'Odporność na presję' };
+const TRC = new Map();   // cechy wyliczane z id – trzymane poza zapisem
 function traits(p) {
   if (p.tr) return p.tr;
+  const c = TRC.get(p.id); if (c) return c;
   let x = (p.id * 2654435761 + 12345) >>> 0;
   const r = () => { x = (x * 1103515245 + 12345) >>> 0; return x / 4294967296; };
   const g = () => clamp(Math.round(10.5 + (r() + r() + r() - 1.5) * 9), 1, 20);
-  return (p.tr = { pro: g(), amb: g(), tem: g(), loy: g(), pre: g() });
+  const t = { pro: g(), amb: g(), tem: g(), loy: g(), pre: g() }; TRC.set(p.id, t); return t;
 }
 function pers(p) {
   const t = traits(p);

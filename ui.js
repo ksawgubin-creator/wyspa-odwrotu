@@ -335,6 +335,7 @@ async function simTo(target) {
       if (um && dKey(curDay().date) >= dKey(target)) break;   // mecz w docelowym dniu – zagrasz sam
       if (S.ddPop === S.day) { S._ddShown = S.day + S.season * 1000; log.push({ k: 'i', t: '⏰ Deadline Day – ostatni dzień okna transferowego' }); }
       if (S.winPop === S.day) { S._wpShown = S.day + S.season * 1000; log.push({ k: 'i', t: '🟢 Otwarto zimowe okno transferowe' }); }
+      try { assistantChores(log); } catch (e) { }
       const r = um ? assistantMatchDay(log) : processDay(null);
       if (S.pending.length) assistantResolveAll(log);
       if (r && r.summary) { summary = r.summary; break; }
@@ -524,6 +525,8 @@ const ATTR_HELP = { TEM: 'Tempo – szybkość i przyspieszenie', STR: 'Strzały
   RZU: 'Rzuty – parady i interwencje w powietrzu', CHW: 'Chwytanie – pewność łapania piłki', WYK: 'Wykopy – wznowienia i gra nogami', REF: 'Refleks – reakcja na strzały z bliska', SZY: 'Szybkość – wyjścia z bramki i sprint', UST: 'Ustawianie – czytanie gry i pozycja w bramce' };
 ACT.rushback = id => { const p = pget(+id); if (!confirm(`Przyspieszyć powrót ${p.n}? Zawodnik będzie gotowy do gry, ale przez 3 tygodnie ryzyko urazu jest trzykrotnie wyższe.`)) return; p.inj = 0; p.fit = Math.min(p.fit, 72); p._rushed = absDay() + 21; saveSoon(); toast(`${p.n} wraca do treningów.`, 'ok'); ACT.info(id); render(); };
 ACT.attrhelp = k => toast(ATTR_HELP[k] || k);
+/* wartość pokazywana: bez znajomości potencjału szacunek z widocznego OVR i typowego potencjału dla wieku */
+const dispVal = p => { if (potKnown(p)) return p.val; const r = ovrRange(p), o = Math.round((r[0] + r[1]) / 2); return calcValue({ ...p, ovr: o, pot: o + Math.max(0, (24 - p.age) * 2) }); };
 const potTxt = p => { if (!potKnown(p)) return '?'; const r = ovrRange(p, true); return r[0] === r[1] ? r[0] : r[0] + '–' + r[1]; };
 ACT.info = id => {
   const p = pget(+id); if (!p) return;
@@ -565,7 +568,7 @@ ACT.info = id => {
   const kv = rows => `<div class="kv">${rows.filter(Boolean).map(([l, v]) => `<div><span>${l}</span><b>${v}</b></div>`).join('')}</div>`;
   const body = {
     ov: () => `${p.inj ? `<div class="card" style="margin:6px 0;border-color:var(--bad)"><b>🚑 ${esc(p.injT || 'Kontuzja')}</b><br><small class="mut">Fizjoterapeuta szacuje powrót za ok. ${Math.ceil(p.inj / 7)} tyg. (${plural(Math.ceil(p.inj), "dzień", "dni", "dni")}).${p.injN > 1 ? ` To już ${p.injN}. uraz tego zawodnika.` : ''}</small>${mine && p.inj <= 14 ? `<div class="btns"><button class="btn sm red" data-act="rushback" data-arg="${p.id}">⚡ Przyspiesz powrót (duże ryzyko nawrotu)</button></div>` : ''}</div>` : ''}${p._rushed > absDay() ? '<small class="warn">⚠️ Po przyspieszonym powrocie – podwyższone ryzyko urazu przez 3 tygodnie.</small><br>' : ''}${stTag(p)}${own ? `<small class="mut">Charakter: <b>${pers(p)}</b> – ${PERS_DESC[pers(p)]}</small><div class="fxl">${Object.entries(TRAITS).map(([k, n]) => `<span class="pill">${n}: ${traitWord(traits(p)[k], TRAIT_FEM[k])}</span>`).join(' ')}</div>` : `<small class="mut">Charakter: ? (poznasz go po transferze)</small>`}
-      ${kv([['Wiek', p.age], ['Potencjał', `<span class="potv">${potTxt(p)}</span>${!potKnown(p) ? ' <small class="mut">(wyślij skauta)</small>' : ''}${potKnown(p) && potTrend(p) ? ` <small class="${potTrend(p).t > 0 ? 'good' : potTrend(p).t < 0 ? 'bad' : 'mut'}">${potTrend(p).t > 0 ? '↗ rośnie' : potTrend(p).t < 0 ? '↘ spada' : '→'}</small>` : ''}${potKnown(p) && p.pot > p.ovr ? ` <small class="good">(+${Math.max(0, Math.round((ovrRange(p, true)[0] + ovrRange(p, true)[1]) / 2) - Math.round((r[0] + r[1]) / 2))})</small>` : ''}`], ['Kondycja', Math.round(p.fit) + '%'], ['Morale', moraleLabel(p.mor).join(' ')], ['Forma', formLabel(p.form) + (Math.round(formAdj(p)) ? ` <small class="${formAdj(p) > 0 ? 'good' : 'bad'}">(${formAdj(p) > 0 ? '+' : ''}${Math.round(formAdj(p))} OVR)</small>` : '')], ['Rytm meczowy', Math.round(p.shp) + '%'], ['Wartość', money(p.val)], ['Status', playerStatus(p)],
+      ${kv([['Wiek', p.age], ['Potencjał', `<span class="potv">${potTxt(p)}</span>${!potKnown(p) ? ' <small class="mut">(wyślij skauta)</small>' : ''}${potKnown(p) && potTrend(p) ? ` <small class="${potTrend(p).t > 0 ? 'good' : potTrend(p).t < 0 ? 'bad' : 'mut'}">${potTrend(p).t > 0 ? '↗ rośnie' : potTrend(p).t < 0 ? '↘ spada' : '→'}</small>` : ''}${potKnown(p) && p.pot > p.ovr ? ` <small class="good">(+${Math.max(0, Math.round((ovrRange(p, true)[0] + ovrRange(p, true)[1]) / 2) - Math.round((r[0] + r[1]) / 2))})</small>` : ''}`], ['Kondycja', Math.round(p.fit) + '%'], ['Morale', moraleLabel(p.mor).join(' ')], ['Forma', formLabel(p.form) + (Math.round(formAdj(p)) ? ` <small class="${formAdj(p) > 0 ? 'good' : 'bad'}">(${formAdj(p) > 0 ? '+' : ''}${Math.round(formAdj(p))} OVR)</small>` : '')], ['Rytm meczowy', Math.round(p.shp) + '%'], ['Wartość', (potKnown(p) ? '' : '~') + money(dispVal(p))], ['Status', playerStatus(p)],
         !mine && releaseClause(p) ? ['Klauzula odstępnego', money(releaseClause(p))] : null])}
       ${known && typeof radarSVG === 'function' ? `<div style="text-align:center;margin-top:6px">${radarSVG(at, names, { size: 180 })}</div>` : ''}
       <small class="mut">${p.pos === 'GK' ? 'RZU – rzuty (parady), CHW – chwytanie, WYK – wykopy, REF – refleks, SZY – szybkość, UST – ustawianie' : 'TEM – tempo, STR – strzały, POD – podania, DRY – drybling, OBR – obrona, FIZ – fizyczność'}</small><br>
@@ -1014,7 +1017,7 @@ function dealState(p) {
 }
 function mkRow(p) {
   const c = clubOf(p), ds = dealState(p);
-  return `<div class="prow" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${flag(p.nat)} ${esc(p.n)}<small>${c ? esc(c.short) + ' ' + S.countries[c.cc].flag : p.tid === -1 ? 'wolny' : 'zagr.'} • ${p.age} l. • ${p.tid === -1 ? 'bez odstępnego' : money(p.val)}${ds[1] ? ` • <span class="${ds[0] === 'g' ? 'good' : ds[0]}">${ds[1]}</span>` : ''}</small></div>${S.short.includes(p.id) ? '<span class="good">★</span>' : ''}${ovrShow(p)}<span class="potc" title="potencjał">${potTxt(p)}</span></div>`;
+  return `<div class="prow" data-act="info" data-arg="${p.id}">${posTag(p.pos)}<div class="pn">${flag(p.nat)} ${esc(p.n)}<small>${c ? esc(c.short) + ' ' + S.countries[c.cc].flag : p.tid === -1 ? 'wolny' : 'zagr.'} • ${p.age} l. • ${p.tid === -1 ? 'bez odstępnego' : '~' + money(dispVal(p))}${ds[1] ? ` • <span class="${ds[0] === 'g' ? 'good' : ds[0]}">${ds[1]}</span>` : ''}</small></div>${S.short.includes(p.id) ? '<span class="good">★</span>' : ''}${ovrShow(p)}<span class="potc" title="potencjał">${potTxt(p)}</span></div>`;
 }
 const FOPT = {
   pos: () => POSITIONS.map(p => [p, POS_PL[p]]), age: () => [19, 21, 23, 25, 28, 31].map(a => [a, `do ${a} l.`]),
@@ -1059,7 +1062,7 @@ function vSearch() {
   const ut = userClub(), best = {}; for (const q of ut.players) for (const ps of [q.pos, ...(q.alt || [])]) best[ps] = Math.max(best[ps] || 0, ps === q.pos ? q.ovr : q.ovr - 3);
   // ocena dopasowania: poziom + potencjał + realne wzmocnienie pozycji (rezerwowy bramkarz to mniejsza potrzeba)
   const fitK = p => { const o = ovrEst(p), pt = potKnown(p) ? mid(ovrRange(p, true)) : o; return o + Math.max(0, pt - o) * 0.35 - Math.max(0, p.age - 29) * 2.5 + (need[p.pos] || 0) * (p.pos === 'GK' ? 1 : 3) + clamp(o - (best[p.pos] || 0), -6, 8) * 0.8; };
-  const key = f.sort === 'pot' ? (p => potKnown(p) ? mid(ovrRange(p, true)) : 0) : f.sort === 'val' ? (p => p.val) : f.sort === 'age' ? (p => -p.age) : f.sort === 'ovr' ? ovrEst : fitK;
+  const key = f.sort === 'pot' ? (p => potKnown(p) ? mid(ovrRange(p, true)) : 0) : f.sort === 'val' ? (p => dispVal(p)) : f.sort === 'age' ? (p => -p.age) : f.sort === 'ovr' ? ovrEst : fitK;
   list.sort((a, b) => key(b) - key(a));
   const act = ['cc', 'pos', 'ageMin', 'age', 'ovr', 'ovrMax', 'potMin', 'potMax', 'priceMin', 'price'].filter(k => f[k]);
   return `<div class="flt"><input placeholder="Szukaj nazwiska…" value="${esc(f.q)}" data-change="fq" style="flex:1 1 55%;min-width:0"><button class="btn sm pri" data-act="fsheet">⚙ Filtry${act.length + (f.real ? 1 : 0) ? ` (${act.length + (f.real ? 1 : 0)})` : ''}</button></div>
@@ -1247,7 +1250,7 @@ function vacHtml() {
 ACT.applyjob = id => { const c = club(+id); if (!confirm(`Złożyć aplikację na stanowisko trenera ${c.name}?`)) return; const r = applyJob(+id); toast(r.msg, r.ok ? '' : 'bad'); saveSoon(); render(); };
 const sOvr = x => x.ovr != null ? x.ovr : clamp(Math.round((x.ab || 10) * 4.75), 1, 99);
 const STAFF_FX = {
-  ass: o => `rozwój kadry ${o >= 50 ? '+' : ''}${Math.round((0.8 + o / 250 - 1) * 100)}% • gdy prowadzi drużynę: siła ${o >= 63 ? '+' : ''}${((0.95 + o * 0.0008 - 1) * 100).toFixed(1)}%, trafność decyzji ${Math.round((0.25 + o / 100 * 0.7) * 100)}%`,
+  ass: o => `rozwój kadry ${o >= 50 ? '+' : ''}${Math.round((0.8 + o / 250 - 1) * 100)}% • gdy prowadzi drużynę: siła ${o >= 88 ? '+' : ''}${((0.985 + (o - 50) * 0.0004 - 1) * 100).toFixed(1)}%, trafność decyzji ${Math.round((0.25 + o / 100 * 0.7) * 100)}%`,
   tac: o => `siła w meczach ${o >= 50 ? '+' : ''}${((o - 50) * 0.08).toFixed(1)}%`,
   fit: o => { const r = Math.round((1.2 - o / 250 - 1) * 100); return `regeneracja ${o >= 50 ? '+' : ''}${Math.round((o - 50) * 0.012 / 2.7 * 100)}% • ryzyko kontuzji ${r > 0 ? '+' : ''}${r}%`; },
   phy: o => `leczenie kontuzji ${o >= 50 ? '+' : ''}${Math.round((0.7 + o / 165 - 1) * 100)}%`,
@@ -1256,7 +1259,7 @@ const STAFF_FX = {
 function vStaff() {
   initStaff(); const mk = staffMarket();
   const avgO = Math.round(avg(Object.keys(STAFF_ROLES).map(k => sOvr(S.staff[k]))));
-  return `<div class="card hl"><div class="row"><span class="ovr ${ovrCls(avgO)}" style="font-size:20px;height:38px;min-width:46px">${avgO}</span><div class="sp"><b>🧑‍💼 Sztab szkoleniowy</b><br><small class="mut">Średnia ocena sztabu • koszt ${money(staffCost())}/tydz.</small></div></div><small class="mut">Każdy członek sztabu ma ocenę 1–99 z realnym wpływem na drużynę. Zatrudnienie nowej osoby = odprawa dla poprzednika (8 tygodniówek). Kandydaci odświeżają się co kilka tygodni.</small></div>
+  return `<div class="card hl"><div class="row"><span class="ovr ${ovrCls(avgO)}" style="font-size:20px;height:38px;min-width:46px">${avgO}</span><div class="sp"><b>🧑‍💼 Sztab szkoleniowy</b><br><small class="mut">Średnia ocena sztabu • koszt ${money(staffCost())}/tydz.</small></div></div><small class="mut">Każdy członek sztabu ma ocenę 1–99 z realnym wpływem na drużynę. Zatrudnienie nowej osoby = odprawa dla poprzednika (26 tygodniówek). Kandydaci odświeżają się co kilka tygodni.</small></div>
     ${Object.entries(STAFF_ROLES).map(([k, [n, d]]) => { const x = S.staff[k], o = sOvr(x); return `<div class="card"><div class="row"><span class="ovr ${ovrCls(o)}">${o}</span><b class="sp">${n}</b></div>
       <small>${esc(x.n)} • ${money(x.wage)}/tydz.</small><br><small class="mut">${d}</small><br><small class="${o >= 50 ? 'good' : 'bad'}">Wpływ teraz: ${STAFF_FX[k](o)}</small>
       <details><summary class="mut" style="margin-top:6px">Kandydaci (${mk[k].length})</summary>${mk[k].map((c, i) => { const co = sOvr(c); return `<div class="row" style="margin:6px 0"><span class="ovr ${ovrCls(co)}">${co}</span><span class="sp">${esc(c.n)}<br><small class="mut">${money(c.wage)}/tydz.</small></span><span class="${co > o ? 'good' : 'bad'}">${co > o ? '▲' : '▼'}${Math.abs(co - o)}</span><button class="btn sm" data-act="hirestaff" data-arg="${k}:${i}">Zatrudnij</button></div>`; }).join('') || '<small class="mut">Brak kandydatów.</small>'}</details></div>`; }).join('')}`;

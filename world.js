@@ -210,7 +210,8 @@ function createWorld() {
 const ATT_TIER = { 1: 1, 2: 0.6, 3: 0.45, 4: 0.35 };
 function ticketDemand(c) {
   const tv = (TVW[c.cc] || [5e4])[0], cf = clamp(Math.sqrt(tv / 4e5), 0.4, 1.25);
-  return Math.round(c.rep * c.rep * 13 * (ATT_TIER[S.leagues[c.lg].tier] || 0.35) * cf);
+  const d = Math.round(c.rep * c.rep * 13 * (ATT_TIER[S.leagues[c.lg].tier] || 0.35) * cf);
+  return c.cap0 ? Math.min(d, Math.round(c.cap0 * 1.8)) : d;   // popyt rośnie, ale nie bez końca (rozbudowa do ~1,8× pierwotnej pojemności)
 }
 const basePrice = c => 5 + c.rep * 0.3;
 const GATE_NET = 0.55;   // po kosztach dnia meczowego (ochrona, obsługa, utrzymanie stadionu)
@@ -922,7 +923,8 @@ function boardMeeting(d) {
   if (ut.bal < 0 && (g === 'A' || g === 'B')) g = 'C';   // długi psują ocenę mimo wyników
   const side = (S.board.side || []).filter(x => x.season === S.season).map(x => `• ${x.t}: ${BOARD_GOALS[x.k][2](ut, x)}`).join('\n');
   let extra = '';
-  if (g === 'A') { const b = Math.round(Math.max(ut.tb, 0) * 0.1 / 1e4) * 1e4 + Math.round(ut.tv * 2); ut.tb += b; extra = ` Zarząd jest zachwycony i zwiększa budżet transferowy o ${money(b)}.`; }
+  if (g === 'A' && S.board.aBonus !== S.season) { S.board.aBonus = S.season; const b = Math.round(Math.min(Math.max(ut.tb, 0) * 0.1 + ut.tv * 2, weeklyIncome(ut) * 13) / 1e4) * 1e4; ut.tb = Math.min(ut.tb + b, Math.max(0, ut.bal)); extra = ` Zarząd jest zachwycony i zwiększa budżet transferowy o ${money(b)}.`; }
+  else if (g === 'A') extra = ' Zarząd jest zachwycony Twoją pracą.';
   else if (g === 'F') extra = ' Zarząd ostrzega: bez szybkiej poprawy wyników dojdzie do zmiany trenera.';
   msg(`🏛️ Spotkanie z zarządem – ocena ${g}`, `${S.board.text}${extra}\nCele dodatkowe:\n${side || '• brak'}`);
 }
@@ -954,6 +956,7 @@ function weekly(d) {
       ch *= fac * (0.6 + 0.8 * clamp(p.pt, 0, 1)) * (focus && (LINE[p.pos] === focus || (focus === 'DEF' && p.pos === 'GK')) ? 1.5 : 1);
       if (p.loan && p.tid !== p.loan.from) ch *= p.tid === S.aff && p.loan.from === S.user ? 1.38 : 1.2;   // klub partnerski: więcej minut i opieki
       if (TI) ch *= TI.dev;
+      if (ch && p.ovr >= 84) ch *= 0.6;   // na szczycie rozwój jest wolniejszy
       if (ch) ch *= (0.75 + traits(p).pro / 40) * clamp((p.pot - p.ovr) / 8, 0.5, 1.6) * (S.mentors && S.mentors.some(x => x.p === p.id) ? 1.3 : 1) * (p.pos === 'GK' && c.id === S.user && S.staff ? 0.75 + staffOvr('gk') / 200 : 1) * (c.id === S.user ? 0.8 + staffOvr('ass') / 250 : 1);
       if (ch && p.ovr < p.pot && rnd() < ch) {
         develop(p, 1);
@@ -964,7 +967,7 @@ function weekly(d) {
         p.retrain.prog += 0.6 + traits(p).pro / 25;
         if (p.retrain.prog >= 12) { p.alt = [...new Set([p.retrain.pos, ...(p.alt || [])])].slice(0, 3); msg('Przekwalifikowanie', `${p.n} opanował nową pozycję: ${POS_PL[p.retrain.pos]}.`); p.retrain = null; }
       }
-      if (p.age >= 31 && rnd() < 0.012 * (p.age - 30)) { develop(p, -1); p.val = calcValue(p); }
+      if (p.age >= 31 && rnd() < 0.012 * (p.age - 30) * (p.ovr >= 85 ? 1.6 : 1)) { develop(p, -1); p.val = calcValue(p); }
     });
   }
   for (const p of S.virt) { p.shp = 70; p.mor = 65; }
@@ -1189,7 +1192,7 @@ const BREQ = { tb: ['💶 Większy budżet transferowy', 'Zarząd może dołoży
 function boardReqInfo(k) {
   const ut = userClub(), b = S.board, cd = (b.req || {})[k] || 0, conf = b.conf, inc = Math.max(1, weeklyIncome(ut));
   let p = clamp((conf - 35) / 55, 0.03, 0.92), amt = 0, cost = 0, lock = '';
-  if (k === 'tb') { amt = Math.round(Math.min(Math.max(0, ut.bal - ut.tb) * 0.25, inc * 25) / 1e5) * 1e5; if (amt < 1e5) lock = 'Klub nie ma wolnych środków.'; p *= ut.bal > ut.tb * 1.5 ? 1 : 0.6; }
+  if (k === 'tb') { amt = Math.round(Math.min(Math.max(0, ut.bal - ut.tb) * 0.25, inc * 25, Math.max(0, inc * 40 - ut.tb)) / 1e5) * 1e5; if (amt < 1e5) lock = ut.tb >= inc * 40 ? 'Budżet transferowy jest już bardzo wysoki.' : 'Klub nie ma wolnych środków.'; p *= ut.bal > ut.tb * 1.5 ? 1 : 0.6; }
   if (k === 'wb') { amt = Math.round(S.board.wb * 0.1 / 1000) * 1000; p *= weeklyIncome(ut) > wageBill(ut) * 1.05 ? 1 : 0.35; }
   if (k === 'fac') { if (S.fac.train >= 5) lock = 'Ośrodek ma już maksymalny poziom.'; cost = FAC_COST(S.fac.train); if (!lock && ut.bal < cost / 2) lock = `Klub nie ma ${money(Math.round(cost / 2))} na swój wkład.`; p *= ut.bal > cost * 1.5 ? 0.9 : 0.4; }
   if (k === 'acad') { if (S.acad.fac >= 5) lock = 'Akademia ma już maksymalny poziom.'; cost = FAC_COST(S.acad.fac); if (!lock && ut.bal < cost / 2) lock = `Klub nie ma ${money(Math.round(cost / 2))} na swój wkład.`; p *= ut.bal > cost * 1.5 ? 0.9 : 0.4; }
@@ -1268,7 +1271,7 @@ function detach(p) {
   else if (p.tid === -1) S.free = S.free.filter(x => x !== p);
   S.offers = S.offers.filter(o => o.pid !== p.id);
 }
-function attach(p, c) { c.players.push(p); p.tid = c.id; p.listed = false; p.preTo = null; }
+function attach(p, c) { c.players.push(p); p.tid = c.id; p.listed = false; p.preTo = null; delete p._fa0; }
 function completeTransfer(pid, fee, wage, years, o = {}) {
   const p = pget(pid), ut = userClub(), seller = clubOf(p), now = upfront(fee, o);
   detach(p);
@@ -1314,7 +1317,8 @@ function loanIn(pid, mode) {
   const fee = Math.round(p.val * (mode === 'opt' ? 0.14 : mode === 'obl' ? 0.06 : 0.1) / 10000) * 10000, weeklyInc = ut.tv + ut.spons + 0.5 * ut.cap * 0.75 * ut.price;
   if (p.wage > weeklyInc * 0.15) return { ok: false, msg: `Pensja ${p.n} (${money(p.wage)}/tydz.) przekracza możliwości klubu.` };
   if (ut.bal < fee || ut.tb < fee) return { ok: false, msg: `Opłata za wypożyczenie wynosi ${money(fee)} – brak środków.` };
-  if (mode === 'obl' && Math.round(p.val * 1.05) > ut.tb + ut.bal * 0.3) return { ok: false, msg: `Obowiązkowy wykup (${money(Math.round(p.val * 1.05 / 1e4) * 1e4)}) przekracza możliwości klubu.` };
+  const owed = sum(ut.players.filter(q => q.loan && q.loan.buy && q.loan.buy.obl).map(q => q.loan.buy.price));
+  if (mode === 'obl' && owed + Math.round(p.val * 1.05) > ut.tb + Math.max(0, ut.bal) * 0.3) return { ok: false, msg: `Obowiązkowy wykup (${money(Math.round(p.val * 1.05 / 1e4) * 1e4)}) przekracza możliwości klubu.` };
   if (hashN(p.id * 31 + absDay()) < (mode === 'obl' ? 0.1 : 0.3)) return { ok: false, msg: `${c.name} odrzuca prośbę o wypożyczenie. (spróbuj za kilka dni)` };
   ut.bal -= fee; ut.tb -= fee; c.bal += fee;
   detach(p); attach(p, ut); p.loan = { from: c.id, season: S.season }; if (mode === 'opt' || mode === 'obl') p.loan.buy = { price: Math.round(p.val * (mode === 'opt' ? 1.15 : 1.05) / 1e4) * 1e4, obl: mode === 'obl' }; S.know[p.id] = 100; refillAI(c);
@@ -1559,7 +1563,7 @@ function genOffers() {
 }
 function aiTransfers() {
   for (let k = 0; k < 25; k++) {
-    const b = wpick(S.clubs, c => c.id === S.user || isReserve(c) ? 0 : Math.pow(c.rep / 50, 3));
+    const b = wpick(S.clubs, c => c.id === S.user || isReserve(c) ? 0 : Math.pow(c.rep / 50, 2));
     if (!b.lineup.length) continue;
     const slots = slotsOf(b.formation);
     let worst = 0, wv = 999;
@@ -1580,10 +1584,10 @@ function aiTransfers() {
     if (fee >= 3e6 || seller.cc === userClub().cc || b.cc === userClub().cc) news(`🔄 Transfer: ${bestP.n} (${bestP.ovr}) – ${seller.name} → ${b.name} (${money(fee)}).`);
   }
   // AI podpisuje lepszych wolnych agentów
-  const fa = S.free.filter(p => p.age <= 33).sort((a, b) => (b.ovr + Math.max(0, b.pot - b.ovr) * 0.5) - (a.ovr + Math.max(0, a.pot - a.ovr) * 0.5)).slice(0, 30);
+  const fa = S.free.filter(p => p.age <= 35).sort((a, b) => (b.ovr + Math.max(0, b.pot - b.ovr) * 0.5) - (a.ovr + Math.max(0, a.pot - a.ovr) * 0.5)).slice(0, 30);
   for (let k = 0; k < 14 && fa.length; k++) {
     const p = fa.splice(ri(0, Math.min(fa.length - 1, 5)), 1)[0];
-    const cs = S.clubs.filter(c => c.id !== S.user && !isReserve(c) && c.players.length < 28 && teamLevel(c) <= p.ovr + 3 && teamLevel(c) >= p.ovr - 8); const c = cs.length ? pick(cs) : null;
+    const cs = S.clubs.filter(c => c.id !== S.user && !isReserve(c) && c.players.length < 28 && teamLevel(c) <= p.ovr + 3 && teamLevel(c) >= p.ovr - 12); const c = cs.length ? pick(cs) : null;
     if (!c) continue;
     S.free = S.free.filter(x => x !== p); attach(p, c); p.con = ri(1, 3); p.wage = calcWage(p, c.rep); p.val = calcValue(p);
     if (p.ovr >= 72) news(`✍️ Wolny transfer: ${p.n} (${p.ovr}) → ${c.name}.`);
@@ -1858,7 +1862,9 @@ const STAFF_ROLES = { ass: ['Asystent trenera', 'Rozwój całej kadry, rady prze
 /* sztab: ocena OVR 1–99 (dawne „ab” 1–20 przeliczane przy wczytaniu) */
 const staffWage = ovr => Math.round((100 + Math.pow(ovr / 5, 2.4) * 18) / 100) * 100;
 function genStaff(ab) { const ovr = clamp(Math.round(ab * 4.75 + gauss() * 3), 1, 99); return { n: genName(pick(COACH_NAT)), ovr, wage: staffWage(ovr) }; }
-const staffOvr = k => { const x = S.staff && S.staff[k]; if (!x) return 50; if (x.ovr == null) x.ovr = clamp(Math.round((x.ab || 10) * 4.75), 1, 99); return x.ovr; };
+const staffOvr = k => { const x = S.staff && S.staff[k]; if (!x) return 50; if (x.ovr == null) { x.ovr = clamp(Math.round((x.ab || 10) * 4.75), 1, 99); x.wage = staffWage(x.ovr); } return x.ovr; };
+/* „normalny” koszt sztabu dla klubu o danej renomie – tylko tyle sponsorzy pokrywają (lepszy sztab = Twój koszt) */
+const staffNorm = () => Object.keys(STAFF_ROLES).length * staffWage(clamp(userClub().rep / 6, 3, 16) * 4.75);
 function initStaff(force) {
   if (S.staff && S.staff.ass && !force) { for (const k in STAFF_ROLES) if (!S.staff[k]) S.staff[k] = genStaff(clamp(userClub().rep / 6, 3, 16) + ri(-2, 2)); return; }
   const r = userClub().rep, base = clamp(r / 6, 3, 16);
@@ -1866,14 +1872,14 @@ function initStaff(force) {
   S.staffMkt = null;
 }
 function staffMarket() {
-  if (S.staffMkt && S.staffMkt.s === S.season && S.staffMkt.w === Math.floor(S.day / 10)) return S.staffMkt.list;
+  if (S.staffMkt && S.staffMkt.s === S.season && S.staffMkt.w === Math.floor(S.day / 20) && Object.keys(STAFF_ROLES).every(k => S.staffMkt.list[k] && S.staffMkt.list[k].every(c => c.ovr != null))) return S.staffMkt.list;
   const r = userClub().rep, list = {};
-  for (const k in STAFF_ROLES) list[k] = [0, 1, 2].map(i => genStaff(clamp(r / 6 + 1 + i * 2 + gauss() * 2, 2, 20)));
-  S.staffMkt = { s: S.season, w: Math.floor(S.day / 10), list }; return list;
+  for (const k in STAFF_ROLES) list[k] = [0, 1, 2].map(i => genStaff(clamp(r / 6 + 1 + i * 1.5 + gauss() * 2, 2, Math.min(20, r / 5 + 3))));
+  S.staffMkt = { s: S.season, w: Math.floor(S.day / 20), list }; return list;
 }
 function hireStaff(role, i) {
   const c = staffMarket()[role][i], ut = userClub(); if (!c) return { ok: false, msg: 'Kandydat niedostępny.' };
-  const comp = S.staff[role].wage * 8;
+  const comp = S.staff[role].wage * 26;
   if (ut.bal - comp < 0) return { ok: false, msg: `Brak środków na odprawę dla obecnego członka sztabu (${money(comp)}).` }; ut.bal -= comp; ut.fin.exp += comp;
   S.staff[role] = c; S.staffMkt.list[role].splice(i, 1);
   saveSoon(); return { ok: true, msg: `${c.n} dołącza do sztabu (odprawa dla poprzednika: ${money(comp)}).` };
@@ -2042,7 +2048,11 @@ function endSeason() {
   for (const id in finals) { const n = finals[id].length; finals[id].forEach(r => { const c = club(r.id); if (c.rep0 == null) c.rep0 = c.rep; if (c.id !== ut.id) c.rep = clamp(c.rep + (r.pos <= 2 && rnd() < (97 - c.rep) / 15 ? 1 : r.pos >= n - 1 ? -1 : 0), 5, 97); }); }
   // powolny powrót reputacji do długoterminowego poziomu klubu (mniej wiecznych dynastii)
   for (const c of S.clubs) { if (c.rep0 == null) c.rep0 = c.rep; if (c.id !== ut.id && rnd() < 0.25) c.rep += Math.sign(c.rep0 - c.rep); }
-  if (upos.pos <= 2) ut.rep = clamp(ut.rep + 2, 1, 97);
+  // renoma klubu menedżera: sukcesy podnoszą, a długofalowo dąży do poziomu prestiżu
+  { const n = finals[wasLg].length, tier = S.leagues[wasLg].tier; let dr = upos.pos <= 2 ? 2 : upos.pos <= 4 ? 1 : upos.pos >= n - 1 ? -1 : 0;
+    if (tier === 1 && myEuro && myEuro.teams.includes(ut.id)) dr += 1; if (myCup && myCup.champion === ut.id) dr += 1;
+    const pt = typeof presOf === 'function' ? presOf(ut) * 8 + 25 : ut.rep; if (pt > ut.rep + 3) dr += 1;
+    ut.rep = clamp(ut.rep + clamp(dr, -2, 3), 1, 97); }
   if (myEuro && myEuro.champion === ut.id) ut.rep = clamp(ut.rep + 3, 1, 97);
   // nagrody indywidualne
   const cand = PALL.filter(p => p.tid >= 0).map(p => {
@@ -2151,11 +2161,13 @@ function endSeason() {
   if (S._inv && S._inv.length) { lines.push(`🏗️ Rywale inwestują w infrastrukturę: ${S._inv.join(', ')}.`); } S._inv = [];
   // reprezentacja gracza: uzupełnij powołania do 23
   if (S.nt) { const st = S.ntTeams[S.nt]; st.sq = st.sq.filter(id => PM.has(id)); if (st.sq.length < 23) for (const id of autoCallup(S.nt)) { if (st.sq.length >= 23) break; if (!st.sq.includes(id)) st.sq.push(id); } }
-  S.free = S.free.sort((a, b) => b.ovr - a.ovr).slice(0, 150);
+  S.free = S.free.filter(p => !(p.age >= 35 || (p.age >= 34 && p._fa0 != null && p._fa0 < S.season)));   // weterani bez klubu kończą kariery
+  for (const p of S.free) if (p._fa0 == null) p._fa0 = S.season;
+  S.free = S.free.sort((a, b) => b.ovr - a.ovr).slice(0, 100);
   rebuildIndex();
   for (const c of S.clubs) { c.level = teamLevel(c); c.price = basePrice(c) * (c.id === S.user ? (S.tkt || 1) : 1); }
   // sponsorzy użytkownika: połowa drogi do poziomu pokrywającego koszty (bez niekończącego się wzrostu)
-  { const sp0 = ut.spons; rebalanceSpons(ut); const tgt = (ut.spons + staffCost() + acadCost()) * DF().spons; ut.spons = Math.round((sp0 * 0.5 + tgt * 0.5) / 1000) * 1000; }
+  { const sp0 = ut.spons; rebalanceSpons(ut); const tgt = (ut.spons + Math.min(staffCost(), staffNorm()) + acadCost()) * DF().spons; ut.spons = Math.round((sp0 * 0.5 + tgt * 0.5) / 1000) * 1000; }
   ut.tb += Math.max(0, Math.round((ut.fin.inc - ut.fin.exp) * 0.3));
   ut.tb = Math.min(ut.tb, Math.max(0, Math.round(ut.bal * 0.8)));   // budżet nigdy ponad realne pieniądze
   const relegated = S.leagues[ut.lg].tier > wasTier;
@@ -2451,9 +2463,23 @@ const idbGet = (db, k) => new Promise((res, rej) => { const r = db.transaction('
 const idbPut = (db, k, v) => new Promise((res, rej) => { const tx = db.transaction('s', 'readwrite'); tx.objectStore('s').put(v, k); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
 const idbDel = (db, k) => new Promise(res => { const tx = db.transaction('s', 'readwrite'); tx.objectStore('s').delete(k); tx.oncomplete = res; tx.onerror = res; });
 function slotMeta() { const ut = S && S.user >= 0 ? userClub() : null; return ut ? { diff: S.diff || 'normal', name: S.manager, club: ut.name, short: ut.short, col: ut.col, lg: S.leagues[ut.lg].name, season: S.season, date: curDay() ? curDay().date : 0, ovr: Math.round(S.mgr.ovr), ts: Date.now() } : null; }
+/* odchudzanie zapisu: domyślne wartości i ułamki nie trafiają do pamięci */
+const SAVE_NULL = ['listed', 'loan', 'preTo', 'sellOn', 'rcl', 'bb', 'obj', 'role', '_disc', '_ctr', 'retrain'];
+function compactSave() {
+  const fix = p => {
+    if (p.tr && typeof TRC !== 'undefined') { TRC.set(p.id, p.tr); delete p.tr; }
+    p.mor = Math.round(p.mor); p.fit = Math.round(p.fit); p.form = Math.round(p.form); if (p.shp != null) p.shp = Math.round(p.shp); if (p.pt != null) p.pt = Math.round(p.pt * 100) / 100;
+    for (const k of SAVE_NULL) if (p[k] === null || p[k] === false) delete p[k];
+    if (p._bids === 0) delete p._bids;
+    if (p._disc && p._disc.until < absDay()) delete p._disc;
+  };
+  for (const c of S.clubs) for (const p of c.players) fix(p);
+  for (const p of S.free || []) fix(p);
+}
 async function saveNow() {
   if (typeof indexedDB === 'undefined' || !S) return;
-  if (globalThis.MATCH_LIVE) return;   // w trakcie meczu na żywo (wyniki innych meczów już policzone) – zapis po zakończeniu dnia
+  if (globalThis.MATCH_LIVE) return;
+  try { compactSave(); } catch (e) { console.warn('compact', e); }   // w trakcie meczu na żywo (wyniki innych meczów już policzone) – zapis po zakończeniu dnia
   try { const db = await idb(); await idbPut(db, slotKey(SLOT), S); const meta = (await idbGet(db, 'meta')) || {}; meta[SLOT] = slotMeta(); await idbPut(db, 'meta', meta); } catch (e) { console.warn('save', e); }
 }
 let saveT = null;

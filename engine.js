@@ -296,16 +296,18 @@ function weatherFor(date, cc, seed) {
 }
 const matchWeather = (h, date) => { const nc = typeof h.nation === 'string' ? h.nation : null; return weatherFor(date, h.cc || nc || 'ENG', Math.floor(date / 864e5) * 7919 + (h.id != null ? h.id : nc ? nc.charCodeAt(0) * 97 + nc.charCodeAt(1) * 13 + nc.charCodeAt(2) : 0) * 31 + 17); };
 function createMatch(h, a, opts = {}) {
+  // asystent prowadzący drużynę: mecz liczony jak mecz menedżera (trudność, taktyka, atuty stadionu)
+  const uu = opts.user || (globalThis.ASSIST_ON && typeof S !== 'undefined' && S ? (h.id === S.user && !h.nation ? 'h' : a.id === S.user && !a.nation ? 'a' : null) : null);
   const m = {
     comp: opts.comp || 'L', label: opts.label || '', neutral: !!opts.neutral, ko: opts.ko || null,
-    home: makeSide(h, opts.user === 'h', opts.quick, opts.emergency), away: makeSide(a, opts.user === 'a', opts.quick, opts.emergency),
+    home: makeSide(h, uu === 'h', opts.quick, opts.emergency), away: makeSide(a, uu === 'a', opts.quick, opts.emergency),
     minute: 0, end: 90 + ri(1, 4), over: false, htDone: false, et: false, pens: null, ev: [], dirty: true, alert: null,
   };
   const d = (h.rep || 50) - (a.rep || 50);
   if (m.comp === 'C' && Math.abs(d) >= 10) (d > 0 ? m.away : m.home).cf *= 1.07; // magia pucharu: słabszy gra ambitniej
   if (m.home.user && !m.neutral && typeof commLvl === 'function') m.home.cf *= (1 + 0.006 * commLvl('turf') + 0.003 * commLvl('screen')) * (typeof stadHomeK === 'function' ? stadHomeK(h) : 1);   // własna, zadbana murawa
   // sztab gracza: analityk taktyczny (każdy mecz) i asystent prowadzący drużynę podczas symulacji dni
-  if (typeof S !== 'undefined' && S && S.staff && typeof staffOvr === 'function') for (const sd of [m.home, m.away]) if (sd.t && sd.t.id === S.user && !sd.t.nation) { sd.cf *= 1 + (staffOvr('tac') - 50) * 0.0008; if (globalThis.ASSIST_ON) sd.cf *= 0.95 + staffOvr('ass') * 0.0008; }
+  if (typeof S !== 'undefined' && S && S.staff && typeof staffOvr === 'function') for (const sd of [m.home, m.away]) if (sd.t && sd.t.id === S.user && !sd.t.nation) { sd.cf *= 1 + (staffOvr('tac') - 50) * 0.0008; if (globalThis.ASSIST_ON) sd.cf *= 0.985 + (staffOvr('ass') - 50) * 0.0004; }
   if (m.home.user || m.away.user) { const ah = avg(m.home.pitch.map(x => x.ov)), aa = avg(m.away.pitch.map(x => x.ov)), gap = Math.abs(ah - aa); if (gap > 4) (ah > aa ? m.away : m.home).cf *= 1 + Math.min(UND_MAX, (gap - 4) * UND_K); }   // słabszy mobilizuje się – mniej pogromów
   if (m.home.ai && !m.home.user) m.home.ment = d > 10 ? 'att' : d < -12 ? 'def' : 'bal';
   if (m.away.ai && !m.away.user) m.away.ment = d < -10 ? 'att' : d > 12 ? 'def' : 'bal';
@@ -506,11 +508,11 @@ function finishMatch(m) {
       if (LINE[r.pos] === 'GK' || LINE[r.pos] === 'DEF') rating += (opp.goals === 0 ? 0.5 : 0) - opp.goals * 0.2;
       r.rating = clamp(Math.round(rating * 10) / 10, 3, 10); r.mins = mins;
       p.fit = clamp(p.fit - mins * (p.pos === 'GK' ? 0.08 : 0.19 * (side.wxF || 1) * (1 + 0.12 * ((side.tac && side.tac.press) || 0))), 15, 100);
-      p.form = Math.round(clamp(p.form * 0.65 + clamp((r.rating - 4) / 5 * 100, 0, 100) * 0.35, 0, 100));
+      p.form = Math.round(clamp(p.form * 0.65 + clamp((r.rating - 3.8) / 5 * 100, 0, 100) * 0.35, 0, 100));
       p.mor = clamp(p.mor + (gd > 0 ? 3 : gd < 0 ? -3 : 0) + (r.rating >= 7.5 ? 2 : r.rating <= 5.5 ? -2 : 0), 0, 100);
       if (club) {
         p.shp = clamp(p.shp + mins / 90 * 16, 0, 100);
-        const st = p.st; st.fm = (st.fm || 0) + p.form; st.apps++; st.g += r.g; st.a += r.a; st.rs += r.rating; st.mins += mins; if (r.y) st.y++; if (r.r) st.r++; if (opp.goals === 0 && mins >= 60 && (LINE[r.pos] === 'GK' || LINE[r.pos] === 'DEF')) st.cs = (st.cs || 0) + 1; st.xg = (st.xg || 0) + (r.xg || 0);
+        const st = p.st; st.fm = (st.fm || 0) + p.form; st.apps++; if (mins >= 30) st.a30 = (st.a30 || 0) + 1; if (typeof S !== 'undefined' && S && side.t.id === S.user) st.mu = (st.mu || 0) + mins; st.g += r.g; st.a += r.a; st.rs += r.rating; st.mins += mins; if (r.y) st.y++; if (r.r) st.r++; if (opp.goals === 0 && mins >= 60 && (LINE[r.pos] === 'GK' || LINE[r.pos] === 'DEF')) st.cs = (st.cs || 0) + 1; st.xg = (st.xg || 0) + (r.xg || 0);
         if (m.comp === 'L') p.lg += r.g; else p.eg += r.g;
         p.car.apps++; p.car.g += r.g; p.car.a += r.a;
       } else if (m.comp === 'P') p.shp = clamp(p.shp + mins / 90 * 22, 0, 100);

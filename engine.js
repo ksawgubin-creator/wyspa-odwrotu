@@ -147,7 +147,9 @@ function injure(p) {
   p.inj = days; p.injT = t[0]; p.injLast = typeof absDay === 'function' ? absDay() : 0; p._rushed = 0; p.injN = (p.injN || 0) + 1;
   return { days, type: t[0] + (recur ? ' (nawrót)' : '') };
 }
-const cond = (p, fit) => (0.72 + 0.28 * clamp(fit, 0, 100) / 100) * (0.96 + 0.0008 * p.form) * (0.97 + 0.0006 * p.mor) * (0.95 + 0.0005 * p.shp);
+/* forma: od −3,5 do +3,5 OVR (beznadziejna … rewelacyjna) */
+const formAdj = p => clamp(((p.form == null ? 50 : p.form) - 50) / 50, -1, 1) * 3.5;
+const cond = (p, fit) => (0.72 + 0.28 * clamp(fit, 0, 100) / 100) * (0.97 + 0.0006 * p.mor) * (0.95 + 0.0005 * p.shp);
 function moraleLabel(m) { return m >= 80 ? ['😁', 'Wyśmienite'] : m >= 65 ? ['🙂', 'Bardzo dobre'] : m >= 45 ? ['😐', 'Dobre'] : m >= 30 ? ['🙁', 'Słabe'] : ['😠', 'Fatalne']; }
 function formLabel(f) { return f >= 75 ? 'Świetna' : f >= 60 ? 'Dobra' : f >= 42 ? 'Przeciętna' : f >= 28 ? 'Słaba' : 'Fatalna'; }
 function money(n) {
@@ -176,7 +178,7 @@ const lastName = p => { const s = p.n.split(' '); return s.length > 1 ? s.slice(
 /* ---------- wybór składu ---------- */
 let PM = new Map();
 const pget = id => PM.get(id);
-function pickScore(p, pos) { return (typeof S !== 'undefined' && S && S.promises && p.tid === S.user && S.promises.some(x => x.pid === p.id) ? 1.12 : 1) * ovrAt(p, pos) * (0.55 + 0.45 * clamp(p.fit, 0, 100) / 100) * (p.fit < 55 ? 0.85 : 1); }
+function pickScore(p, pos) { return (typeof S !== 'undefined' && S && S.promises && p.tid === S.user && S.promises.some(x => x.pid === p.id) ? 1.12 : 1) * (ovrAt(p, pos) + formAdj(p)) * (0.55 + 0.45 * clamp(p.fit, 0, 100) / 100) * (p.fit < 55 ? 0.85 : 1); }
 /* najlepsza jedenastka dla formacji: zachłanny przydział + poprawki zamianami (także z ławką) */
 function pickLineup(t, f) {
   const slots = slotsOf(f), pool = t.players.filter(isAvail);
@@ -266,7 +268,7 @@ function makeSide(t, isUser, quick, emergency) {
   const side = {
     t, ment: isUser ? (t.ment || 'bal') : 'bal', ai: !isUser || quick, user: isUser, tac: Object.assign({ press: 0, tempo: 0, line: 0, width: 0 }, isUser && t.tac || {}),
     duty: isUser && t.duty ? t.duty.slice() : null, pm: isUser && t.pm != null ? t.pm : null, oi: isUser && t.oi ? { mark: (t.oi.mark || []).slice(), hard: !!t.oi.hard } : { mark: [], hard: false }, xg: 0,
-    pitch: t.lineup.map((id, i) => { const p = pget(id); return p ? { p, pos: slots[i].pos, ov: ovrAt(p, slots[i].pos), slot: i } : null; }).filter(Boolean),
+    pitch: t.lineup.map((id, i) => { const p = pget(id); return p ? { p, pos: slots[i].pos, ov: ovrAt(p, slots[i].pos) + formAdj(p), slot: i } : null; }).filter(Boolean),
     bench: t.bench.map(pget).filter(Boolean), subs: 0, goals: 0, shots: 0, sot: 0, poss: 0, fouls: 0, yel: 0, corners: 0,
     rec: {}, str: null, scorers: [], cf: (1 + ((typeof coachOvr === 'function' ? coachOvr(t) : 60) - 60) * 0.0009) * clamp(1 + gauss() * DAY_VAR, 0.82, 1.18) * (isUser && typeof DF === 'function' ? DF().cf : 1),
   };
@@ -391,13 +393,13 @@ function removeFromPitch(side, p, minute) { side.pitch = side.pitch.filter(s => 
 function substitute(m, side, outP, inP) {
   const s = side.pitch.find(x => x.p === outP);
   if (!s || side.subs >= MAX_SUBS || !side.bench.includes(inP)) return false;
-  s.p = inP; s.ov = ovrAt(inP, s.pos); side.bench = side.bench.filter(b => b !== inP); side.subs++;
+  s.p = inP; s.ov = ovrAt(inP, s.pos) + formAdj(inP); side.bench = side.bench.filter(b => b !== inP); side.subs++;
   side.rec[outP.id].off = m.minute;
   side.rec[inP.id] = { p: inP, on: m.minute, off: null, g: 0, a: 0, y: 0, r: 0, sv: 0, pos: s.pos };
   ev(m, 'sub', side, `🔁 ${side.t.name}: ${shortName(inP)} za ${shortName(outP)}.`);
   m.dirty = true; return true;
 }
-function bestSubFor(side, pos) { return side.bench.filter(b => (b.pos === 'GK') === (pos === 'GK')).sort((a, b) => ovrAt(b, pos) * cond(b, b.fit) - ovrAt(a, pos) * cond(a, a.fit))[0]; }
+function bestSubFor(side, pos) { return side.bench.filter(b => (b.pos === 'GK') === (pos === 'GK')).sort((a, b) => (ovrAt(b, pos) + formAdj(b)) * cond(b, b.fit) - (ovrAt(a, pos) + formAdj(a)) * cond(a, a.fit))[0]; }
 function aiSubs(m, side) {
   if (side.subs >= MAX_SUBS || !side.bench.length) return;
   const cand = side.pitch.filter(s => s.pos !== 'GK').map(s => ({ s, f: fitNow(side, s, m.minute) })).sort((a, b) => a.f - b.f)[0];
@@ -508,7 +510,7 @@ function finishMatch(m) {
       p.mor = clamp(p.mor + (gd > 0 ? 3 : gd < 0 ? -3 : 0) + (r.rating >= 7.5 ? 2 : r.rating <= 5.5 ? -2 : 0), 0, 100);
       if (club) {
         p.shp = clamp(p.shp + mins / 90 * 16, 0, 100);
-        const st = p.st; st.apps++; st.g += r.g; st.a += r.a; st.rs += r.rating; st.mins += mins; if (r.y) st.y++; if (r.r) st.r++; if (opp.goals === 0 && mins >= 60 && (LINE[r.pos] === 'GK' || LINE[r.pos] === 'DEF')) st.cs = (st.cs || 0) + 1; st.xg = (st.xg || 0) + (r.xg || 0);
+        const st = p.st; st.fm = (st.fm || 0) + p.form; st.apps++; st.g += r.g; st.a += r.a; st.rs += r.rating; st.mins += mins; if (r.y) st.y++; if (r.r) st.r++; if (opp.goals === 0 && mins >= 60 && (LINE[r.pos] === 'GK' || LINE[r.pos] === 'DEF')) st.cs = (st.cs || 0) + 1; st.xg = (st.xg || 0) + (r.xg || 0);
         if (m.comp === 'L') p.lg += r.g; else p.eg += r.g;
         p.car.apps++; p.car.g += r.g; p.car.a += r.a;
       } else if (m.comp === 'P') p.shp = clamp(p.shp + mins / 90 * 22, 0, 100);

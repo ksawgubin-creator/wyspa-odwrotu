@@ -2283,7 +2283,7 @@ function potDrift(p, c, notes, maxM) {
     if (d > 0) d *= clamp((88 - p.pot) / 12, 0.1, 1);
     p.pot = clamp(p.pot + clamp(Math.round(d), -6, 6), p.ovr, 95); return;
   }
-  let d = (sh - (mine ? 0.4 : 0.3)) * 9 + (traits(p).pro - 10.5) * 0.25 + gauss() * 1.2 + (p.loan && p.tid !== p.loan.from && sh >= 0.5 ? 1 : 0) + (st.apps >= 10 && ar >= 7 ? 1 : 0);
+  let d = (sh - (mine ? 0.4 : 0.3)) * 9 + (traits(p).pro - 10.5) * 0.25 + gauss() * 1.2 + (p.loan && p.tid !== p.loan.from && sh >= 0.5 ? 1 : 0) + (st.apps >= 10 && ar >= 7 ? 1 : 0) + (st.apps >= 5 && st.fm != null ? clamp((st.fm / st.apps - 50) / 20, -2.5, 2.5) : 0);   // forma w sezonie
   d *= p.age <= 19 ? 1.25 : p.age <= 21 ? 1 : p.age <= 23 ? 0.7 : 0.35;
   if (d > 0) d *= clamp((95 - p.pot) / 10, 0.2, 1);
   d = clamp(Math.round(d), -6, 7);
@@ -2293,10 +2293,11 @@ function potDrift(p, c, notes, maxM) {
 /* trend potencjału w trakcie sezonu (do karty zawodnika) */
 function potTrend(p) {
   if (p.age > 23) return null; const c = clubOf(p); if (!c) return null;
-  const maxM = Math.max(1, ...c.players.map(q => (q.st && q.st.mins) || 0)), sh = potShare(p, maxM);
+  const maxM = Math.max(1, ...c.players.map(q => (q.st && q.st.mins) || 0)); let sh = potShare(p, maxM), sh0;
   if (maxM < 450) return { t: 0, sh, txt: 'za wcześnie na ocenę' };
   const mine = c.id === S.user || (p.loan && p.loan.from === S.user), th = 0.4;
   if (!mine) return p.pt >= 0.75 ? { t: 1, sh, txt: 'rośnie – gra regularnie' } : p.pt >= 0.45 ? { t: 0, sh, txt: 'stabilny' } : { t: -1, sh, txt: 'spada – mało gra' };
+  const fm = p.st && p.st.apps >= 3 && p.st.fm != null ? (p.st.fm / p.st.apps - 50) / 100 : 0; sh0 = sh; sh = sh + fm;   // dobra forma przyspiesza, słaba hamuje
   return sh >= th + 0.2 ? { t: 1, sh, txt: 'rośnie – gra regularnie' } : sh >= th - 0.1 ? { t: 0, sh, txt: 'stabilny' } : { t: -1, sh, txt: 'spada – za mało minut' + (p.age <= 21 && !p.loan ? ' (rozważ wypożyczenie)' : '') };
 }
 function jobOffers() {

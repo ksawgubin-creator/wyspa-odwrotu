@@ -23,6 +23,7 @@ const stars = c => presStars(c);
 function toast(t, kind) {
   const el = $('#toast'); el.textContent = t; el.className = 'on' + (kind ? ' ' + kind : '') + ($('#match') && !$('#match').classList.contains('hidden') ? ' low' : '');
   if (kind && typeof uk_haptic === 'function') uk_haptic(kind === 'bad' ? 'bad' : 'ok');
+  el.onclick = () => el.classList.remove('on');
   clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('on'), 2600);
 }
 const toastClear = () => { const el = $('#toast'); el.classList.remove('on'); clearTimeout(toast.t); };
@@ -1033,7 +1034,9 @@ function squadNeeds() {
 function vSearch() {
   const f = UI.f, list = searchList();
   const mid = r => (r[0] + r[1]) / 2, need = squadNeeds();
-  const fitK = p => { const o = ovrEst(p), pt = know(p) >= 30 ? mid(ovrRange(p, true)) : o; return o + Math.max(0, pt - o) * 0.35 - Math.max(0, p.age - 29) * 2.5 + (need[p.pos] || 0) * 3; };
+  const ut = userClub(), best = {}; for (const q of ut.players) for (const ps of [q.pos, ...(q.alt || [])]) best[ps] = Math.max(best[ps] || 0, ps === q.pos ? q.ovr : q.ovr - 3);
+  // ocena dopasowania: poziom + potencjał + realne wzmocnienie pozycji (rezerwowy bramkarz to mniejsza potrzeba)
+  const fitK = p => { const o = ovrEst(p), pt = know(p) >= 30 ? mid(ovrRange(p, true)) : o; return o + Math.max(0, pt - o) * 0.35 - Math.max(0, p.age - 29) * 2.5 + (need[p.pos] || 0) * (p.pos === 'GK' ? 1 : 3) + clamp(o - (best[p.pos] || 0), -6, 8) * 0.8; };
   const key = f.sort === 'pot' ? (p => know(p) >= 30 ? mid(ovrRange(p, true)) : 0) : f.sort === 'val' ? (p => p.val) : f.sort === 'age' ? (p => -p.age) : f.sort === 'ovr' ? ovrEst : fitK;
   list.sort((a, b) => key(b) - key(a));
   const act = ['cc', 'pos', 'ageMin', 'age', 'ovr', 'ovrMax', 'potMin', 'potMax', 'priceMin', 'price'].filter(k => f[k]);
@@ -1115,7 +1118,7 @@ function vOffers() {
     <small class="mut">Wartość: ${money(p.val)} • morale zawodnika: ${moraleLabel(p.mor).join(' ')}</small>
     <div class="btns"><button class="btn pri sp" data-act="accept" data-arg="${o.id}">Akceptuj</button><button class="btn" data-act="ctroffer" data-arg="${o.id}">💬 Negocjuj</button><button class="btn" data-act="decline" data-arg="${o.id}">Odrzuć</button></div></div>`; }).join('') || `<div class="card">${empty('📭', 'Brak ofert za Twoich zawodników', 'Wystaw zawodnika na sprzedaż w jego karcie – oferty przychodzą w oknie transferowym.')}</div>`;
 }
-ACT.ctroffer = id => { const o = S.offers.find(x => x.id === +id); if (!o) return; const p = pget(o.pid); CTR = { id: o.id, ask: Math.round(Math.max(o.amount * 1.2, p.val) / 1e4) * 1e4 }; renderCtr(); };
+ACT.ctroffer = id => { const o = S.offers.find(x => x.id === +id); if (!o) return; const p = pget(o.pid); CTR = { id: o.id, ask: o.agreed ? o.amount : Math.round(Math.max(o.amount * 1.2, p.val) / 1e4) * 1e4 }; renderCtr(o.agreed ? { cls: 'good', t: `Uzgodniono ${money(o.amount)} – wystarczy potwierdzić sprzedaż.` } : undefined); };
 let CTR = null;
 function renderCtr(note) {
   const o = S.offers.find(x => x.id === CTR.id); if (!o) return closeModal();
@@ -1151,7 +1154,7 @@ ACT.offtab = a => { if (a !== UI.offTab) navPush(); UI.offTab = a; render(); };
 ACT.cltab = a => { if (a !== UI.clubTab) navPush(); UI.clubTab = a; render(); };
 function boardReqHtml() {
   return `<div class="card list"><h2>🏛️ Prośby do zarządu</h2><small class="mut">Zaufanie zarządu: ${Math.round(S.board.conf)}%. Odmowa nieco psuje relacje; o to samo możesz prosić co ~3 miesiące.</small>
-    ${Object.keys(BREQ).map(k => { const i = boardReqInfo(k); return `<div class="prow"><div class="pn">${BREQ[k][0]}<small>${BREQ[k][1]}${i.amt ? ` Kwota: ${money(i.amt)}${k === 'wb' ? '/tydz.' : ''}.` : ''}${i.cost ? ` Koszt klubu: ${money(Math.round(i.cost / 2))}.` : ''} ${i.lock ? '🔒 ' + i.lock : 'Szanse: ' + appChanceTxt(i.p) + '.'}</small></div><button class="btn sm" data-act="breq" data-arg="${k}" ${i.lock ? 'disabled' : ''}>Poproś</button></div>`; }).join('')}</div>`;
+    ${Object.keys(BREQ).map(k => { const i = boardReqInfo(k); return `<div class="prow"><div class="pn">${BREQ[k][0]}<small>${BREQ[k][1]}${i.amt ? ` Kwota: ${money(i.amt)}${k === 'wb' ? '/tydz' : ''}.` : ''}${i.cost ? ` Koszt klubu: ${money(Math.round(i.cost / 2))}.` : ''} ${i.lock ? '🔒 ' + i.lock : 'Szanse: ' + appChanceTxt(i.p) + '.'}</small></div><button class="btn sm" data-act="breq" data-arg="${k}" ${i.lock ? 'disabled' : ''}>Poproś</button></div>`; }).join('')}</div>`;
 }
 ACT.breq = k => { const r = boardRequest(k); toast(r.msg, r.ok ? 'ok' : 'bad'); render(); };
 function vFin() {

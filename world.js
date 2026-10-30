@@ -1337,11 +1337,12 @@ function loanOut(pid, toId) {
 function counterOffer(offerId, ask) {
   const o = S.offers.find(x => x.id === offerId); if (!o) return { res: 'gone', msg: 'Oferta wygasła.' };
   const p = pget(o.pid), b = club(o.from); if (o._ctrd >= 2) return { res: 'gone', msg: `${b.name} nie chce dalej negocjować.` };
+  if (o.agreed && ask > o.amount) return { res: 'counter', msg: `Kwota ${money(o.amount)} jest już uzgodniona z ${b.name} – potwierdź sprzedaż. Dalsze żądania mogą zerwać rozmowy.` };
   o._ctrd = (o._ctrd || 0) + 1;
   if (ask <= o.amount) return { res: 'accept', msg: `${b.name} chętnie zapłaci ${money(o.amount)} – nie musisz schodzić z ceny. Potwierdź sprzedaż.` };
   if (o.base == null) o.base = o.amount;   // limit liczony od pierwotnej oferty – „ostatnie słowo” jest ostateczne
   const limit = o.lim != null ? o.lim : (o.lim = o.base * (1.08 + 0.2 * hashN(o.id * 5 + p.id))), maxPay = Math.min(limit, b.bal);
-  if (ask <= maxPay) { o.amount = Math.round(ask / 1e4) * 1e4; saveSoon(); return { res: 'accept', msg: `${b.name} akceptuje Twoje warunki: ${money(o.amount)}. Potwierdź sprzedaż.` }; }
+  if (ask <= maxPay) { o.amount = Math.round(ask / 1e4) * 1e4; o.agreed = true; saveSoon(); return { res: 'accept', msg: `${b.name} akceptuje Twoje warunki: ${money(o.amount)}. Potwierdź sprzedaż.` }; }
   if (o._ctrd >= 2 || ask > limit * 1.35) { S.offers = S.offers.filter(x => x !== o); saveSoon(); return { res: 'gone', msg: `${b.name} wycofuje ofertę – „za drogo”.` }; }
   const nw = Math.round(Math.min(maxPay, (o.amount + ask) / 2) / 1e4) * 1e4;
   if (nw <= o.amount) { saveSoon(); return { res: 'counter', msg: `${b.name} nie podniesie oferty – zostaje ${money(o.amount)}. To ich ostatnie słowo.` }; }
@@ -1355,6 +1356,7 @@ function sellTo(offerId) {
   if (b.bal < o.amount) { S.offers = S.offers.filter(x => x !== o); return { ok: false, msg: `${b.name} wycofał ofertę – klub nie ma już tyle pieniędzy.` }; }
   if (ut.players.length <= 16) return { ok: false, msg: 'Kadra nie może liczyć mniej niż 16 zawodników.' };
   detach(p); attach(p, b); p.con = ri(2, 5); p.wage = calcWage(p, b.rep);
+  if (p.age <= 24) { S.soldY = (S.soldY || []).concat(p.id).slice(-20); }
   const so = p.sellOn ? Math.round(Math.max(0, o.amount) * p.sellOn.pct) : 0;
   if (so) { const sc = club(p.sellOn.club); sc.bal += so; msg('Klauzula odsprzedaży', `${sc.name} otrzymuje ${money(so)} (${Math.round(p.sellOn.pct * 100)}% z transferu ${p.n}).`); }
   p.sellOn = null;
@@ -1522,7 +1524,8 @@ function deadlineDay() {
   if (S.ddDone === S.season * 100 + S.day) return; S.ddDone = S.season * 100 + S.day;
   const n0 = S.offers.length; genOffers(); genOffers(); aiTransfers();
   const ut = userClub(), lv = teamLevel(ut);
-  if (!S.dl || absDay() - S.dl.day > 5) { const lvl = PALL.filter(p => p.tid >= 0 && p.tid !== ut.id && !p.loan && Math.abs(p.ovr - lv) <= 4 && p.age <= 30 && club(p.tid).players.length > 22 && !notForSale(p)); const deals = shuffle(lvl).slice(0, 4); for (const p of deals) p._disc = { k: 0.8, until: absDay() + 3 }; S.dl = { day: absDay(), deals: deals.map(p => p.id) }; }
+  if (!S.dl || absDay() - S.dl.day > 5) { const xi = ut.lineup.map(pget).filter(Boolean), need = {}; for (const ln of ['GK', 'DEF', 'MID', 'ATT']) { const q = xi.filter(p => LINE[p.pos] === ln); need[ln] = q.length ? Math.min(...q.map(p => p.ovr)) : 0; }
+    const lvl = PALL.filter(p => p.tid >= 0 && p.tid !== ut.id && !p.loan && p.age <= 31 && p.ovr > need[LINE[p.pos]] && p.ovr >= lv - 2 && p.ovr <= lv + 6 && askPrice(p) * 0.8 <= Math.max(ut.tb, 0) * 1.05 && club(p.tid).players.length > 22 && !notForSale(p)); const deals = shuffle(lvl).sort((a, b) => (b.ovr - need[LINE[b.pos]]) - (a.ovr - need[LINE[a.pos]])).slice(0, 5); for (const p of deals) p._disc = { k: 0.8, until: absDay() + 3 }; S.dl = { day: absDay(), deals: deals.map(p => p.id) }; }
   S.ddPop = S.day;
   msg('⏰ DEADLINE DAY!', `Dziś o północy zamyka się okno transferowe. Nowe oferty za Twoich zawodników: ${S.offers.length - n0}. Okazje last minute czekają w zakładce Transfery.`);
 }
@@ -1621,7 +1624,7 @@ function stadProjects(c) {
   const s = stadInit(c), B = c.builds || [], busy = k => B.some(b => b.s === k), bp = basePrice(c), out = [];
   for (const k in STANDS) {
     const add = Math.min(STAND_MAX[k] - s[k], Math.max(500, Math.round(s[k] * 0.3 / 100) * 100));
-    if (add >= 300) out.push({ id: 'exp:' + k, k: 'exp', s: k, name: `Rozbuduj: ${STANDS[k]}`, d: `+${add.toLocaleString('pl-PL')} miejsc (${standTiers(k, s[k])}→${standTiers(k, s[k] + add)} kondygnacje). W trakcie budowy 20% tej trybuny jest zamknięte.`, add, cost: Math.round(add * bp * 95 / 1e5) * 1e5, days: 70 + Math.round(add / 45), busy: busy(k) });
+    if (add >= 300) out.push({ id: 'exp:' + k, k: 'exp', s: k, name: `Rozbuduj: ${STANDS[k]}`, d: `+${add.toLocaleString('pl-PL')} miejsc${standTiers(k, s[k]) !== standTiers(k, s[k] + add) ? ` (nowa kondygnacja: ${standTiers(k, s[k])}→${standTiers(k, s[k] + add)})` : ''}. W trakcie budowy 20% tej trybuny jest zamknięte.`, add, cost: Math.round(add * bp * 95 / 1e5) * 1e5, days: 70 + Math.round(add / 45), busy: busy(k) });
     if (!s.roof[k]) out.push({ id: 'roof:' + k, k: 'roof', s: k, name: `Zadaszenie: ${STANDS[k]}`, d: 'Przy deszczu i śniegu frekwencja nie spada, +1,5% popytu i +1% wpływów z biletów (wygoda), głośniejszy doping (+atut boiska).', cost: Math.round(Math.max(400000, s[k] * 140) / 1e5) * 1e5, days: 75, busy: busy(k) });
   }
   if (s.corners < 2) out.push({ id: 'corners', k: 'corners', s: 'corners', name: s.corners ? 'Zabudowa narożników – 2. etap' : 'Zabudowa narożników', d: `+${(cornerSeats(c)).toLocaleString('pl-PL')} miejsc, zamknięta „misa" stadionu. Wymaga trybun za bramkami min. ${(4000 + s.corners * 3000).toLocaleString('pl-PL')} miejsc.`, add: cornerSeats(c), cost: Math.round(cornerSeats(c) * bp * 120 / 1e5) * 1e5, days: 150, busy: busy('corners'), lock: Math.min(s.north, s.south) < 4000 + s.corners * 3000 });
@@ -1805,6 +1808,8 @@ function setBoardObjective() {
   const down = lg.tier < ls.length ? promoN(lg.cc, lg.tier) : 0, up = lg.tier > 1 ? promoN(lg.cc, lg.tier - 1) : 0;
   let target = rank > n - down - 1 && down ? n - down : clamp(rank + (n >= 14 ? (rank <= 2 ? 1 : 2) : 1), 1, Math.max(1, n - down - 1)), text;
   // przejęcie w trakcie sezonu: cel uwzględnia aktualną pozycję w tabeli
+  // po udanym sezonie apetyt zarządu rośnie: cel nie gorszy niż zeszłoroczne miejsce + 2
+  const lp = S.board.lastPos; if (lp && lp.lg === ut.lg && lp.club === ut.id && lp.s === S.season - 1) target = Math.min(target, Math.max(1, lp.pos + 2));
   const tbNow = table(ut.lg), me = tbNow.find(r => r.id === ut.id); if (me && me.P >= 5) target = clamp(Math.max(target, me.pos - 2), 1, down ? n - down : n);
   const upName = lg.tier > 1 ? S.leagues[ls[lg.tier - 2]].name : '';
   if (lg.tier > 1 && target <= up) text = `Celem zarządu jest awans (do ligi: ${upName}).`;
@@ -1942,6 +1947,7 @@ function endSeason() {
   const upos = finals[ut.lg].find(r => r.id === ut.id);
   const aw = seasonAwards(ut.lg, finals), ks0 = topScorers(ut.lg, 1)[0];
   const wasLg = ut.lg, wasTier = S.leagues[ut.lg].tier;
+  S.board.lastPos = { pos: upos.pos, lg: wasLg, club: ut.id, s: S.season };
   // nagrody pieniężne
   for (const id in finals) { const n = finals[id].length; finals[id].forEach(r => { const c = club(r.id); const pr = Math.round(c.tv * 14 * (n - r.pos + 1) / n); c.bal += pr; c.fin.inc += pr; if (c.id === S.user) { c.tb += pr; lines.push(`💰 Premia za miejsce w lidze: ${money(pr)} (trafia też do budżetu transferowego).`); } }); }
   payDebts();
@@ -2120,7 +2126,7 @@ function endSeason() {
     // AI inwestuje w ośrodek treningowy i akademię (maks. jedna inwestycja na sezon)
     if (!isReserve(c)) {
       const tf = aiTf(c), ya = aiYa(c), k = tf <= ya ? 'tf' : 'ya', lv = k === 'tf' ? tf : ya, cost = FAC_COST(Math.max(1, Math.floor(lv)));
-      if (lv < 5 && c.bal > cost * 2.2 && rnd() < 0.6) { c[k] = Math.min(5, Math.floor(lv) + 1); c.bal -= cost; if (c.cc === ut.cc && S.leagues[c.lg].tier <= S.leagues[ut.lg].tier) news(`🏗️ ${c.name} inwestuje ${money(cost)} w ${k === 'tf' ? 'ośrodek treningowy' : 'akademię'} (poziom ${c[k]}).`); }
+      if (lv < 5 && c.bal > cost * 2.2 && rnd() < 0.6) { c[k] = Math.min(5, Math.floor(lv) + 1); c.bal -= cost; if (c.lg === ut.lg) (S._inv = S._inv || []).push(`${c.name} (${k === 'tf' ? 'ośrodek' : 'akademia'} → poz. ${c[k]})`); }
     }
     if (c.bal > cap) c.bal = Math.round(cap + (c.bal - cap) * 0.6);
     c.tb = Math.min(Math.max(c.tb, Math.round(0.35 * c.bal)), Math.max(0, Math.round(c.bal * 0.7)));
@@ -2132,6 +2138,7 @@ function endSeason() {
       if (c.bal < 0) rebalanceSpons(c);
     }
   }
+  if (S._inv && S._inv.length) { lines.push(`🏗️ Rywale inwestują w infrastrukturę: ${S._inv.join(', ')}.`); } S._inv = [];
   // reprezentacja gracza: uzupełnij powołania do 23
   if (S.nt) { const st = S.ntTeams[S.nt]; st.sq = st.sq.filter(id => PM.has(id)); if (st.sq.length < 23) for (const id of autoCallup(S.nt)) { if (st.sq.length >= 23) break; if (!st.sq.includes(id)) st.sq.push(id); } }
   S.free = S.free.sort((a, b) => b.ovr - a.ovr).slice(0, 150);
@@ -2320,7 +2327,7 @@ function applyJob(id) {
     leak = ' Niestety informacja wyciekła do mediów – zarząd i kibice nie są zachwyceni.';
     msg('📰 Przeciek', `Media donoszą, że ${S.manager} aplikował na stanowisko trenera ${c.name}. Zarząd ${userClub().name} oczekuje wyjaśnień.`);
   }
-  return { ok: true, msg: `Wysłano aplikację do ${c.short || c.name}. Odpowiedź w ciągu ok. 2 tygodni.${leak}` };
+  return { ok: true, msg: `Wysłano aplikację: ${c.name}. Odpowiedź w ciągu ok. 2 tygodni.${leak}` };
 }
 function jobAppsWeek() {
   const today = absDay();
